@@ -17,7 +17,7 @@
             $menus = [
                 ['label' => 'Dashboard', 'href' => route('dashboard'), 'active' => request()->routeIs('dashboard')],
                 ['label' => 'Data Anggota', 'href' => '#', 'active' => false],
-                ['label' => 'Data Bidang', 'href' => '#', 'active' => false],
+                ['label' => 'Data Bidang', 'href' => route('departments.index'), 'active' => request()->routeIs('departments.*')],
                 ['label' => 'Data Jabatan', 'href' => '#', 'active' => false],
                 ['label' => 'Jadwal Agenda', 'href' => '#', 'active' => false],
                 ['label' => 'Kegiatan Aktual', 'href' => '#', 'active' => false],
