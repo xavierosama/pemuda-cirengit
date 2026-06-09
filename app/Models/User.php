@@ -5,6 +5,8 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -19,9 +21,11 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'member_id',
         'name',
         'email',
         'password',
+        'role',
     ];
 
     /**
@@ -45,5 +49,30 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function member(): BelongsTo
+    {
+        return $this->belongsTo(Member::class);
+    }
+
+    public function createdAgendaSchedules(): HasMany
+    {
+        return $this->hasMany(AgendaSchedule::class, 'created_by');
+    }
+
+    public function createdActivities(): HasMany
+    {
+        return $this->hasMany(Activity::class, 'created_by');
+    }
+
+    public function createdAttendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class, 'created_by');
+    }
+
+    public function verifiedAttendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class, 'verified_by');
     }
 }
