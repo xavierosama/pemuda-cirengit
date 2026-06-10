@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AgendaScheduleController;
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\ActivityAttendanceQrController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceCheckInController;
 use App\Http\Controllers\DashboardController;
@@ -38,6 +39,8 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
     Route::patch('activities/{activity}/status', [ActivityController::class, 'updateStatus'])
         ->name('activities.status.update');
+    Route::get('activities/{activity}/attendance-qr', [ActivityAttendanceQrController::class, 'show'])
+        ->name('activities.attendance-qr');
     Route::get('activities/{activity}/attendances', [AttendanceController::class, 'byActivity'])
         ->name('activities.attendances.index');
     Route::get('activities/{activity}/attendances/create', [AttendanceController::class, 'createManual'])
