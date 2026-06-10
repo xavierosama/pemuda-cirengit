@@ -23,7 +23,7 @@ class MemberController extends Controller
         $memberStatus = $request->string('member_status')->toString();
 
         $members = Member::query()
-            ->with(['department', 'position'])
+            ->with(['department', 'position', 'user'])
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('full_name', 'like', "%{$search}%")
@@ -83,7 +83,7 @@ class MemberController extends Controller
      */
     public function show(Member $member): View
     {
-        $member->load(['department', 'position']);
+        $member->load(['department', 'position', 'user']);
 
         return view('members.show', compact('member'));
     }

@@ -61,7 +61,7 @@
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            @foreach (['Nama', 'Bidang', 'Jabatan', 'No HP', 'Status'] as $heading)
+                            @foreach (['Nama', 'Bidang', 'Jabatan', 'No HP', 'Status', 'Status Akun'] as $heading)
                                 <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
                             @endforeach
                             <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
@@ -80,6 +80,9 @@
                                 <td class="whitespace-nowrap px-4 py-4">
                                     <span class="{{ $statusClasses[$member->member_status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$member->member_status] }}</span>
                                 </td>
+                                <td class="whitespace-nowrap px-4 py-4">
+                                    <span class="{{ $member->user ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $member->user ? 'Sudah Ada' : 'Belum Ada' }}</span>
+                                </td>
                                 <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-2">
                                         <a href="{{ route('members.show', $member) }}" class="rounded-md px-2.5 py-1.5 text-slate-700 transition hover:bg-slate-100">Detail</a>
@@ -92,7 +95,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="6" class="px-4 py-10 text-center text-sm text-slate-500">Belum ada data anggota.</td></tr>
+                            <tr><td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">Belum ada data anggota.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
