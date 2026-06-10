@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\AgendaSchedule;
 use App\Models\Attendance;
+use App\Models\Department;
 use App\Models\Member;
 use Illuminate\View\View;
 
@@ -17,16 +18,14 @@ class DashboardController extends Controller
 
         $statistics = [
             'active_members' => Member::where('member_status', 'active')->count(),
+            'active_departments' => Department::where('status', 'active')->count(),
             'active_agenda_schedules' => AgendaSchedule::where('is_active', true)->count(),
             'monthly_activities' => Activity::whereBetween('activity_date', [$monthStart, $monthEnd])->count(),
-            'scheduled_activities' => Activity::where('status', 'scheduled')->count(),
-            'holiday_activities' => Activity::where('status', 'holiday')->count(),
-            'monthly_attendances' => Attendance::whereHas('activity', fn ($query) => $query
-                ->whereBetween('activity_date', [$monthStart, $monthEnd]))
-                ->count(),
+            'need_verification_attendances' => Attendance::where('verification_status', 'need_verification')->count(),
         ];
 
         $upcomingActivities = Activity::query()
+            ->with('department')
             ->whereDate('activity_date', '>=', today())
             ->orderBy('activity_date')
             ->orderByRaw('start_time is null')
@@ -34,18 +33,26 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        $recentAttendanceActivities = Activity::query()
-            ->whereHas('attendances')
-            ->withCount([
-                'attendances as present_count' => fn ($query) => $query->where('status', 'present'),
-                'attendances as permission_count' => fn ($query) => $query->where('status', 'permission'),
-                'attendances as absent_count' => fn ($query) => $query->where('status', 'absent'),
-                'attendances as need_verification_count' => fn ($query) => $query->where('status', 'need_verification'),
-            ])
-            ->orderByDesc('activity_date')
-            ->orderByDesc('start_time')
-            ->limit(5)
-            ->get();
+        $monthlyAttendanceCounts = Attendance::query()
+            ->whereHas('activity', fn ($query) => $query->whereBetween('activity_date', [$monthStart, $monthEnd]))
+            ->selectRaw("sum(case when status = 'present' then 1 else 0 end) as present")
+            ->selectRaw("sum(case when status = 'permission' then 1 else 0 end) as permission")
+            ->selectRaw("sum(case when status = 'absent' then 1 else 0 end) as absent")
+            ->selectRaw("sum(case when status = 'need_verification' then 1 else 0 end) as need_verification")
+            ->first();
+        $monthlyAttendanceTotal = (int) $monthlyAttendanceCounts->present
+            + (int) $monthlyAttendanceCounts->permission
+            + (int) $monthlyAttendanceCounts->absent
+            + (int) $monthlyAttendanceCounts->need_verification;
+        $monthlyAttendanceSummary = [
+            'present' => (int) $monthlyAttendanceCounts->present,
+            'permission' => (int) $monthlyAttendanceCounts->permission,
+            'absent' => (int) $monthlyAttendanceCounts->absent,
+            'need_verification' => (int) $monthlyAttendanceCounts->need_verification,
+            'attendance_percentage' => $monthlyAttendanceTotal > 0
+                ? round(((int) $monthlyAttendanceCounts->present / $monthlyAttendanceTotal) * 100, 2)
+                : 0,
+        ];
 
         $activeAgendaSchedules = AgendaSchedule::query()
             ->with(['department', 'pic'])
@@ -57,7 +64,7 @@ class DashboardController extends Controller
         return view('dashboard', compact(
             'statistics',
             'upcomingActivities',
-            'recentAttendanceActivities',
+            'monthlyAttendanceSummary',
             'activeAgendaSchedules'
         ));
     }

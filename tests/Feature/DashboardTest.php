@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Activity;
 use App\Models\AgendaSchedule;
 use App\Models\Attendance;
+use App\Models\Department;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -26,15 +27,17 @@ class DashboardTest extends TestCase
         $this->actingAs(User::factory()->create())
             ->get(route('dashboard'))
             ->assertOk()
-            ->assertSee('Belum ada kegiatan yang akan datang.')
-            ->assertSee('Belum ada kegiatan dengan data presensi.')
-            ->assertSee('Belum ada jadwal agenda aktif.');
+            ->assertSee('Belum ada kegiatan terdekat.')
+            ->assertSee('Belum ada jadwal agenda aktif.')
+            ->assertSee('Aksi Cepat');
     }
 
     public function test_dashboard_displays_statistics_and_limits_summary_lists(): void
     {
         Carbon::setTestNow('2026-06-10 10:00:00');
         $user = User::factory()->create();
+        $department = Department::create(['name' => 'Pendidikan', 'status' => 'active']);
+        Department::create(['name' => 'Nonaktif', 'status' => 'inactive']);
         $members = collect();
 
         for ($index = 1; $index <= 7; $index++) {
@@ -44,8 +47,12 @@ class DashboardTest extends TestCase
             ]));
 
             AgendaSchedule::create([
+                'department_id' => $department->id,
                 'title' => 'Agenda Aktif '.$index,
                 'schedule_type' => 'daily',
+                'start_time' => '08:00',
+                'end_time' => '10:00',
+                'default_location' => 'Sekretariat',
                 'is_active' => $index <= 6,
                 'created_by' => $user->id,
             ]);
@@ -53,8 +60,12 @@ class DashboardTest extends TestCase
 
         for ($index = 1; $index <= 6; $index++) {
             $activity = Activity::create([
+                'department_id' => $department->id,
                 'title' => 'Kegiatan Mendatang '.$index,
                 'activity_date' => '2026-06-'.str_pad((string) (10 + $index), 2, '0', STR_PAD_LEFT),
+                'start_time' => '20:00',
+                'end_time' => '21:00',
+                'location' => 'Masjid Cirengit',
                 'status' => $index === 1 ? 'holiday' : 'scheduled',
                 'created_by' => $user->id,
             ]);
@@ -69,6 +80,7 @@ class DashboardTest extends TestCase
                     default => 'need_verification',
                 },
                 'attendance_method' => 'manual',
+                'verification_status' => $index >= 4 ? 'need_verification' : 'valid',
                 'created_by' => $user->id,
             ]);
         }
@@ -85,11 +97,10 @@ class DashboardTest extends TestCase
         $response->assertOk()
             ->assertViewHas('statistics', fn (array $statistics) => $statistics === [
                 'active_members' => 6,
+                'active_departments' => 1,
                 'active_agenda_schedules' => 6,
                 'monthly_activities' => 6,
-                'scheduled_activities' => 5,
-                'holiday_activities' => 1,
-                'monthly_attendances' => 6,
+                'need_verification_attendances' => 3,
             ])
             ->assertViewHas('upcomingActivities', fn ($activities) => $activities->count() === 5
                 && $activities->pluck('title')->all() === [
@@ -99,10 +110,20 @@ class DashboardTest extends TestCase
                     'Kegiatan Mendatang 4',
                     'Kegiatan Mendatang 5',
                 ])
-            ->assertViewHas('recentAttendanceActivities', fn ($activities) => $activities->count() === 5
-                && $activities->first()->title === 'Kegiatan Mendatang 6'
-                && $activities->first()->need_verification_count === 1)
+            ->assertViewHas('monthlyAttendanceSummary', fn (array $summary) => $summary === [
+                'present' => 1,
+                'permission' => 1,
+                'absent' => 1,
+                'need_verification' => 3,
+                'attendance_percentage' => 16.67,
+            ])
             ->assertViewHas('activeAgendaSchedules', fn ($schedules) => $schedules->count() === 5)
-            ->assertSee('Kegiatan Mendatang 1');
+            ->assertSee('Ringkasan Utama')
+            ->assertSee('Kegiatan Mendatang 1')
+            ->assertSee('20:00 - 21:00')
+            ->assertSee('Rekap Presensi Bulan Ini')
+            ->assertSee('16.67%')
+            ->assertSee('Jadwal Agenda Aktif')
+            ->assertSee('Aksi Cepat');
     }
 }
