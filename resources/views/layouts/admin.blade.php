@@ -14,15 +14,35 @@
     </head>
     <body class="font-sans antialiased">
         @php
-            $menus = [
-                ['label' => 'Dashboard', 'href' => route('dashboard'), 'active' => request()->routeIs('dashboard')],
-                ['label' => 'Data Anggota', 'href' => route('members.index'), 'active' => request()->routeIs('members.*')],
-                ['label' => 'Data Bidang', 'href' => route('departments.index'), 'active' => request()->routeIs('departments.*')],
-                ['label' => 'Data Jabatan', 'href' => route('positions.index'), 'active' => request()->routeIs('positions.*')],
-                ['label' => 'Jadwal Agenda', 'href' => route('agenda-schedules.index'), 'active' => request()->routeIs('agenda-schedules.*')],
-                ['label' => 'Kegiatan Aktual', 'href' => route('activities.index'), 'active' => request()->routeIs('activities.*') && ! request()->routeIs('activities.attendances.*')],
-                ['label' => 'Daftar Hadir', 'href' => route('attendances.index'), 'active' => request()->routeIs('attendances.*') || request()->routeIs('activities.attendances.*')],
-                ['label' => 'Rekap Presensi', 'href' => route('attendance-reports.index'), 'active' => request()->routeIs('attendance-reports.*')],
+            $menuSections = [
+                [
+                    'heading' => null,
+                    'items' => [
+                        ['label' => 'Dashboard', 'href' => route('dashboard'), 'active' => request()->routeIs('dashboard')],
+                    ],
+                ],
+                [
+                    'heading' => 'Master Data',
+                    'items' => [
+                        ['label' => 'Data Anggota', 'href' => route('members.index'), 'active' => request()->routeIs('members.*')],
+                        ['label' => 'Data Bidang', 'href' => route('departments.index'), 'active' => request()->routeIs('departments.*')],
+                        ['label' => 'Data Jabatan', 'href' => route('positions.index'), 'active' => request()->routeIs('positions.*')],
+                    ],
+                ],
+                [
+                    'heading' => 'Agenda & Kegiatan',
+                    'items' => [
+                        ['label' => 'Jadwal Agenda', 'href' => route('agenda-schedules.index'), 'active' => request()->routeIs('agenda-schedules.*')],
+                        ['label' => 'Kegiatan Aktual', 'href' => route('activities.index'), 'active' => request()->routeIs('activities.*') && ! request()->routeIs('activities.attendances.*')],
+                    ],
+                ],
+                [
+                    'heading' => 'Presensi',
+                    'items' => [
+                        ['label' => 'Daftar Hadir', 'href' => route('attendances.index'), 'active' => request()->routeIs('attendances.*') || request()->routeIs('activities.attendances.*')],
+                        ['label' => 'Rekap Presensi', 'href' => route('attendance-reports.index'), 'active' => request()->routeIs('attendance-reports.*')],
+                    ],
+                ],
             ];
         @endphp
 
@@ -54,15 +74,23 @@
                     </button>
                 </div>
 
-                <nav class="space-y-1 px-4 py-6">
-                    @foreach ($menus as $menu)
-                        <a
-                            href="{{ $menu['href'] }}"
-                            class="{{ $menu['active'] ? 'bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-100' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900' }} flex items-center rounded-lg px-3 py-2.5 text-sm font-semibold transition"
-                        >
-                            <span class="{{ $menu['active'] ? 'bg-emerald-700' : 'bg-slate-300' }} mr-3 h-2 w-2 rounded-full"></span>
-                            {{ $menu['label'] }}
-                        </a>
+                <nav class="space-y-7 px-4 py-6">
+                    @foreach ($menuSections as $section)
+                        <div class="space-y-1.5">
+                            @if ($section['heading'])
+                                <p class="px-3 text-xs font-bold uppercase tracking-wide text-slate-400">{{ $section['heading'] }}</p>
+                            @endif
+
+                            @foreach ($section['items'] as $menu)
+                                <a
+                                    href="{{ $menu['href'] }}"
+                                    class="{{ $menu['active'] ? 'bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-100' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950' }} flex items-center rounded-lg px-3 py-2.5 text-sm font-semibold transition"
+                                >
+                                    <span class="{{ $menu['active'] ? 'bg-emerald-700 ring-4 ring-emerald-100' : 'bg-slate-300' }} mr-3 h-2 w-2 rounded-full"></span>
+                                    {{ $menu['label'] }}
+                                </a>
+                            @endforeach
+                        </div>
                     @endforeach
                 </nav>
             </aside>
