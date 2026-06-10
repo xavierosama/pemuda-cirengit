@@ -145,13 +145,6 @@ class ActivityController extends Controller
             ->with('success', 'Kegiatan dibuat dari jadwal. Lengkapi atau periksa detailnya.');
     }
 
-    public function attendancesPlaceholder(Activity $activity): RedirectResponse
-    {
-        return redirect()
-            ->route('activities.show', $activity)
-            ->with('info', 'Daftar hadir kegiatan akan tersedia pada tahap presensi berikutnya.');
-    }
-
     private function validatedData(Request $request): array
     {
         $attendanceCloseRules = ['nullable', 'date'];

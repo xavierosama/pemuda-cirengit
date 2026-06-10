@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AgendaScheduleController;
 use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PositionController;
@@ -27,9 +28,22 @@ Route::middleware('auth')->group(function () {
 
     Route::patch('activities/{activity}/status', [ActivityController::class, 'updateStatus'])
         ->name('activities.status.update');
-    Route::get('activities/{activity}/attendances', [ActivityController::class, 'attendancesPlaceholder'])
+    Route::get('activities/{activity}/attendances', [AttendanceController::class, 'byActivity'])
         ->name('activities.attendances.index');
+    Route::get('activities/{activity}/attendances/create', [AttendanceController::class, 'createManual'])
+        ->name('activities.attendances.create');
+    Route::post('activities/{activity}/attendances', [AttendanceController::class, 'storeManual'])
+        ->name('activities.attendances.store');
+    Route::get('activities/{activity}/attendances/bulk', [AttendanceController::class, 'createBulk'])
+        ->name('activities.attendances.bulk.create');
+    Route::put('activities/{activity}/attendances/bulk', [AttendanceController::class, 'storeBulk'])
+        ->name('activities.attendances.bulk.store');
     Route::resource('activities', ActivityController::class);
+
+    Route::get('attendances', [AttendanceController::class, 'index'])->name('attendances.index');
+    Route::get('attendances/{attendance}/edit', [AttendanceController::class, 'edit'])->name('attendances.edit');
+    Route::put('attendances/{attendance}', [AttendanceController::class, 'update'])->name('attendances.update');
+    Route::delete('attendances/{attendance}', [AttendanceController::class, 'destroy'])->name('attendances.destroy');
 
     Route::resource('members', MemberController::class);
     Route::resource('departments', DepartmentController::class);

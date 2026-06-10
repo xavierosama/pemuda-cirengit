@@ -20,8 +20,8 @@
                 ['label' => 'Data Bidang', 'href' => route('departments.index'), 'active' => request()->routeIs('departments.*')],
                 ['label' => 'Data Jabatan', 'href' => route('positions.index'), 'active' => request()->routeIs('positions.*')],
                 ['label' => 'Jadwal Agenda', 'href' => route('agenda-schedules.index'), 'active' => request()->routeIs('agenda-schedules.*')],
-                ['label' => 'Kegiatan Aktual', 'href' => route('activities.index'), 'active' => request()->routeIs('activities.*')],
-                ['label' => 'Daftar Hadir', 'href' => '#', 'active' => false],
+                ['label' => 'Kegiatan Aktual', 'href' => route('activities.index'), 'active' => request()->routeIs('activities.*') && ! request()->routeIs('activities.attendances.*')],
+                ['label' => 'Daftar Hadir', 'href' => route('attendances.index'), 'active' => request()->routeIs('attendances.*') || request()->routeIs('activities.attendances.*')],
             ];
         @endphp
 
