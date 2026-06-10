@@ -64,10 +64,14 @@ class AgendaScheduleCrudTest extends TestCase
         $this->actingAs($user)
             ->get(route('agenda-schedules.edit', $agendaSchedule))
             ->assertOk()
+            ->assertSee('Informasi Agenda')
+            ->assertSee('Pola Jadwal')
+            ->assertSee('Waktu & Lokasi Default', false)
             ->assertSee('type="text"', false)
             ->assertSee('value="19:30"', false)
             ->assertSee('value="21:00"', false)
-            ->assertSee('Gunakan format 24 jam, contoh 20:00.');
+            ->assertSee('Gunakan format 24 jam, contoh 20:00.')
+            ->assertSee('Batal/Kembali');
 
         $this->actingAs($user)->put(route('agenda-schedules.update', $agendaSchedule), [
             'title' => 'Kajian Bulanan',

@@ -47,6 +47,23 @@ class ActivityCrudTest extends TestCase
             ->assertOk()
             ->assertSee('Kajian Aktual');
 
+        $this->actingAs($user)
+            ->get(route('activities.create'))
+            ->assertOk()
+            ->assertSee('Informasi Kegiatan')
+            ->assertSee('Tanggal, Waktu, dan Lokasi')
+            ->assertSee('Pengaturan Presensi')
+            ->assertSee('placeholder="Contoh: 20:00"', false)
+            ->assertSee('Dalam meter, contoh: 100.')
+            ->assertSee('Aktifkan jika kegiatan menggunakan QR/link presensi.');
+
+        $this->actingAs($user)
+            ->get(route('activities.edit', $activity))
+            ->assertOk()
+            ->assertSee('Edit Kegiatan Aktual')
+            ->assertSee('Attendance token')
+            ->assertSee('Batal/Kembali');
+
         $this->actingAs($user)->patch(route('activities.status.update', $activity), [
             'status' => 'relocated',
             'change_reason' => 'Lokasi utama tidak tersedia.',
