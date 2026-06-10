@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Activity;
 use App\Models\Member;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
@@ -65,6 +66,74 @@ class MemberAccountTest extends TestCase
         $this->assertSame(2, User::count());
         $this->assertSame($member->id, $existingUser->fresh()->member_id);
         $this->assertSame('member', $existingUser->fresh()->role);
+    }
+
+    public function test_member_id_is_unique_but_nullable_on_users(): void
+    {
+        $member = Member::create(['full_name' => 'Anggota Unique', 'member_status' => 'active']);
+
+        User::factory()->create(['member_id' => null]);
+        User::factory()->create(['member_id' => null]);
+        User::factory()->create(['member_id' => $member->id]);
+
+        $this->expectException(QueryException::class);
+
+        User::factory()->create(['member_id' => $member->id]);
+    }
+
+    public function test_account_creation_stops_when_member_already_has_account(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $member = Member::create([
+            'full_name' => 'Anggota Sudah Ada',
+            'email' => 'sudah-ada@example.test',
+            'member_status' => 'active',
+        ]);
+        User::factory()->create([
+            'email' => $member->email,
+            'member_id' => $member->id,
+            'role' => 'member',
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('members.account.store', $member))
+            ->assertSessionHas('info', 'Anggota ini sudah memiliki akun login.');
+
+        $this->assertSame(2, User::count());
+    }
+
+    public function test_member_detail_shows_account_status_and_conditional_buttons(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $memberWithoutAccount = Member::create([
+            'full_name' => 'Belum Akun',
+            'email' => 'belum-akun@example.test',
+            'member_status' => 'active',
+        ]);
+        $memberWithAccount = Member::create([
+            'full_name' => 'Sudah Akun',
+            'email' => 'sudah-akun@example.test',
+            'member_status' => 'active',
+        ]);
+        User::factory()->create([
+            'email' => $memberWithAccount->email,
+            'member_id' => $memberWithAccount->id,
+            'role' => 'member',
+        ]);
+
+        $this->actingAs($admin)
+            ->get(route('members.show', $memberWithoutAccount))
+            ->assertOk()
+            ->assertSee('Belum Ada')
+            ->assertSee('Buat Akun Login')
+            ->assertDontSee('Reset Password');
+
+        $this->actingAs($admin)
+            ->get(route('members.show', $memberWithAccount))
+            ->assertOk()
+            ->assertSee('Sudah Ada')
+            ->assertSee('Reset Password')
+            ->assertDontSee('Buat Akun Login');
     }
 
     public function test_member_role_cannot_access_admin_but_can_access_check_in(): void

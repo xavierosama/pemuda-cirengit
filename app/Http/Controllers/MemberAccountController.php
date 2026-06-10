@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Member;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
@@ -27,6 +28,10 @@ class MemberAccountController extends Controller
             return back()->with('info', 'Anggota ini sudah memiliki akun login.');
         }
 
+        if (User::where('member_id', $member->id)->exists()) {
+            return back()->with('error', 'Data anggota ini sudah terhubung dengan akun user lain.');
+        }
+
         $user = User::where('email', $member->email)->first();
 
         if ($user) {
@@ -34,21 +39,29 @@ class MemberAccountController extends Controller
                 return back()->with('error', 'Email tersebut sudah digunakan oleh akun anggota lain.');
             }
 
-            $user->update([
-                'member_id' => $member->id,
-                'role' => $user->role ?? 'member',
-            ]);
+            try {
+                $user->update([
+                    'member_id' => $member->id,
+                    'role' => $user->role ?? 'member',
+                ]);
+            } catch (QueryException) {
+                return back()->with('error', 'Data anggota ini sudah terhubung dengan akun user lain.');
+            }
 
             return back()->with('success', 'Akun dengan email tersebut sudah ada dan berhasil dihubungkan ke anggota.');
         }
 
-        User::create([
-            'name' => $member->full_name,
-            'email' => $member->email,
-            'password' => Hash::make('password'),
-            'role' => 'member',
-            'member_id' => $member->id,
-        ]);
+        try {
+            User::create([
+                'name' => $member->full_name,
+                'email' => $member->email,
+                'password' => Hash::make('password'),
+                'role' => 'member',
+                'member_id' => $member->id,
+            ]);
+        } catch (QueryException) {
+            return back()->with('error', 'Data anggota ini sudah terhubung dengan akun user lain.');
+        }
 
         return back()->with('success', 'Akun login berhasil dibuat. Password awal: password');
     }

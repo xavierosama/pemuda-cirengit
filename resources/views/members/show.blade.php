@@ -71,7 +71,7 @@
                     <p class="mt-1 text-sm text-slate-500">Akun digunakan anggota untuk melakukan presensi mandiri melalui link kegiatan.</p>
                 </div>
                 <span class="{{ $member->user ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset">
-                    {{ $member->user ? 'Sudah punya akun' : 'Belum punya akun' }}
+                    {{ $member->user ? 'Sudah Ada' : 'Belum Ada' }}
                 </span>
             </div>
 
