@@ -41,7 +41,13 @@
                         <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->location_accuracy !== null ? number_format((float) $attendance->location_accuracy, 2).' m' : '-' }}</td>
                         <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold {{ $attendance->verification_status === 'valid' ? 'text-emerald-700' : ($attendance->verification_status === 'rejected' ? 'text-red-700' : 'text-amber-700') }}">{{ $verificationLabels[$attendance->verification_status] }}</td>
                         <td class="max-w-56 px-4 py-4 text-sm text-slate-600">{{ str($attendance->notes ?: '-')->limit(60) }}</td>
-                        <td class="whitespace-nowrap px-4 py-4 text-right"><div class="flex justify-end gap-2">@if ($attendance->verification_status === 'need_verification')<form method="POST" action="{{ route('attendances.verify', $attendance) }}">@csrf @method('PATCH')<button class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Valid</button></form><form method="POST" action="{{ route('attendances.reject', $attendance) }}">@csrf @method('PATCH')<button class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50">Reject</button></form>@endif<a href="{{ route('attendances.edit', $attendance) }}" class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">Edit</a></div></td>
+                        <td class="whitespace-nowrap px-4 py-4 text-right"><div class="flex justify-end gap-2">
+                            @if ($attendance->verification_status === 'need_verification')
+                                <x-action-icon :action="route('attendances.verify', $attendance)" method="PATCH" label="Valid" icon="check" variant="emerald" />
+                                <x-action-icon :action="route('attendances.reject', $attendance)" method="PATCH" label="Reject" icon="x" variant="red" />
+                            @endif
+                            <x-action-icon :href="route('attendances.edit', $attendance)" label="Edit" icon="pencil" variant="amber" />
+                        </div></td>
                     </tr>
                 @empty
                     <tr><td colspan="13" class="px-4 py-10 text-center text-sm text-slate-500">Belum ada data presensi.</td></tr>

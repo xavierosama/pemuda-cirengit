@@ -79,13 +79,9 @@
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-2">
-                                        <a href="{{ route('departments.show', $department) }}" class="rounded-md px-2.5 py-1.5 text-slate-700 transition hover:bg-slate-100">Detail</a>
-                                        <a href="{{ route('departments.edit', $department) }}" class="rounded-md px-2.5 py-1.5 text-emerald-700 transition hover:bg-emerald-50">Edit</a>
-                                        <form method="POST" action="{{ route('departments.destroy', $department) }}" onsubmit="return confirm('Hapus data bidang ini?')">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="rounded-md px-2.5 py-1.5 text-red-700 transition hover:bg-red-50">Hapus</button>
-                                        </form>
+                                        <x-action-icon :href="route('departments.show', $department)" label="Detail" icon="eye" variant="blue" />
+                                        <x-action-icon :href="route('departments.edit', $department)" label="Edit" icon="pencil" variant="amber" />
+                                        <x-action-icon :action="route('departments.destroy', $department)" method="DELETE" label="Hapus" icon="trash" variant="red" confirm="Yakin ingin menghapus data ini?" />
                                     </div>
                                 </td>
                             </tr>

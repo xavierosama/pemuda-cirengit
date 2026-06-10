@@ -68,9 +68,9 @@
                                 <td class="whitespace-nowrap px-4 py-4"><span class="{{ $statusClasses[$activity->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$activity->status] }}</span></td>
                                 <td class="whitespace-nowrap px-4 py-4"><span class="{{ $activity->attendance_enabled ? 'text-emerald-700' : 'text-slate-500' }} text-sm font-semibold">{{ $activity->attendance_enabled ? 'Aktif' : 'Tidak aktif' }}</span></td>
                                 <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold"><div class="flex justify-end gap-2">
-                                    <a href="{{ route('activities.show', $activity) }}" class="rounded-md px-2.5 py-1.5 text-slate-700 hover:bg-slate-100">Detail</a>
-                                    <a href="{{ route('activities.edit', $activity) }}" class="rounded-md px-2.5 py-1.5 text-emerald-700 hover:bg-emerald-50">Edit</a>
-                                    <form method="POST" action="{{ route('activities.destroy', $activity) }}" onsubmit="return confirm('Hapus kegiatan aktual ini?')">@csrf @method('DELETE')<button type="submit" class="rounded-md px-2.5 py-1.5 text-red-700 hover:bg-red-50">Hapus</button></form>
+                                    <x-action-icon :href="route('activities.show', $activity)" label="Detail" icon="eye" variant="blue" />
+                                    <x-action-icon :href="route('activities.edit', $activity)" label="Edit" icon="pencil" variant="amber" />
+                                    <x-action-icon :action="route('activities.destroy', $activity)" method="DELETE" label="Hapus" icon="trash" variant="red" confirm="Yakin ingin menghapus data ini?" />
                                 </div></td>
                             </tr>
                         @empty

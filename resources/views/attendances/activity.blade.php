@@ -48,11 +48,11 @@
                                 <td class="max-w-64 px-4 py-4 text-sm text-slate-600">{{ $attendance->notes ?: '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-right"><div class="flex justify-end gap-2">
                                     @if ($attendance->verification_status === 'need_verification')
-                                        <form method="POST" action="{{ route('attendances.verify', $attendance) }}">@csrf @method('PATCH')<button class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Valid</button></form>
-                                        <form method="POST" action="{{ route('attendances.reject', $attendance) }}">@csrf @method('PATCH')<button class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50">Reject</button></form>
+                                        <x-action-icon :action="route('attendances.verify', $attendance)" method="PATCH" label="Valid" icon="check" variant="emerald" />
+                                        <x-action-icon :action="route('attendances.reject', $attendance)" method="PATCH" label="Reject" icon="x" variant="red" />
                                     @endif
-                                    <a href="{{ route('attendances.edit', $attendance) }}" class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-100">Edit</a>
-                                    <form method="POST" action="{{ route('attendances.destroy', $attendance) }}" onsubmit="return confirm('Hapus data kehadiran ini?')">@csrf @method('DELETE')<button class="rounded-md px-2.5 py-1.5 text-sm font-semibold text-red-700 hover:bg-red-50">Hapus</button></form>
+                                    <x-action-icon :href="route('attendances.edit', $attendance)" label="Edit" icon="pencil" variant="amber" />
+                                    <x-action-icon :action="route('attendances.destroy', $attendance)" method="DELETE" label="Hapus" icon="trash" variant="red" confirm="Yakin ingin menghapus data ini?" />
                                 </div></td>
                             </tr>
                         @empty

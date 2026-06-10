@@ -79,13 +79,10 @@
                                 <td class="whitespace-nowrap px-4 py-4"><span class="{{ $agendaSchedule->is_active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $agendaSchedule->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
                                 <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-2">
-                                        <a href="{{ route('agenda-schedules.show', $agendaSchedule) }}" class="rounded-md px-2.5 py-1.5 text-slate-700 hover:bg-slate-100">Detail</a>
-                                        <a href="{{ route('agenda-schedules.edit', $agendaSchedule) }}" class="rounded-md px-2.5 py-1.5 text-emerald-700 hover:bg-emerald-50">Edit</a>
+                                        <x-action-icon :href="route('agenda-schedules.show', $agendaSchedule)" label="Detail" icon="eye" variant="blue" />
+                                        <x-action-icon :href="route('agenda-schedules.edit', $agendaSchedule)" label="Edit" icon="pencil" variant="amber" />
                                         @if ($agendaSchedule->is_active)
-                                            <form method="POST" action="{{ route('agenda-schedules.deactivate', $agendaSchedule) }}" onsubmit="return confirm('Nonaktifkan jadwal agenda ini?')">
-                                                @csrf @method('PATCH')
-                                                <button type="submit" class="rounded-md px-2.5 py-1.5 text-amber-700 hover:bg-amber-50">Nonaktifkan</button>
-                                            </form>
+                                            <x-action-icon :action="route('agenda-schedules.deactivate', $agendaSchedule)" method="PATCH" label="Nonaktifkan" icon="ban" variant="slate" confirm="Nonaktifkan jadwal agenda ini?" />
                                         @endif
                                     </div>
                                 </td>
