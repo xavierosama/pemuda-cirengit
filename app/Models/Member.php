@@ -13,7 +13,7 @@ class Member extends Model
         'department_id',
         'position_id',
         'full_name',
-        'member_number',
+        'npa',
         'phone',
         'email',
         'address',

@@ -36,7 +36,7 @@
                 <div class="flex items-center gap-4">
                     <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-slate-900 text-xl font-bold uppercase text-white">{{ str($member->full_name)->substr(0, 1) }}</div>
                     <div>
-                        <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">{{ $member->member_number ?: 'Anggota' }}</p>
+                        <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">{{ $member->npa ?: 'Anggota' }}</p>
                         <h2 class="mt-1 text-2xl font-bold text-slate-950">{{ $member->full_name }}</h2>
                         <p class="mt-1 text-sm text-slate-500">Bergabung {{ $member->joined_at?->format('d M Y') ?? '-' }}</p>
                     </div>
@@ -49,6 +49,7 @@
             <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 class="text-base font-bold text-slate-950">Penempatan Organisasi</h3>
                 <dl class="mt-5 space-y-4">
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Nomor Pokok Anggota (NPA)</dt><dd class="mt-1 text-sm font-semibold text-slate-800">{{ $member->npa ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Bidang</dt><dd class="mt-1 text-sm font-semibold text-slate-800">{{ $member->department?->name ?? '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Jabatan</dt><dd class="mt-1 text-sm font-semibold text-slate-800">{{ $member->position?->name ?? '-' }}</dd></div>
                 </dl>

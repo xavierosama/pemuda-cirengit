@@ -21,7 +21,7 @@ class MemberCrudTest extends TestCase
 
         $this->actingAs($user)->post(route('members.store'), [
             'full_name' => 'Ahmad Cirengit',
-            'member_number' => 'PC-001',
+            'npa' => 'PC-001',
             'phone' => '08123456789',
             'email' => 'ahmad@example.test',
             'address' => 'Cirengit',
@@ -36,13 +36,14 @@ class MemberCrudTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('members.index', [
-                'search' => '081234',
+                'search' => 'PC-001',
                 'department_id' => $department->id,
                 'position_id' => $position->id,
                 'member_status' => 'active',
             ]))
             ->assertOk()
             ->assertSee('Ahmad Cirengit')
+            ->assertSee('PC-001')
             ->assertSee('Pendidikan')
             ->assertSee('Anggota');
 
@@ -64,6 +65,7 @@ class MemberCrudTest extends TestCase
             'id' => $member->id,
             'full_name' => 'Ahmad Updated',
             'member_status' => 'alumni',
+            'npa' => 'PC-001',
         ]);
 
         $this->actingAs($user)

@@ -61,7 +61,7 @@
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            @foreach (['Nama', 'Bidang', 'Jabatan', 'No HP', 'Status', 'Status Akun'] as $heading)
+                            @foreach (['Nama', 'NPA', 'Bidang', 'Jabatan', 'No HP', 'Status', 'Status Akun'] as $heading)
                                 <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
                             @endforeach
                             <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
@@ -72,8 +72,8 @@
                             <tr>
                                 <td class="px-4 py-4">
                                     <p class="whitespace-nowrap text-sm font-semibold text-slate-900">{{ $member->full_name }}</p>
-                                    <p class="mt-1 text-xs text-slate-500">{{ $member->member_number ?: 'Nomor anggota belum diisi' }}</p>
                                 </td>
+                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $member->npa ?: '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $member->department?->name ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $member->position?->name ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $member->phone ?: '-' }}</td>
@@ -95,7 +95,7 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">Belum ada data anggota.</td></tr>
+                            <tr><td colspan="8" class="px-4 py-10 text-center text-sm text-slate-500">Belum ada data anggota.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

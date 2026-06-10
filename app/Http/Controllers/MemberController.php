@@ -27,6 +27,7 @@ class MemberController extends Controller
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('full_name', 'like', "%{$search}%")
+                        ->orWhere('npa', 'like', "%{$search}%")
                         ->orWhere('phone', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%");
                 });
@@ -128,7 +129,7 @@ class MemberController extends Controller
     {
         return $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
-            'member_number' => ['nullable', 'string', 'max:255'],
+            'npa' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
             'address' => ['nullable', 'string'],

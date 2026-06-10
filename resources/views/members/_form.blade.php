@@ -8,9 +8,9 @@
     </div>
 
     <div>
-        <label for="member_number" class="block text-sm font-semibold text-slate-700">Nomor Anggota</label>
-        <input id="member_number" name="member_number" type="text" value="{{ old('member_number', $member->member_number ?? '') }}" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-        @error('member_number') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+        <label for="npa" class="block text-sm font-semibold text-slate-700">Nomor Pokok Anggota (NPA)</label>
+        <input id="npa" name="npa" type="text" value="{{ old('npa', $member->npa ?? '') }}" placeholder="Masukkan NPA" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+        @error('npa') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
     </div>
 
     <div>
