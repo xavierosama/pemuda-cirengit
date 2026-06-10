@@ -107,6 +107,30 @@ class MemberCrudTest extends TestCase
         ]);
     }
 
+    public function test_member_index_filters_by_account_status_and_shows_summary_cards(): void
+    {
+        $user = User::factory()->create(['role' => 'secretary']);
+        $withAccount = Member::create(['full_name' => 'Anggota Punya Akun', 'member_status' => 'active']);
+        Member::create(['full_name' => 'Anggota Tanpa Akun', 'member_status' => 'inactive']);
+        User::factory()->create(['role' => 'member', 'member_id' => $withAccount->id]);
+
+        $this->actingAs($user)
+            ->get(route('members.index', ['account_status' => 'exists']))
+            ->assertOk()
+            ->assertSee('Kelola data anggota, NPA, bidang, jabatan, dan akun login anggota.')
+            ->assertSee('Total Anggota Aktif')
+            ->assertSee('Total Sudah Punya Akun')
+            ->assertSee('Filter Data Anggota')
+            ->assertSee('Anggota Punya Akun')
+            ->assertDontSee('Anggota Tanpa Akun');
+
+        $this->actingAs($user)
+            ->get(route('members.index', ['account_status' => 'missing']))
+            ->assertOk()
+            ->assertSee('Anggota Tanpa Akun')
+            ->assertDontSee('Anggota Punya Akun');
+    }
+
     public function test_npa_is_nullable_and_unique_when_filled(): void
     {
         $user = User::factory()->create();

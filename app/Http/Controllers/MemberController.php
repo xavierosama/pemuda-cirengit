@@ -21,6 +21,7 @@ class MemberController extends Controller
         $departmentId = $request->integer('department_id') ?: null;
         $positionId = $request->integer('position_id') ?: null;
         $memberStatus = $request->string('member_status')->toString();
+        $accountStatus = $request->string('account_status')->toString();
 
         $members = Member::query()
             ->with(['department', 'position', 'user'])
@@ -38,21 +39,33 @@ class MemberController extends Controller
                 in_array($memberStatus, ['active', 'inactive', 'alumni', 'moved'], true),
                 fn ($query) => $query->where('member_status', $memberStatus)
             )
+            ->when($accountStatus === 'exists', fn ($query) => $query->whereHas('user'))
+            ->when($accountStatus === 'missing', fn ($query) => $query->whereDoesntHave('user'))
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
         $departments = Department::orderBy('name')->get(['id', 'name']);
         $positions = Position::orderBy('name')->get(['id', 'name']);
+        $memberStats = [
+            'active' => Member::where('member_status', 'active')->count(),
+            'inactive' => Member::where('member_status', 'inactive')->count(),
+            'alumni' => Member::where('member_status', 'alumni')->count(),
+            'moved' => Member::where('member_status', 'moved')->count(),
+            'account_exists' => Member::whereHas('user')->count(),
+            'account_missing' => Member::whereDoesntHave('user')->count(),
+        ];
 
         return view('members.index', compact(
             'members',
             'departments',
             'positions',
+            'memberStats',
             'search',
             'departmentId',
             'positionId',
-            'memberStatus'
+            'memberStatus',
+            'accountStatus'
         ));
     }
 
