@@ -78,8 +78,8 @@ class AgendaScheduleCrudTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('agenda-schedules.activities.create', $agendaSchedule))
-            ->assertRedirect(route('agenda-schedules.show', $agendaSchedule))
-            ->assertSessionHas('info');
+            ->assertOk()
+            ->assertSee('Tanggal Pelaksanaan');
     }
 
     public function test_schedule_pattern_validation_is_conditional(): void

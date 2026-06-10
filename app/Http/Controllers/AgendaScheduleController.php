@@ -115,13 +115,6 @@ class AgendaScheduleController extends Controller
             ->with('success', 'Jadwal agenda berhasil dinonaktifkan.');
     }
 
-    public function createActivityPlaceholder(AgendaSchedule $agendaSchedule): RedirectResponse
-    {
-        return redirect()
-            ->route('agenda-schedules.show', $agendaSchedule)
-            ->with('info', 'Form pembuatan kegiatan dari jadwal akan tersedia pada modul Kegiatan Aktual.');
-    }
-
     private function formOptions(): array
     {
         return [
