@@ -16,33 +16,60 @@ class AttendanceController extends Controller
 {
     public function index(Request $request): View
     {
-        $activityId = $request->integer('activity_id') ?: null;
-        $status = $request->string('status')->toString();
-        $memberId = $request->integer('member_id') ?: null;
+        $search = $request->string('search')->toString();
         $departmentId = $request->integer('department_id') ?: null;
+        $activityStatus = $request->string('activity_status')->toString();
+        $attendanceStatus = $request->string('attendance_enabled')->toString();
+        $startDate = $request->string('start_date')->toString();
+        $endDate = $request->string('end_date')->toString();
+        $activityStatuses = ['scheduled', 'completed', 'holiday', 'postponed', 'relocated', 'cancelled'];
 
-        $attendances = Attendance::query()
-            ->with(['activity', 'member.department'])
-            ->when($activityId, fn ($query) => $query->where('activity_id', $activityId))
-            ->when(in_array($status, $this->statuses(), true), fn ($query) => $query->where('status', $status))
-            ->when($memberId, fn ($query) => $query->where('member_id', $memberId))
-            ->when($departmentId, function ($query) use ($departmentId) {
-                $query->whereHas('member', fn ($memberQuery) => $memberQuery->where('department_id', $departmentId));
-            })
-            ->latest()
-            ->paginate(15)
+        $activities = Activity::query()
+            ->with(['department', 'pic'])
+            ->withCount([
+                'attendances as present_count' => fn ($query) => $query->where('status', 'present'),
+                'attendances as permission_count' => fn ($query) => $query->where('status', 'permission'),
+                'attendances as absent_count' => fn ($query) => $query->where('status', 'absent'),
+                'attendances as need_verification_count' => fn ($query) => $query->where('status', 'need_verification'),
+            ])
+            ->when($search, fn ($query) => $query->where('title', 'like', "%{$search}%"))
+            ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
+            ->when(in_array($activityStatus, $activityStatuses, true), fn ($query) => $query->where('status', $activityStatus))
+            ->when(
+                in_array($attendanceStatus, ['0', '1'], true),
+                fn ($query) => $query->where('attendance_enabled', $attendanceStatus === '1')
+            )
+            ->when($startDate, fn ($query) => $query->whereDate('activity_date', '>=', $startDate))
+            ->when($endDate, fn ($query) => $query->whereDate('activity_date', '<=', $endDate))
+            ->orderByDesc('activity_date')
+            ->orderByDesc('start_time')
+            ->paginate(10)
             ->withQueryString();
 
+        $monthActivityIds = Activity::whereYear('activity_date', now()->year)
+            ->whereMonth('activity_date', now()->month)
+            ->pluck('id');
+
+        $attendanceStats = [
+            'active_activities' => Activity::where('attendance_enabled', true)->count(),
+            'monthly_total' => Attendance::whereIn('activity_id', $monthActivityIds)->count(),
+            'monthly_present' => Attendance::whereIn('activity_id', $monthActivityIds)->where('status', 'present')->count(),
+            'monthly_permission' => Attendance::whereIn('activity_id', $monthActivityIds)->where('status', 'permission')->count(),
+            'monthly_absent' => Attendance::whereIn('activity_id', $monthActivityIds)->where('status', 'absent')->count(),
+            'need_verification' => Attendance::where('status', 'need_verification')->count(),
+        ];
+
         return view('attendances.index', [
-            'attendances' => $attendances,
-            'activities' => Activity::orderByDesc('activity_date')->orderBy('title')->get(),
-            'members' => Member::orderBy('full_name')->get(['id', 'full_name']),
+            'activities' => $activities,
             'departments' => Department::orderBy('name')->get(['id', 'name']),
-            'statuses' => $this->statuses(),
-            'activityId' => $activityId,
-            'status' => $status,
-            'memberId' => $memberId,
+            'activityStatuses' => $activityStatuses,
+            'attendanceStats' => $attendanceStats,
+            'search' => $search,
             'departmentId' => $departmentId,
+            'activityStatus' => $activityStatus,
+            'attendanceStatus' => $attendanceStatus,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
         ]);
     }
 

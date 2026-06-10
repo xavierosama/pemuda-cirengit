@@ -56,6 +56,12 @@
         </svg>
         @break
 
+    @case('download')
+        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.75v9.5m0 0 3.75-3.75M12 14.25 8.25 10.5M5.25 16.75v1.5a2 2 0 0 0 2 2h9.5a2 2 0 0 0 2-2v-1.5" />
+        </svg>
+        @break
+
     @default
         <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <circle cx="12" cy="12" r="8" />

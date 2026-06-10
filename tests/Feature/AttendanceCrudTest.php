@@ -94,7 +94,13 @@ class AttendanceCrudTest extends TestCase
     {
         $user = User::factory()->create();
         $department = Department::create(['name' => 'Pendidikan', 'status' => 'active']);
-        $activity = $this->createActivity($user);
+        $activity = $this->createActivity($user, [
+            'department_id' => $department->id,
+            'title' => 'Kajian Pendidikan',
+            'start_time' => '20:00',
+            'end_time' => '21:00',
+            'location' => 'Masjid Cirengit',
+        ]);
         $member = Member::create([
             'department_id' => $department->id,
             'full_name' => 'Budi Pendidikan',
@@ -110,14 +116,26 @@ class AttendanceCrudTest extends TestCase
 
         $this->actingAs($user)
             ->get(route('attendances.index', [
-                'activity_id' => $activity->id,
-                'status' => 'present',
-                'member_id' => $member->id,
+                'search' => 'Kajian',
                 'department_id' => $department->id,
+                'activity_status' => 'scheduled',
+                'attendance_enabled' => '1',
+                'start_date' => '2026-06-01',
+                'end_date' => '2026-06-30',
             ]))
             ->assertOk()
-            ->assertSee('Budi Pendidikan')
-            ->assertSee('Pendidikan');
+            ->assertSee('Kelola daftar hadir kegiatan, status presensi, dan verifikasi kehadiran anggota.')
+            ->assertSee('Total Kegiatan dengan Presensi Aktif')
+            ->assertSee('Filter Daftar Hadir')
+            ->assertSee('Tabel Daftar Hadir')
+            ->assertSee('Kajian Pendidikan')
+            ->assertSee('25/06/2026')
+            ->assertSee('20:00 - 21:00')
+            ->assertSee('Pendidikan')
+            ->assertSee('Buka Daftar Hadir')
+            ->assertSee('QR Presensi')
+            ->assertSee('Sinkronkan Peserta')
+            ->assertSee('Export Excel');
 
         $this->actingAs($user)
             ->put(route('attendances.update', $attendance), [
