@@ -46,20 +46,49 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function byActivity(Activity $activity): View
+    public function byActivity(Request $request, Activity $activity): View
     {
         $activity->load(['department', 'pic']);
+        $search = $request->string('search')->toString();
+        $status = $request->string('status')->toString();
+        $departmentId = $request->integer('department_id') ?: null;
 
-        $attendances = $activity->attendances()
-            ->with('member.department')
+        $allAttendances = $activity->attendances()
+            ->with(['member.department', 'member.position'])
             ->get()
             ->sortBy('member.full_name', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
 
         $summary = collect($this->statuses())
-            ->mapWithKeys(fn ($status) => [$status => $attendances->where('status', $status)->count()]);
+            ->mapWithKeys(fn ($status) => [$status => $allAttendances->where('status', $status)->count()]);
+        $totalAttendances = $summary->sum();
+        $attendancePercentage = $totalAttendances > 0
+            ? round(($summary['present'] / $totalAttendances) * 100, 2)
+            : 0;
 
-        return view('attendances.activity', compact('activity', 'attendances', 'summary'));
+        $attendances = $allAttendances
+            ->when($search, function ($rows) use ($search) {
+                $keyword = str($search)->lower()->toString();
+
+                return $rows->filter(fn (Attendance $attendance) => str($attendance->member->full_name)->lower()->contains($keyword)
+                    || str($attendance->member->npa ?? '')->lower()->contains($keyword));
+            })
+            ->when(in_array($status, $this->statuses(), true), fn ($rows) => $rows->where('status', $status))
+            ->when($departmentId, fn ($rows) => $rows->filter(fn (Attendance $attendance) => (int) $attendance->member->department_id === (int) $departmentId))
+            ->values();
+
+        $departments = Department::orderBy('name')->get(['id', 'name']);
+
+        return view('attendances.activity', compact(
+            'activity',
+            'attendances',
+            'summary',
+            'attendancePercentage',
+            'departments',
+            'search',
+            'status',
+            'departmentId'
+        ));
     }
 
     public function createManual(Activity $activity): View

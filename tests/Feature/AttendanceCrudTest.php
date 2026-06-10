@@ -232,13 +232,82 @@ class AttendanceCrudTest extends TestCase
     public function test_sync_button_is_visible_on_activity_attendance_page(): void
     {
         $user = User::factory()->create(['role' => 'admin']);
-        $activity = $this->createActivity($user);
+        $activity = $this->createActivity($user, ['attendance_token' => 'sync-visible-token']);
 
         $this->actingAs($user)
             ->get(route('activities.attendances.index', $activity))
             ->assertOk()
+            ->assertSee('Persentase Kehadiran')
+            ->assertSee('Cari nama anggota atau NPA')
             ->assertSee('Sinkronkan Peserta Presensi')
+            ->assertSee('Lihat QR Presensi')
+            ->assertSee('Salin Link Presensi')
             ->assertSee('Export Excel');
+    }
+
+    public function test_activity_attendance_page_filters_by_search_status_and_department(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $education = Department::create(['name' => 'Pendidikan', 'status' => 'active']);
+        $dakwah = Department::create(['name' => 'Dakwah', 'status' => 'active']);
+        $position = Position::create(['name' => 'Anggota', 'status' => 'active']);
+        $activity = $this->createActivity($user, [
+            'title' => 'Kajian Filter',
+            'activity_date' => '2026-06-10',
+            'start_time' => '20:00',
+            'end_time' => '21:00',
+            'location' => 'Masjid Cirengit',
+            'attendance_token' => 'filter-token',
+        ]);
+        $included = Member::create([
+            'department_id' => $education->id,
+            'position_id' => $position->id,
+            'npa' => '20.0001',
+            'full_name' => 'Ahmad Pendidikan',
+            'member_status' => 'active',
+        ]);
+        $excluded = Member::create([
+            'department_id' => $dakwah->id,
+            'position_id' => $position->id,
+            'npa' => '30.0001',
+            'full_name' => 'Budi Dakwah',
+            'member_status' => 'active',
+        ]);
+        Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $included->id,
+            'status' => 'present',
+            'attendance_method' => 'link',
+            'checked_in_at' => '2026-06-10 20:05:00',
+            'distance_from_activity' => 10,
+            'verification_status' => 'valid',
+            'notes' => 'Datang.',
+        ]);
+        Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $excluded->id,
+            'status' => 'absent',
+            'attendance_method' => 'manual',
+            'verification_status' => 'valid',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('activities.attendances.index', [
+                'activity' => $activity,
+                'search' => '20.0001',
+                'status' => 'present',
+                'department_id' => $education->id,
+            ]))
+            ->assertOk()
+            ->assertSee('Kajian Filter')
+            ->assertSee('10/06/2026')
+            ->assertSee('20:00 - 21:00')
+            ->assertSee('Ahmad Pendidikan')
+            ->assertSee('20.0001')
+            ->assertDontSee('Budi Dakwah')
+            ->assertSee('10/06/2026 20:05')
+            ->assertSee('Verifikasi')
+            ->assertSee('Ubah Status');
     }
 
     public function test_internal_user_can_export_activity_attendance_recap_to_excel(): void

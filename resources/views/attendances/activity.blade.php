@@ -7,57 +7,139 @@
 @section('content')
     @php
         $statusLabels = ['present' => 'Hadir', 'permission' => 'Izin', 'absent' => 'Tidak Hadir', 'need_verification' => 'Perlu Verifikasi'];
-        $statusClasses = ['present' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'permission' => 'bg-sky-50 text-sky-700 ring-sky-200', 'absent' => 'bg-red-50 text-red-700 ring-red-200', 'need_verification' => 'bg-amber-50 text-amber-700 ring-amber-200'];
+        $statusClasses = ['present' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'permission' => 'bg-sky-50 text-sky-700 ring-sky-200', 'absent' => 'bg-slate-100 text-slate-700 ring-slate-200', 'need_verification' => 'bg-amber-50 text-amber-700 ring-amber-200'];
         $verificationLabels = ['valid' => 'Valid', 'need_verification' => 'Perlu Verifikasi', 'rejected' => 'Ditolak'];
+        $verificationClasses = ['valid' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'need_verification' => 'bg-amber-50 text-amber-700 ring-amber-200', 'rejected' => 'bg-red-50 text-red-700 ring-red-200'];
+        $activityStatusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Pindah Lokasi', 'cancelled' => 'Dibatalkan'];
+        $activityStatusClasses = ['scheduled' => 'bg-sky-50 text-sky-700 ring-sky-200', 'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'holiday' => 'bg-slate-100 text-slate-600 ring-slate-200', 'postponed' => 'bg-amber-50 text-amber-700 ring-amber-200', 'relocated' => 'bg-violet-50 text-violet-700 ring-violet-200', 'cancelled' => 'bg-red-50 text-red-700 ring-red-200'];
+        $attendanceUrl = $activity->attendance_token ? route('attendance.check-in.show', $activity->attendance_token, true) : null;
+        $activityTime = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
+        $summaryCards = [
+            ['label' => 'Total Hadir', 'value' => $summary['present'], 'class' => 'border-l-emerald-500'],
+            ['label' => 'Total Izin', 'value' => $summary['permission'], 'class' => 'border-l-sky-500'],
+            ['label' => 'Total Tidak Hadir', 'value' => $summary['absent'], 'class' => 'border-l-slate-500'],
+            ['label' => 'Total Perlu Verifikasi', 'value' => $summary['need_verification'], 'class' => 'border-l-amber-500'],
+        ];
     @endphp
 
-    <div class="space-y-6">
-        @if (session('success'))<div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ session('success') }}</div>@endif
+    <div class="space-y-6" x-data="{ copied: false }">
+        @if (session('success'))
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ session('success') }}</div>
+        @endif
 
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div><a href="{{ route('activities.show', $activity) }}" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Kembali ke Detail Kegiatan</a><h2 class="mt-3 text-2xl font-bold text-slate-950">{{ $activity->title }}</h2><p class="mt-2 text-sm text-slate-500">{{ $activity->activity_date->format('d/m/Y') }} - {{ $activity->location ?: 'Lokasi belum diisi' }}</p></div>
-            <div class="flex flex-col gap-2 sm:flex-row">
-                <a href="{{ route('activities.attendances.export', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Export Excel</a>
+        <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div>
+                    <a href="{{ route('activities.show', $activity) }}" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Kembali ke Detail Kegiatan</a>
+                    <h2 class="mt-3 text-2xl font-bold text-slate-950">{{ $activity->title }}</h2>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <span class="{{ $activityStatusClasses[$activity->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $activityStatusLabels[$activity->status] }}</span>
+                        <span class="{{ $activity->attendance_enabled ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">Presensi {{ $activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif' }}</span>
+                    </div>
+                </div>
+                <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:min-w-[520px]">
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tanggal</dt><dd class="mt-1 font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu</dt><dd class="mt-1 font-medium text-slate-800">{{ $activityTime ?: '-' }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Lokasi</dt><dd class="mt-1 font-medium text-slate-800">{{ $activity->location ?: '-' }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Bidang</dt><dd class="mt-1 font-medium text-slate-800">{{ $activity->department?->name ?? '-' }}</dd></div>
+                </dl>
+            </div>
+        </section>
+
+        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            @foreach ($summaryCards as $card)
+                <div class="{{ $card['class'] }} rounded-lg border border-slate-200 border-l-4 bg-white p-5 shadow-sm">
+                    <p class="text-sm font-medium text-slate-500">{{ $card['label'] }}</p>
+                    <p class="mt-3 text-2xl font-bold text-slate-950">{{ number_format($card['value']) }}</p>
+                </div>
+            @endforeach
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
+                <p class="text-sm font-medium text-emerald-700">Persentase Kehadiran</p>
+                <p class="mt-3 text-2xl font-bold text-emerald-900">{{ number_format($attendancePercentage, 2) }}%</p>
+            </div>
+        </section>
+
+        <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                <a href="{{ route('activities.show', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Kembali ke Detail Kegiatan</a>
                 <form method="POST" action="{{ route('activities.attendances.sync-participants', $activity) }}">
                     @csrf
-                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Sinkronkan Peserta Presensi</button>
+                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Sinkronkan Peserta Presensi</button>
                 </form>
-                <a href="{{ route('activities.attendances.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Input Satu Anggota</a><a href="{{ route('activities.attendances.bulk.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Input Massal</a>
+                @if ($activity->attendance_enabled)
+                    <a href="{{ route('activities.attendance-qr', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Lihat QR Presensi</a>
+                @else
+                    <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-500">QR Belum Aktif</button>
+                @endif
+                @if ($attendanceUrl)
+                    <button type="button" @click="navigator.clipboard.writeText(@js($attendanceUrl)).then(() => { copied = true; setTimeout(() => copied = false, 2000) })" class="inline-flex items-center justify-center rounded-lg border border-cyan-300 px-4 py-2 text-sm font-semibold text-cyan-700 hover:bg-cyan-50">Salin Link Presensi</button>
+                @else
+                    <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-400">Link Belum Tersedia</button>
+                @endif
+                <a href="{{ route('activities.attendances.export', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Export Excel</a>
+                <a href="{{ route('activities.attendances.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Input Satu Anggota</a>
+                <a href="{{ route('activities.attendances.bulk.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Input Massal</a>
             </div>
-        </div>
+            <p x-show="copied" x-transition class="mt-3 text-sm font-semibold text-emerald-700">Link disalin</p>
+        </section>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            @foreach ($statusLabels as $value => $label)<div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><p class="text-sm font-medium text-slate-500">{{ $label }}</p><p class="mt-3 text-3xl font-bold text-slate-950">{{ $summary[$value] }}</p></div>@endforeach
+        <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+            <form method="GET" action="{{ route('activities.attendances.index', $activity) }}" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_200px_auto]">
+                <input name="search" type="search" value="{{ $search }}" placeholder="Cari nama anggota atau NPA" aria-label="Cari nama anggota atau NPA" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                <select name="status" aria-label="Filter status kehadiran" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                    <option value="">Semua status</option>
+                    @foreach ($statusLabels as $value => $label)
+                        <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <select name="department_id" aria-label="Filter bidang" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                    <option value="">Semua bidang</option>
+                    @foreach ($departments as $department)
+                        <option value="{{ $department->id }}" @selected((string) $departmentId === (string) $department->id)>{{ $department->name }}</option>
+                    @endforeach
+                </select>
+                <div class="flex gap-2 sm:col-span-2 xl:col-span-1">
+                    <button type="submit" class="inline-flex flex-1 items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Filter</button>
+                    <a href="{{ route('activities.attendances.index', $activity) }}" class="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Reset</a>
+                </div>
+            </form>
         </section>
 
         <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
-                    <thead class="bg-slate-50"><tr>@foreach (['Anggota', 'Bidang', 'Status', 'Metode', 'Check-in', 'Verifikasi Pada', 'Jarak', 'Accuracy', 'Verifikasi', 'Catatan'] as $heading)<th class="px-4 py-3 text-left text-xs font-bold uppercase text-slate-500">{{ $heading }}</th>@endforeach<th class="px-4 py-3 text-right text-xs font-bold uppercase text-slate-500">Aksi</th></tr></thead>
+                    <thead class="bg-slate-50">
+                        <tr>
+                            @foreach (['No', 'NPA', 'Nama Anggota', 'Bidang', 'Jabatan', 'Status Kehadiran', 'Metode Presensi', 'Waktu Presensi', 'Jarak', 'Status Verifikasi', 'Catatan'] as $heading)
+                                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
+                            @endforeach
+                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
+                        </tr>
+                    </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($attendances as $attendance)
                             <tr>
+                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $loop->iteration }}</td>
+                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->member->npa ?: '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">{{ $attendance->member->full_name }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->member->department?->name ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->member->position?->name ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4"><span class="{{ $statusClasses[$attendance->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$attendance->status] }}</span></td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm capitalize text-slate-600">{{ $attendance->attendance_method }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->verified_at?->format('d/m/Y H:i') ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' m' : '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->location_accuracy !== null ? number_format((float) $attendance->location_accuracy, 2).' m' : '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold {{ $attendance->verification_status === 'valid' ? 'text-emerald-700' : ($attendance->verification_status === 'rejected' ? 'text-red-700' : 'text-amber-700') }}">{{ $verificationLabels[$attendance->verification_status] }}</td>
-                                <td class="max-w-64 px-4 py-4 text-sm text-slate-600">{{ $attendance->notes ?: '-' }}</td>
+                                <td class="whitespace-nowrap px-4 py-4"><span class="{{ $verificationClasses[$attendance->verification_status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $verificationLabels[$attendance->verification_status] }}</span></td>
+                                <td class="max-w-64 px-4 py-4 text-sm text-slate-600">{{ str($attendance->notes ?: '-')->limit(60) }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-right"><div class="flex justify-end gap-2">
                                     @if ($attendance->verification_status === 'need_verification')
-                                        <x-action-icon :action="route('attendances.verify', $attendance)" method="PATCH" label="Valid" icon="check" variant="emerald" />
-                                        <x-action-icon :action="route('attendances.reject', $attendance)" method="PATCH" label="Reject" icon="x" variant="red" />
+                                        <x-action-icon :action="route('attendances.verify', $attendance)" method="PATCH" label="Verifikasi" icon="check" variant="emerald" />
+                                        <x-action-icon :action="route('attendances.reject', $attendance)" method="PATCH" label="Tolak" icon="x" variant="red" />
                                     @endif
-                                    <x-action-icon :href="route('attendances.edit', $attendance)" label="Edit" icon="pencil" variant="amber" />
-                                    <x-action-icon :action="route('attendances.destroy', $attendance)" method="DELETE" label="Hapus" icon="trash" variant="red" confirm="Yakin ingin menghapus data ini?" />
+                                    <x-action-icon :href="route('attendances.edit', $attendance)" label="Ubah Status" icon="pencil" variant="amber" />
                                 </div></td>
                             </tr>
                         @empty
-                            <tr><td colspan="11" class="px-4 py-10 text-center text-sm text-slate-500">Belum ada anggota yang tercatat.</td></tr>
+                            <tr><td colspan="12" class="px-4 py-12 text-center text-sm text-slate-500">Belum ada peserta presensi. Klik Sinkronkan Peserta Presensi untuk membuat daftar hadir.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
