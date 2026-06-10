@@ -2,7 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Department;
+use App\Models\Member;
+use App\Models\Position;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use ZipArchive;
 
@@ -32,6 +40,312 @@ class MemberImportTemplateController extends Controller
                 'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             ])
             ->deleteFileAfterSend();
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:5120'],
+        ], [
+            'file.required' => 'File Excel wajib diunggah.',
+            'file.mimes' => 'File harus berformat .xlsx atau .xls.',
+            'file.max' => 'Ukuran file maksimal 5MB.',
+        ]);
+
+        $file = $validated['file'];
+        $result = [
+            'created' => 0,
+            'updated' => 0,
+            'failed' => 0,
+            'errors' => [],
+        ];
+
+        if ($file->getClientOriginalExtension() === 'xls') {
+            return back()
+                ->withInput()
+                ->with('import_result', [
+                    ...$result,
+                    'failed' => 1,
+                    'errors' => ['File .xls lama belum dapat diproses. Simpan ulang file sebagai .xlsx lalu import kembali.'],
+                ]);
+        }
+
+        try {
+            $rows = $this->readRowsFromXlsx($file->getRealPath());
+        } catch (\Throwable $exception) {
+            return back()
+                ->withInput()
+                ->with('import_result', [
+                    ...$result,
+                    'failed' => 1,
+                    'errors' => ['File Excel tidak dapat dibaca. Pastikan menggunakan template yang tersedia.'],
+                ]);
+        }
+
+        if (count($rows) < 2) {
+            return back()
+                ->withInput()
+                ->with('import_result', [
+                    ...$result,
+                    'failed' => 1,
+                    'errors' => ['File Excel belum berisi data anggota.'],
+                ]);
+        }
+
+        $headers = array_map(fn ($header) => str($header)->trim()->lower()->toString(), $rows[0]);
+        $expectedHeaders = ['npa', 'full_name', 'phone', 'email', 'address', 'joined_at', 'department', 'position', 'member_status', 'notes'];
+
+        if ($headers !== $expectedHeaders) {
+            return back()
+                ->withInput()
+                ->with('import_result', [
+                    ...$result,
+                    'failed' => count($rows) - 1,
+                    'errors' => ['Header kolom tidak sesuai template. Gunakan template yang tersedia.'],
+                ]);
+        }
+
+        foreach (array_slice($rows, 1) as $index => $row) {
+            $rowNumber = $index + 2;
+            $row = array_pad($row, count($headers), null);
+            $data = array_combine($headers, array_slice($row, 0, count($headers)));
+            $data = collect($data)->map(fn ($value) => is_string($value) ? trim($value) : $value)->all();
+
+            if (collect($data)->filter(fn ($value) => filled($value))->isEmpty()) {
+                continue;
+            }
+
+            $department = $this->findDepartment($data['department'] ?? null);
+            $position = $this->findPosition($data['position'] ?? null);
+            $existingMember = $this->findExistingMember($data['npa'] ?? null, $data['email'] ?? null);
+            $joinedAt = $this->parseDate($data['joined_at'] ?? null);
+
+            $validator = Validator::make([
+                ...$data,
+                'department_id' => $department?->id,
+                'position_id' => $position?->id,
+                'joined_at_parsed' => $joinedAt,
+            ], [
+                'full_name' => ['required', 'string', 'max:255'],
+                'npa' => [
+                    'nullable',
+                    'string',
+                    'max:255',
+                    Rule::unique('members', 'npa')->ignore($existingMember),
+                ],
+                'phone' => ['nullable', 'string', 'max:50'],
+                'email' => ['nullable', 'email', 'max:255'],
+                'address' => ['nullable', 'string'],
+                'joined_at_parsed' => ['nullable', 'date'],
+                'department_id' => filled($data['department'] ?? null) ? ['required'] : ['nullable'],
+                'position_id' => filled($data['position'] ?? null) ? ['required'] : ['nullable'],
+                'member_status' => ['required', Rule::in(['active', 'inactive', 'alumni', 'moved'])],
+                'notes' => ['nullable', 'string'],
+            ], [
+                'full_name.required' => 'Nama anggota wajib diisi.',
+                'npa.unique' => 'NPA sudah digunakan oleh anggota lain.',
+                'email.email' => 'Email tidak valid.',
+                'joined_at_parsed.date' => 'Tanggal bergabung harus format dd/mm/yyyy.',
+                'department_id.required' => 'Nama bidang tidak ditemukan di data master.',
+                'position_id.required' => 'Nama jabatan tidak ditemukan di data master.',
+                'member_status.required' => 'Status anggota wajib diisi.',
+                'member_status.in' => 'Status anggota harus active, inactive, alumni, atau moved.',
+            ]);
+
+            if ($validator->fails()) {
+                $result['failed']++;
+                $result['errors'][] = 'Baris '.$rowNumber.': '.$validator->errors()->first();
+                continue;
+            }
+
+            $payload = [
+                'npa' => $data['npa'] ?: null,
+                'full_name' => $data['full_name'],
+                'phone' => $data['phone'] ?: null,
+                'email' => $data['email'] ?: null,
+                'address' => $data['address'] ?: null,
+                'joined_at' => $joinedAt,
+                'department_id' => $department?->id,
+                'position_id' => $position?->id,
+                'member_status' => $data['member_status'],
+                'notes' => $data['notes'] ?: null,
+            ];
+
+            if ($existingMember) {
+                $existingMember->update($payload);
+                $result['updated']++;
+            } else {
+                Member::create($payload);
+                $result['created']++;
+            }
+        }
+
+        return redirect()->route('members.import')->with('import_result', $result);
+    }
+
+    private function readRowsFromXlsx(string $path): array
+    {
+        $zip = new ZipArchive();
+
+        if ($zip->open($path) !== true) {
+            throw new \RuntimeException('Cannot open xlsx file.');
+        }
+
+        $sharedStrings = $this->readSharedStrings($zip);
+        $worksheetXml = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $zip->close();
+
+        if ($worksheetXml === false) {
+            throw new \RuntimeException('Worksheet not found.');
+        }
+
+        $document = new \DOMDocument();
+        $document->loadXML($worksheetXml);
+        $xpath = new \DOMXPath($document);
+
+        $rows = [];
+        foreach ($xpath->query('//*[local-name()="sheetData"]/*[local-name()="row"]') as $row) {
+            $cells = [];
+
+            foreach ($xpath->query('./*[local-name()="c"]', $row) as $cell) {
+                $reference = $cell->getAttribute('r');
+                preg_match('/[A-Z]+/', $reference, $matches);
+                $columnIndex = $this->columnIndex($matches[0] ?? 'A');
+                $cells[$columnIndex] = $this->cellValue($cell, $sharedStrings, $xpath);
+            }
+
+            if ($cells !== []) {
+                ksort($cells);
+                $rows[] = $this->normalizeRow($cells);
+            }
+        }
+
+        return $rows;
+    }
+
+    private function readSharedStrings(ZipArchive $zip): array
+    {
+        $sharedStringsXml = $zip->getFromName('xl/sharedStrings.xml');
+
+        if ($sharedStringsXml === false) {
+            return [];
+        }
+
+        $sharedStrings = simplexml_load_string($sharedStringsXml);
+        $values = [];
+
+        foreach ($sharedStrings->children('http://schemas.openxmlformats.org/spreadsheetml/2006/main')->si as $stringItem) {
+            $text = '';
+            $stringItemChildren = $stringItem->children('http://schemas.openxmlformats.org/spreadsheetml/2006/main');
+
+            if (isset($stringItemChildren->t)) {
+                $text = (string) $stringItemChildren->t;
+            } else {
+                foreach ($stringItemChildren->r as $run) {
+                    $text .= (string) $run->children('http://schemas.openxmlformats.org/spreadsheetml/2006/main')->t;
+                }
+            }
+
+            $values[] = $text;
+        }
+
+        return $values;
+    }
+
+    private function cellValue(\DOMElement $cell, array $sharedStrings, \DOMXPath $xpath): ?string
+    {
+        $type = $cell->getAttribute('t');
+
+        return match ($type) {
+            'inlineStr' => $this->inlineStringValue($cell, $xpath),
+            's' => $sharedStrings[(int) $this->directChildText($cell, 'v', $xpath)] ?? null,
+            default => $this->directChildText($cell, 'v', $xpath),
+        };
+    }
+
+    private function inlineStringValue(\DOMElement $cell, \DOMXPath $xpath): string
+    {
+        $value = '';
+
+        foreach ($xpath->query('.//*[local-name()="t"]', $cell) as $textNode) {
+            $value .= $textNode->textContent;
+        }
+
+        return $value;
+    }
+
+    private function directChildText(\DOMElement $cell, string $childName, \DOMXPath $xpath): ?string
+    {
+        $node = $xpath->query('./*[local-name()="'.$childName.'"]', $cell)->item(0);
+
+        return $node?->textContent;
+    }
+
+    private function normalizeRow(array $cells): array
+    {
+        $row = [];
+        $maxColumn = max(array_keys($cells));
+
+        for ($column = 1; $column <= $maxColumn; $column++) {
+            $row[] = $cells[$column] ?? null;
+        }
+
+        return $row;
+    }
+
+    private function columnIndex(string $columnName): int
+    {
+        $index = 0;
+
+        foreach (str_split($columnName) as $character) {
+            $index = ($index * 26) + (ord($character) - 64);
+        }
+
+        return $index;
+    }
+
+    private function findDepartment(?string $name): ?Department
+    {
+        if (blank($name)) {
+            return null;
+        }
+
+        return Department::whereRaw('LOWER(name) = ?', [strtolower(trim($name))])->first();
+    }
+
+    private function findPosition(?string $name): ?Position
+    {
+        if (blank($name)) {
+            return null;
+        }
+
+        return Position::whereRaw('LOWER(name) = ?', [strtolower(trim($name))])->first();
+    }
+
+    private function findExistingMember(?string $npa, ?string $email): ?Member
+    {
+        if (filled($npa)) {
+            return Member::where('npa', $npa)->first();
+        }
+
+        if (filled($email)) {
+            return Member::where('email', $email)->first();
+        }
+
+        return null;
+    }
+
+    private function parseDate(?string $date): ?string
+    {
+        if (blank($date)) {
+            return null;
+        }
+
+        try {
+            return Carbon::createFromFormat('d/m/Y', trim($date))->format('Y-m-d');
+        } catch (\Throwable) {
+            return 'invalid-date';
+        }
     }
 
     private function worksheetXml(): string

@@ -86,6 +86,8 @@ Route::middleware(['auth', 'internal'])->group(function () {
         ->name('members.account.reset-password');
     Route::get('members/import', [MemberImportTemplateController::class, 'show'])
         ->name('members.import');
+    Route::post('members/import', [MemberImportTemplateController::class, 'store'])
+        ->name('members.import.store');
     Route::get('members/import/template', [MemberImportTemplateController::class, 'download'])
         ->name('members.import.template');
     Route::resource('members', MemberController::class);

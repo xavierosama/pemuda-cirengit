@@ -8,6 +8,7 @@ use App\Models\Position;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 use ZipArchive;
 
@@ -150,7 +151,10 @@ class MemberCrudTest extends TestCase
             ->get(route('members.import'))
             ->assertOk()
             ->assertSee('Download Template Excel')
-            ->assertSee('Gunakan format tanggal dd/mm/yyyy.')
+            ->assertSee('File Excel')
+            ->assertSee('Import Data Anggota')
+            ->assertSee('Gunakan template yang tersedia agar format kolom sesuai.')
+            ->assertSee('Format tanggal: dd/mm/yyyy.')
             ->assertSee('Pastikan nama bidang dan jabatan sesuai dengan data master.')
             ->assertSee('Status anggota yang tersedia: active, inactive, alumni, moved.');
 
@@ -173,6 +177,56 @@ class MemberCrudTest extends TestCase
         }
     }
 
+    public function test_internal_user_can_import_members_from_excel(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        Department::create(['name' => 'Pendidikan', 'status' => 'active']);
+        Position::create(['name' => 'Anggota', 'status' => 'active']);
+        Member::create([
+            'full_name' => 'Nama Lama',
+            'npa' => '20.0001',
+            'email' => 'lama@example.test',
+            'member_status' => 'active',
+        ]);
+
+        $file = $this->makeMemberImportFile([
+            ['npa', 'full_name', 'phone', 'email', 'address', 'joined_at', 'department', 'position', 'member_status', 'notes'],
+            ['20.0001', 'Ahmad Update', '081234567890', 'ahmad.update@example.com', 'Kp. Cirengit', '10/06/2026', 'Pendidikan', 'Anggota', 'active', 'Data update'],
+            ['20.0002', 'Budi Baru', '081111111111', 'budi@example.com', 'Cirengit', '11/06/2026', 'Pendidikan', 'Anggota', 'inactive', 'Data baru'],
+            ['20.0003', '', '', 'salah-email', '', '31/06/2026', 'Tidak Ada', 'Anggota', 'aktif', 'Data gagal'],
+        ]);
+
+        $this->actingAs($user)
+            ->from(route('members.import'))
+            ->post(route('members.import.store'), ['file' => $file])
+            ->assertRedirect(route('members.import'))
+            ->assertSessionHas('import_result', fn (array $result) => $result['created'] === 1
+                && $result['updated'] === 1
+                && $result['failed'] === 1
+                && str_contains($result['errors'][0], 'Baris 4:'));
+
+        $this->assertDatabaseHas('members', [
+            'npa' => '20.0001',
+            'full_name' => 'Ahmad Update',
+            'joined_at' => '2026-06-10 00:00:00',
+        ]);
+        $this->assertDatabaseHas('members', [
+            'npa' => '20.0002',
+            'full_name' => 'Budi Baru',
+            'member_status' => 'inactive',
+        ]);
+        $this->assertDatabaseMissing('members', ['npa' => '20.0003']);
+    }
+
+    public function test_member_import_requires_excel_file(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($user)
+            ->post(route('members.import.store'), ['file' => UploadedFile::fake()->create('anggota.pdf', 12, 'application/pdf')])
+            ->assertSessionHasErrors(['file']);
+    }
+
     public function test_member_role_cannot_download_member_import_template(): void
     {
         $member = Member::create(['full_name' => 'Anggota', 'member_status' => 'active']);
@@ -182,5 +236,70 @@ class MemberCrudTest extends TestCase
             ->get(route('members.import.template'))
             ->assertRedirect(route('member.home'))
             ->assertSessionHas('warning', 'Dashboard admin hanya dapat diakses oleh pengurus.');
+    }
+
+    private function makeMemberImportFile(array $rows): UploadedFile
+    {
+        $path = tempnam(sys_get_temp_dir(), 'member-import-test-');
+        $zip = new ZipArchive();
+        $zip->open($path, ZipArchive::OVERWRITE);
+        $zip->addFromString('[Content_Types].xml', <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+    <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+    <Default Extension="xml" ContentType="application/xml"/>
+    <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+    <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>
+XML);
+        $zip->addFromString('_rels/.rels', <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>
+XML);
+        $zip->addFromString('xl/workbook.xml', <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+    <sheets><sheet name="Import" sheetId="1" r:id="rId1"/></sheets>
+</workbook>
+XML);
+        $zip->addFromString('xl/_rels/workbook.xml.rels', <<<'XML'
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+    <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>
+XML);
+
+        $rowXml = collect($rows)->map(function (array $row, int $rowIndex) {
+            $cells = collect($row)->map(function (string $value, int $columnIndex) use ($rowIndex) {
+                $columnName = chr(65 + $columnIndex);
+
+                return sprintf(
+                    '<c r="%s%d" t="inlineStr"><is><t>%s</t></is></c>',
+                    $columnName,
+                    $rowIndex + 1,
+                    e($value)
+                );
+            })->implode('');
+
+            return sprintf('<row r="%d">%s</row>', $rowIndex + 1, $cells);
+        })->implode('');
+
+        $zip->addFromString('xl/worksheets/sheet1.xml', <<<XML
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+    <sheetData>{$rowXml}</sheetData>
+</worksheet>
+XML);
+        $zip->close();
+
+        return new UploadedFile(
+            $path,
+            'anggota.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true
+        );
     }
 }
