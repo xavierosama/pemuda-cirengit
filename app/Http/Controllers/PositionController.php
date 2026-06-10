@@ -19,13 +19,20 @@ class PositionController extends Controller
         $status = $request->string('status')->toString();
 
         $positions = Position::query()
+            ->withCount('members')
             ->when($search, fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->when(in_array($status, ['active', 'inactive'], true), fn ($query) => $query->where('status', $status))
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
-        return view('positions.index', compact('positions', 'search', 'status'));
+        $positionStats = [
+            'total' => Position::count(),
+            'active' => Position::where('status', 'active')->count(),
+            'inactive' => Position::where('status', 'inactive')->count(),
+        ];
+
+        return view('positions.index', compact('positions', 'positionStats', 'search', 'status'));
     }
 
     /**

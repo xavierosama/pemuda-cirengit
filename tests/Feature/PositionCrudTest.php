@@ -28,7 +28,26 @@ class PositionCrudTest extends TestCase
         $this->actingAs($user)
             ->get(route('positions.index', ['search' => 'Koordinator', 'status' => 'active']))
             ->assertOk()
+            ->assertSee('Kelola jabatan dan posisi anggota dalam organisasi.')
+            ->assertSee('Total Jabatan')
+            ->assertSee('Jabatan Aktif')
+            ->assertSee('Filter Data Jabatan')
+            ->assertSee('Tabel Data Jabatan')
+            ->assertSee('Jumlah Anggota')
             ->assertSee('Koordinator Lapangan');
+
+        $this->actingAs($user)
+            ->get(route('positions.create'))
+            ->assertOk()
+            ->assertSee('Tambah Jabatan')
+            ->assertSee('Informasi Jabatan')
+            ->assertSee('Batal/Kembali');
+
+        $this->actingAs($user)
+            ->get(route('positions.edit', $position))
+            ->assertOk()
+            ->assertSee('Edit Jabatan')
+            ->assertSee('Terakhir diperbarui');
 
         $this->actingAs($user)
             ->get(route('positions.show', $position))

@@ -28,7 +28,26 @@ class DepartmentCrudTest extends TestCase
         $this->actingAs($user)
             ->get(route('departments.index', ['search' => 'Riset', 'status' => 'active']))
             ->assertOk()
+            ->assertSee('Kelola bidang organisasi Pemuda Persis Cirengit.')
+            ->assertSee('Total Bidang')
+            ->assertSee('Bidang Aktif')
+            ->assertSee('Filter Data Bidang')
+            ->assertSee('Tabel Data Bidang')
+            ->assertSee('Jumlah Anggota')
             ->assertSee('Bidang Riset');
+
+        $this->actingAs($user)
+            ->get(route('departments.create'))
+            ->assertOk()
+            ->assertSee('Tambah Bidang')
+            ->assertSee('Informasi Bidang')
+            ->assertSee('Batal/Kembali');
+
+        $this->actingAs($user)
+            ->get(route('departments.edit', $department))
+            ->assertOk()
+            ->assertSee('Edit Bidang')
+            ->assertSee('Terakhir diperbarui');
 
         $this->actingAs($user)
             ->get(route('departments.show', $department))

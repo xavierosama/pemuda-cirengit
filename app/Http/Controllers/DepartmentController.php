@@ -19,13 +19,20 @@ class DepartmentController extends Controller
         $status = $request->string('status')->toString();
 
         $departments = Department::query()
+            ->withCount('members')
             ->when($search, fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->when(in_array($status, ['active', 'inactive'], true), fn ($query) => $query->where('status', $status))
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
-        return view('departments.index', compact('departments', 'search', 'status'));
+        $departmentStats = [
+            'total' => Department::count(),
+            'active' => Department::where('status', 'active')->count(),
+            'inactive' => Department::where('status', 'inactive')->count(),
+        ];
+
+        return view('departments.index', compact('departments', 'departmentStats', 'search', 'status'));
     }
 
     /**
