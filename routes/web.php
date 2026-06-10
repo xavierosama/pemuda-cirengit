@@ -3,6 +3,7 @@
 use App\Http\Controllers\AgendaScheduleController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\ActivityAttendanceQrController;
+use App\Http\Controllers\ActivityAttendanceExportController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceCheckInController;
 use App\Http\Controllers\AttendanceReportController;
@@ -62,6 +63,8 @@ Route::middleware(['auth', 'internal'])->group(function () {
         ->name('activities.status.update');
     Route::get('activities/{activity}/attendance-qr', [ActivityAttendanceQrController::class, 'show'])
         ->name('activities.attendance-qr');
+    Route::get('activities/{activity}/attendances/export', ActivityAttendanceExportController::class)
+        ->name('activities.attendances.export');
     Route::get('activities/{activity}/attendances', [AttendanceController::class, 'byActivity'])
         ->name('activities.attendances.index');
     Route::get('activities/{activity}/attendances/create', [AttendanceController::class, 'createManual'])

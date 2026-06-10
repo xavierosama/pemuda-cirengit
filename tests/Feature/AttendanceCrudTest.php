@@ -6,8 +6,10 @@ use App\Models\Activity;
 use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Member;
+use App\Models\Position;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use ZipArchive;
 use Tests\TestCase;
 
 class AttendanceCrudTest extends TestCase
@@ -235,7 +237,96 @@ class AttendanceCrudTest extends TestCase
         $this->actingAs($user)
             ->get(route('activities.attendances.index', $activity))
             ->assertOk()
-            ->assertSee('Sinkronkan Peserta Presensi');
+            ->assertSee('Sinkronkan Peserta Presensi')
+            ->assertSee('Export Excel');
+    }
+
+    public function test_internal_user_can_export_activity_attendance_recap_to_excel(): void
+    {
+        $user = User::factory()->create(['role' => 'secretary']);
+        $department = Department::create(['name' => 'Pendidikan', 'status' => 'active']);
+        $position = Position::create(['name' => 'Anggota', 'status' => 'active']);
+        $pic = Member::create([
+            'department_id' => $department->id,
+            'position_id' => $position->id,
+            'full_name' => 'Ustadz PIC',
+            'member_status' => 'active',
+        ]);
+        $activity = $this->createActivity($user, [
+            'department_id' => $department->id,
+            'pic_id' => $pic->id,
+            'title' => 'Kajian Rutin Pemuda',
+            'activity_date' => '2026-06-10',
+            'start_time' => '20:00',
+            'end_time' => '21:30',
+            'location' => 'Masjid Cirengit',
+        ]);
+        $firstMember = Member::create([
+            'department_id' => $department->id,
+            'position_id' => $position->id,
+            'npa' => '20.0001',
+            'full_name' => 'Ahmad Hadir',
+            'member_status' => 'active',
+        ]);
+        $secondMember = Member::create([
+            'department_id' => $department->id,
+            'position_id' => $position->id,
+            'npa' => '20.0002',
+            'full_name' => 'Budi Izin',
+            'member_status' => 'active',
+        ]);
+        Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $firstMember->id,
+            'status' => 'present',
+            'attendance_method' => 'link',
+            'checked_in_at' => '2026-06-10 20:05:00',
+            'distance_from_activity' => 12.5,
+            'verification_status' => 'valid',
+            'notes' => 'Tepat waktu',
+        ]);
+        Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $secondMember->id,
+            'status' => 'permission',
+            'attendance_method' => 'manual',
+            'verification_status' => 'valid',
+            'notes' => 'Izin keluarga',
+        ]);
+
+        $response = $this->actingAs($user)
+            ->get(route('activities.attendances.export', $activity));
+
+        $response->assertOk()
+            ->assertDownload('rekap-presensi-kajian-rutin-pemuda-2026-06-10.xlsx');
+
+        $worksheet = $this->worksheetXmlFromDownload($response);
+
+        foreach ([
+            'Nama kegiatan', 'Kajian Rutin Pemuda', 'Tanggal kegiatan', '10/06/2026',
+            'Waktu kegiatan', '20:00 - 21:30', 'Lokasi kegiatan', 'Masjid Cirengit',
+            'Bidang', 'Pendidikan', 'PIC kegiatan', 'Ustadz PIC',
+            'Total Hadir', 'Total Izin', 'Persentase Kehadiran', '50.00%',
+            'No', 'NPA', 'Nama Anggota', 'Jabatan', 'Status Kehadiran',
+            'Metode Presensi', 'Waktu Presensi', 'Jarak dari Lokasi Kegiatan',
+            'Status Verifikasi', 'Catatan', '20.0001', 'Ahmad Hadir',
+            'Hadir', 'Link', '10/06/2026 20:05', '12.50 m', 'Tepat waktu',
+            '20.0002', 'Budi Izin', 'Izin', 'Manual', 'Izin keluarga',
+        ] as $value) {
+            $this->assertStringContainsString($value, $worksheet);
+        }
+    }
+
+    public function test_member_role_cannot_export_activity_attendance_recap(): void
+    {
+        $member = Member::create(['full_name' => 'Anggota', 'member_status' => 'active']);
+        $user = User::factory()->create(['role' => 'member', 'member_id' => $member->id]);
+        $activity = $this->createActivity(User::factory()->create(['role' => 'admin']));
+
+        $this->actingAs($user)
+            ->get(route('activities.attendances.export', $activity))
+            ->assertRedirect(route('member.home'))
+            ->assertSessionHas('warning', 'Dashboard admin hanya dapat diakses oleh pengurus.');
     }
 
     private function createActivity(User $user, array $overrides = []): Activity
@@ -248,5 +339,15 @@ class AttendanceCrudTest extends TestCase
             'attendance_enabled' => true,
             'created_by' => $user->id,
         ], $overrides));
+    }
+
+    private function worksheetXmlFromDownload($response): string
+    {
+        $zip = new ZipArchive();
+        $zip->open($response->baseResponse->getFile()->getPathname());
+        $worksheet = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $zip->close();
+
+        return $worksheet;
     }
 }
