@@ -11,6 +11,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberAccountController;
 use App\Http\Controllers\MemberHomeController;
+use App\Http\Controllers\MemberImportTemplateController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -83,6 +84,10 @@ Route::middleware(['auth', 'internal'])->group(function () {
         ->name('members.account.store');
     Route::patch('members/{member}/account/reset-password', [MemberAccountController::class, 'resetPassword'])
         ->name('members.account.reset-password');
+    Route::get('members/import', [MemberImportTemplateController::class, 'show'])
+        ->name('members.import');
+    Route::get('members/import/template', [MemberImportTemplateController::class, 'download'])
+        ->name('members.import.template');
     Route::resource('members', MemberController::class);
     Route::resource('departments', DepartmentController::class);
     Route::resource('positions', PositionController::class);

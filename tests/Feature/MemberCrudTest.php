@@ -9,6 +9,7 @@ use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use ZipArchive;
 
 class MemberCrudTest extends TestCase
 {
@@ -139,5 +140,47 @@ class MemberCrudTest extends TestCase
             'npa' => 'NPA-UNIK',
             'member_status' => 'active',
         ]);
+    }
+
+    public function test_internal_user_can_download_member_import_template(): void
+    {
+        $user = User::factory()->create(['role' => 'secretary']);
+
+        $this->actingAs($user)
+            ->get(route('members.import'))
+            ->assertOk()
+            ->assertSee('Download Template Excel')
+            ->assertSee('Gunakan format tanggal dd/mm/yyyy.')
+            ->assertSee('Pastikan nama bidang dan jabatan sesuai dengan data master.')
+            ->assertSee('Status anggota yang tersedia: active, inactive, alumni, moved.');
+
+        $response = $this->actingAs($user)->get(route('members.import.template'));
+
+        $response->assertOk()
+            ->assertDownload('template-import-anggota.xlsx');
+
+        $zip = new ZipArchive();
+        $zip->open($response->baseResponse->getFile()->getPathname());
+        $worksheet = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $zip->close();
+
+        foreach (['npa', 'full_name', 'phone', 'email', 'address', 'joined_at', 'department', 'position', 'member_status', 'notes'] as $header) {
+            $this->assertStringContainsString($header, $worksheet);
+        }
+
+        foreach (['20.0001', 'Ahmad Fulan', '081234567890', 'ahmad.fulan@example.com', 'Kp. Cirengit', '10/06/2026', 'Pendidikan', 'Anggota', 'active', 'Contoh data anggota'] as $value) {
+            $this->assertStringContainsString($value, $worksheet);
+        }
+    }
+
+    public function test_member_role_cannot_download_member_import_template(): void
+    {
+        $member = Member::create(['full_name' => 'Anggota', 'member_status' => 'active']);
+        $user = User::factory()->create(['role' => 'member', 'member_id' => $member->id]);
+
+        $this->actingAs($user)
+            ->get(route('members.import.template'))
+            ->assertRedirect(route('member.home'))
+            ->assertSessionHas('warning', 'Dashboard admin hanya dapat diakses oleh pengurus.');
     }
 }
