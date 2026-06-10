@@ -19,7 +19,7 @@
                 ['label' => 'Data Anggota', 'href' => route('members.index'), 'active' => request()->routeIs('members.*')],
                 ['label' => 'Data Bidang', 'href' => route('departments.index'), 'active' => request()->routeIs('departments.*')],
                 ['label' => 'Data Jabatan', 'href' => route('positions.index'), 'active' => request()->routeIs('positions.*')],
-                ['label' => 'Jadwal Agenda', 'href' => '#', 'active' => false],
+                ['label' => 'Jadwal Agenda', 'href' => route('agenda-schedules.index'), 'active' => request()->routeIs('agenda-schedules.*')],
                 ['label' => 'Kegiatan Aktual', 'href' => '#', 'active' => false],
                 ['label' => 'Daftar Hadir', 'href' => '#', 'active' => false],
             ];

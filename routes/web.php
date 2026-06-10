@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AgendaScheduleController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PositionController;
@@ -15,6 +16,12 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('agenda-schedules/{agenda_schedule}/activities/create', [AgendaScheduleController::class, 'createActivityPlaceholder'])
+        ->name('agenda-schedules.activities.create');
+    Route::patch('agenda-schedules/{agenda_schedule}/deactivate', [AgendaScheduleController::class, 'deactivate'])
+        ->name('agenda-schedules.deactivate');
+    Route::resource('agenda-schedules', AgendaScheduleController::class)->except('destroy');
+
     Route::resource('members', MemberController::class);
     Route::resource('departments', DepartmentController::class);
     Route::resource('positions', PositionController::class);
