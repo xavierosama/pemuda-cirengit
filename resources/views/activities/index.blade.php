@@ -61,7 +61,7 @@
                         @forelse ($activities as $activity)
                             <tr>
                                 <td class="px-4 py-4"><p class="text-sm font-semibold text-slate-900">{{ $activity->title }}</p><p class="mt-1 text-xs text-slate-500">{{ $activity->agendaSchedule?->title ?? 'Kegiatan mandiri' }}</p></td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->activity_date->format('d M Y') }}</td>
+                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->start_time ? substr($activity->start_time, 0, 5) : '-' }}{{ $activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : '' }}</td>
                                 <td class="max-w-48 px-4 py-4 text-sm text-slate-600">{{ str($activity->location ?: '-')->limit(45) }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->department?->name ?? '-' }}</td>

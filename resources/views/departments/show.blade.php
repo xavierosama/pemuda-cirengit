@@ -32,11 +32,11 @@
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
                         <dt class="text-sm font-semibold text-slate-700">Dibuat</dt>
-                        <dd class="mt-2 text-sm text-slate-600">{{ $department->created_at?->format('d M Y H:i') }}</dd>
+                        <dd class="mt-2 text-sm text-slate-600">{{ $department->created_at?->format('d/m/Y H:i') }}</dd>
                     </div>
                     <div>
                         <dt class="text-sm font-semibold text-slate-700">Diperbarui</dt>
-                        <dd class="mt-2 text-sm text-slate-600">{{ $department->updated_at?->format('d M Y H:i') }}</dd>
+                        <dd class="mt-2 text-sm text-slate-600">{{ $department->updated_at?->format('d/m/Y H:i') }}</dd>
                     </div>
                 </div>
             </dl>

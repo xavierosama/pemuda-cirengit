@@ -63,7 +63,7 @@
                         @forelse ($agendaSchedules as $agendaSchedule)
                             @php
                                 $pattern = match ($agendaSchedule->schedule_type) {
-                                    'once' => $agendaSchedule->specific_date?->format('d M Y') ?? '-',
+                                    'once' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
                                     'daily' => 'Setiap hari',
                                     'weekly' => isset($dayLabels[$agendaSchedule->day_of_week]) ? 'Setiap '.$dayLabels[$agendaSchedule->day_of_week] : '-',
                                     'monthly' => 'Setiap tanggal '.$agendaSchedule->day_of_month,

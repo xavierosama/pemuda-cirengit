@@ -49,7 +49,7 @@
                     <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Presensi Kegiatan</p>
                     <h1 class="mt-2 text-2xl font-bold text-slate-950">{{ $activity->title }}</h1>
                     <dl class="mt-6 grid gap-4 border-t border-slate-200 pt-6 sm:grid-cols-2">
-                        <div><dt class="text-xs font-semibold uppercase text-slate-500">Tanggal</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->activity_date->format('d M Y') }}</dd></div>
+                        <div><dt class="text-xs font-semibold uppercase text-slate-500">Tanggal</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->activity_date->format('d/m/Y') }}</dd></div>
                         <div><dt class="text-xs font-semibold uppercase text-slate-500">Waktu</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->start_time ? substr($activity->start_time, 0, 5) : '-' }}{{ $activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : '' }}</dd></div>
                         <div class="sm:col-span-2"><dt class="text-xs font-semibold uppercase text-slate-500">Lokasi</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->location ?: '-' }}</dd></div>
                     </dl>
@@ -63,7 +63,7 @@
                         <dl class="mt-5 grid gap-4 sm:grid-cols-2">
                             <div><dt class="text-xs font-semibold uppercase text-slate-500">Status Kehadiran</dt><dd class="mt-1 text-sm font-semibold text-slate-800">{{ $attendanceLabels[$attendance->status] }}</dd></div>
                             <div><dt class="text-xs font-semibold uppercase text-slate-500">Verifikasi</dt><dd class="mt-1 text-sm font-semibold text-slate-800">{{ $verificationLabels[$attendance->verification_status] }}</dd></div>
-                            <div><dt class="text-xs font-semibold uppercase text-slate-500">Waktu Check-in</dt><dd class="mt-1 text-sm text-slate-700">{{ $attendance->checked_in_at?->format('d M Y H:i:s') ?? '-' }}</dd></div>
+                            <div><dt class="text-xs font-semibold uppercase text-slate-500">Waktu Check-in</dt><dd class="mt-1 text-sm text-slate-700">{{ $attendance->checked_in_at?->format('d/m/Y H:i:s') ?? '-' }}</dd></div>
                             <div><dt class="text-xs font-semibold uppercase text-slate-500">Jarak</dt><dd class="mt-1 text-sm text-slate-700">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' meter' : '-' }}</dd></div>
                         </dl>
                     </section>

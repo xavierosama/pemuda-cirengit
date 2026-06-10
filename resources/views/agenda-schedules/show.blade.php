@@ -9,7 +9,7 @@
         $typeLabels = ['once' => 'Satu Kali', 'daily' => 'Harian', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan'];
         $dayLabels = [0 => 'Minggu', 1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'];
         $pattern = match ($agendaSchedule->schedule_type) {
-            'once' => $agendaSchedule->specific_date?->format('d M Y') ?? '-',
+            'once' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
             'daily' => 'Setiap hari',
             'weekly' => isset($dayLabels[$agendaSchedule->day_of_week]) ? 'Setiap '.$dayLabels[$agendaSchedule->day_of_week] : '-',
             'monthly' => 'Setiap tanggal '.$agendaSchedule->day_of_month,

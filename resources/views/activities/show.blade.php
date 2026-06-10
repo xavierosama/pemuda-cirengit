@@ -25,7 +25,7 @@
 
         <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div><p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">{{ $activity->activity_date->format('d M Y') }}</p><h2 class="mt-2 text-2xl font-bold text-slate-950">{{ $activity->title }}</h2><p class="mt-2 text-sm text-slate-500">{{ $activity->agendaSchedule?->title ?? 'Kegiatan mandiri' }}</p></div>
+                <div><p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">{{ $activity->activity_date->format('d/m/Y') }}</p><h2 class="mt-2 text-2xl font-bold text-slate-950">{{ $activity->title }}</h2><p class="mt-2 text-sm text-slate-500">{{ $activity->agendaSchedule?->title ?? 'Kegiatan mandiri' }}</p></div>
                 <span class="{{ $statusClasses[$activity->status] }} inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$activity->status] }}</span>
             </div>
         </section>
@@ -62,8 +62,8 @@
                 <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">Presensi belum diaktifkan untuk kegiatan ini.</div>
             @else
                 <dl class="mt-5 grid gap-4 border-t border-slate-200 pt-5 sm:grid-cols-3">
-                    <div><dt class="text-xs font-semibold uppercase text-slate-500">Waktu Buka</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->attendance_open_at?->format('d M Y H:i') ?? '-' }}</dd></div>
-                    <div><dt class="text-xs font-semibold uppercase text-slate-500">Waktu Tutup</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->attendance_close_at?->format('d M Y H:i') ?? '-' }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase text-slate-500">Waktu Buka</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->attendance_open_at?->format('d/m/Y H:i') ?? '-' }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase text-slate-500">Waktu Tutup</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->attendance_close_at?->format('d/m/Y H:i') ?? '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase text-slate-500">Radius Presensi</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->attendance_radius }} meter</dd></div>
                 </dl>
 

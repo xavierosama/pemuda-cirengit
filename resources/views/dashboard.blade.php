@@ -58,7 +58,7 @@
                         @forelse ($upcomingActivities as $activity)
                             <tr>
                                 <td class="px-5 py-4 text-sm font-semibold text-slate-900"><a href="{{ route('activities.show', $activity) }}" class="hover:text-emerald-700">{{ $activity->title }}</a></td>
-                                <td class="whitespace-nowrap px-5 py-4 text-sm text-slate-600">{{ $activity->activity_date->format('d M Y') }}</td>
+                                <td class="whitespace-nowrap px-5 py-4 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }}</td>
                                 <td class="whitespace-nowrap px-5 py-4 text-sm text-slate-600">{{ $activity->start_time ? substr($activity->start_time, 0, 5) : '-' }}{{ $activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : '' }}</td>
                                 <td class="max-w-64 px-5 py-4 text-sm text-slate-600">{{ str($activity->location ?: '-')->limit(55) }}</td>
                                 <td class="whitespace-nowrap px-5 py-4"><span class="{{ $statusClasses[$activity->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$activity->status] }}</span></td>
@@ -81,7 +81,7 @@
                     @forelse ($recentAttendanceActivities as $activity)
                         <a href="{{ route('activities.attendances.index', $activity) }}" class="block px-5 py-4 hover:bg-slate-50">
                             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div class="min-w-0"><p class="truncate text-sm font-semibold text-slate-900">{{ $activity->title }}</p><p class="mt-1 text-xs text-slate-500">{{ $activity->activity_date->format('d M Y') }}</p></div>
+                                <div class="min-w-0"><p class="truncate text-sm font-semibold text-slate-900">{{ $activity->title }}</p><p class="mt-1 text-xs text-slate-500">{{ $activity->activity_date->format('d/m/Y') }}</p></div>
                                 <div class="grid grid-cols-4 gap-4 text-center">
                                     <div><p class="text-base font-bold text-emerald-700">{{ $activity->present_count }}</p><p class="text-xs text-slate-500">Hadir</p></div>
                                     <div><p class="text-base font-bold text-sky-700">{{ $activity->permission_count }}</p><p class="text-xs text-slate-500">Izin</p></div>
@@ -105,7 +105,7 @@
                     @forelse ($activeAgendaSchedules as $agendaSchedule)
                         @php
                             $pattern = match ($agendaSchedule->schedule_type) {
-                                'once' => $agendaSchedule->specific_date?->format('d M Y') ?? '-',
+                                'once' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
                                 'daily' => 'Setiap hari',
                                 'weekly' => isset($dayLabels[$agendaSchedule->day_of_week]) ? 'Setiap '.$dayLabels[$agendaSchedule->day_of_week] : 'Mingguan',
                                 'monthly' => $agendaSchedule->day_of_month ? 'Setiap tanggal '.$agendaSchedule->day_of_month : 'Bulanan',

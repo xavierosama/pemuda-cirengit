@@ -7,7 +7,7 @@
 @section('content')
     @php $statusLabels = ['present' => 'Hadir', 'permission' => 'Izin', 'absent' => 'Tidak Hadir', 'need_verification' => 'Perlu Verifikasi']; @endphp
     <div class="max-w-3xl space-y-6">
-        <div><a href="{{ route('activities.attendances.index', $activity) }}" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Kembali ke Daftar Hadir</a><h2 class="mt-3 text-xl font-bold text-slate-950">{{ $activity->title }}</h2><p class="mt-1 text-sm text-slate-500">{{ $activity->activity_date->format('d M Y') }}</p></div>
+        <div><a href="{{ route('activities.attendances.index', $activity) }}" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Kembali ke Daftar Hadir</a><h2 class="mt-3 text-xl font-bold text-slate-950">{{ $activity->title }}</h2><p class="mt-1 text-sm text-slate-500">{{ $activity->activity_date->format('d/m/Y') }}</p></div>
         <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <form method="POST" action="{{ route('activities.attendances.store', $activity) }}">
                 @csrf

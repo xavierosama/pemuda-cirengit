@@ -23,7 +23,7 @@
                 <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">QR Presensi Kegiatan</p>
                 <h2 class="mt-2 text-2xl font-bold text-slate-950">{{ $activity->title }}</h2>
                 <div class="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-slate-600">
-                    <span>{{ $activity->activity_date->format('d M Y') }}</span>
+                    <span>{{ $activity->activity_date->format('d/m/Y') }}</span>
                     <span>{{ $activity->start_time ? substr($activity->start_time, 0, 5) : '-' }}{{ $activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : '' }}</span>
                     <span>{{ $activity->location ?: 'Lokasi belum diisi' }}</span>
                 </div>
