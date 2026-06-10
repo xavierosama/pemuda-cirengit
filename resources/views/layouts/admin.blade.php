@@ -22,6 +22,7 @@
                 ['label' => 'Jadwal Agenda', 'href' => route('agenda-schedules.index'), 'active' => request()->routeIs('agenda-schedules.*')],
                 ['label' => 'Kegiatan Aktual', 'href' => route('activities.index'), 'active' => request()->routeIs('activities.*') && ! request()->routeIs('activities.attendances.*')],
                 ['label' => 'Daftar Hadir', 'href' => route('attendances.index'), 'active' => request()->routeIs('attendances.*') || request()->routeIs('activities.attendances.*')],
+                ['label' => 'Rekap Presensi', 'href' => route('attendance-reports.index'), 'active' => request()->routeIs('attendance-reports.*')],
             ];
         @endphp
 

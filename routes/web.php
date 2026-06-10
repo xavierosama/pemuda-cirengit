@@ -5,6 +5,7 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\ActivityAttendanceQrController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceCheckInController;
+use App\Http\Controllers\AttendanceReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\MemberController;
@@ -44,6 +45,9 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'internal'])->group(function () {
+    Route::get('attendance-reports', [AttendanceReportController::class, 'index'])
+        ->name('attendance-reports.index');
+
     Route::get('agenda-schedules/{agenda_schedule}/activities/create', [ActivityController::class, 'createFromSchedule'])
         ->name('agenda-schedules.activities.create');
     Route::post('agenda-schedules/{agenda_schedule}/activities', [ActivityController::class, 'storeFromSchedule'])

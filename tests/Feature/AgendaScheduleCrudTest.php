@@ -49,13 +49,25 @@ class AgendaScheduleCrudTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('Kajian Pekanan')
+            ->assertSee('19:30')
+            ->assertSee('21:00')
             ->assertSee('Dakwah')
             ->assertSee('Ahmad PIC');
 
         $this->actingAs($user)
             ->get(route('agenda-schedules.show', $agendaSchedule))
             ->assertOk()
+            ->assertSee('19:30')
+            ->assertSee('21:00')
             ->assertSee('Buat Kegiatan dari Jadwal');
+
+        $this->actingAs($user)
+            ->get(route('agenda-schedules.edit', $agendaSchedule))
+            ->assertOk()
+            ->assertSee('type="text"', false)
+            ->assertSee('value="19:30"', false)
+            ->assertSee('value="21:00"', false)
+            ->assertSee('Gunakan format 24 jam, contoh 20:00.');
 
         $this->actingAs($user)->put(route('agenda-schedules.update', $agendaSchedule), [
             'title' => 'Kajian Bulanan',
@@ -106,5 +118,37 @@ class AgendaScheduleCrudTest extends TestCase
             'default_radius' => 100,
             'is_active' => 1,
         ])->assertSessionHasErrors('day_of_month');
+    }
+
+    public function test_schedule_time_must_use_24_hour_hh_mm_format(): void
+    {
+        $user = User::factory()->create();
+
+        $this->actingAs($user)->post(route('agenda-schedules.store'), [
+            'title' => 'Agenda AM PM',
+            'schedule_type' => 'daily',
+            'start_time' => '08:00 PM',
+            'end_time' => '24:00',
+            'default_radius' => 100,
+            'is_active' => 1,
+        ])->assertSessionHasErrors([
+            'start_time' => 'Waktu mulai harus menggunakan format 24 jam HH:mm, contoh 20:00.',
+            'end_time' => 'Waktu selesai harus menggunakan format 24 jam HH:mm, contoh 20:00.',
+        ]);
+
+        $this->actingAs($user)->post(route('agenda-schedules.store'), [
+            'title' => 'Agenda Format 24 Jam',
+            'schedule_type' => 'daily',
+            'start_time' => '08:00',
+            'end_time' => '23:59',
+            'default_radius' => 100,
+            'is_active' => 1,
+        ])->assertRedirect(route('agenda-schedules.index'));
+
+        $this->assertDatabaseHas('agenda_schedules', [
+            'title' => 'Agenda Format 24 Jam',
+            'start_time' => '08:00',
+            'end_time' => '23:59',
+        ]);
     }
 }

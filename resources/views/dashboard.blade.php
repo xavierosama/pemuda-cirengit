@@ -113,7 +113,7 @@
                         @endphp
                         <a href="{{ route('agenda-schedules.show', $agendaSchedule) }}" class="block px-5 py-4 hover:bg-slate-50">
                             <div class="flex items-start justify-between gap-4"><p class="text-sm font-semibold text-slate-900">{{ $agendaSchedule->title }}</p><span class="whitespace-nowrap text-xs font-semibold text-emerald-700">{{ $typeLabels[$agendaSchedule->schedule_type] }}</span></div>
-                            <p class="mt-2 text-xs text-slate-500">{{ $pattern }}{{ $agendaSchedule->start_time ? ' - '.substr($agendaSchedule->start_time, 0, 5) : '' }}</p>
+                            <p class="mt-2 text-xs text-slate-500">{{ $pattern }}{{ $agendaSchedule->start_time ? ' - '.substr($agendaSchedule->start_time, 0, 5) : '' }}{{ $agendaSchedule->end_time ? ' - '.substr($agendaSchedule->end_time, 0, 5) : '' }}</p>
                             <p class="mt-1 truncate text-xs text-slate-500">{{ $agendaSchedule->department?->name ?? 'Tanpa bidang' }}{{ $agendaSchedule->pic ? ' - PIC: '.$agendaSchedule->pic->full_name : '' }}</p>
                         </a>
                     @empty

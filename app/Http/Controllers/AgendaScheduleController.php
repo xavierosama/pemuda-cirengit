@@ -134,13 +134,16 @@ class AgendaScheduleController extends Controller
             'day_of_week' => ['nullable', 'required_if:schedule_type,weekly', 'integer', 'between:0,6'],
             'day_of_month' => ['nullable', 'required_if:schedule_type,monthly', 'integer', 'between:1,31'],
             'specific_date' => ['nullable', 'required_if:schedule_type,once', 'date'],
-            'start_time' => ['nullable', 'date_format:H:i'],
-            'end_time' => ['nullable', 'date_format:H:i'],
+            'start_time' => ['nullable', 'regex:/^([01][0-9]|2[0-3]):[0-5][0-9]$/'],
+            'end_time' => ['nullable', 'regex:/^([01][0-9]|2[0-3]):[0-5][0-9]$/'],
             'default_location' => ['nullable', 'string', 'max:255'],
             'default_latitude' => ['nullable', 'numeric', 'between:-90,90'],
             'default_longitude' => ['nullable', 'numeric', 'between:-180,180'],
             'default_radius' => ['required', 'numeric', 'min:1'],
             'is_active' => ['required', 'boolean'],
+        ], [
+            'start_time.regex' => 'Waktu mulai harus menggunakan format 24 jam HH:mm, contoh 20:00.',
+            'end_time.regex' => 'Waktu selesai harus menggunakan format 24 jam HH:mm, contoh 20:00.',
         ]);
 
         if ($validated['schedule_type'] !== 'weekly') {

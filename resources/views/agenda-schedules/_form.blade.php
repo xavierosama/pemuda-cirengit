@@ -75,13 +75,15 @@
 
         <div>
             <label for="start_time" class="block text-sm font-semibold text-slate-700">Waktu Mulai</label>
-            <input id="start_time" name="start_time" type="time" value="{{ old('start_time', isset($agendaSchedule) && $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '') }}" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+            <input id="start_time" name="start_time" type="text" inputmode="numeric" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" placeholder="Contoh: 20:00" value="{{ old('start_time', isset($agendaSchedule) && $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '') }}" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+            <p class="mt-2 text-xs text-slate-500">Gunakan format 24 jam, contoh 20:00.</p>
             @error('start_time') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
 
         <div>
             <label for="end_time" class="block text-sm font-semibold text-slate-700">Waktu Selesai</label>
-            <input id="end_time" name="end_time" type="time" value="{{ old('end_time', isset($agendaSchedule) && $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : '') }}" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+            <input id="end_time" name="end_time" type="text" inputmode="numeric" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" placeholder="Contoh: 20:00" value="{{ old('end_time', isset($agendaSchedule) && $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : '') }}" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+            <p class="mt-2 text-xs text-slate-500">Gunakan format 24 jam, contoh 20:00.</p>
             @error('end_time') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
         </div>
 
