@@ -10,6 +10,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberAccountController;
+use App\Http\Controllers\MemberExportController;
 use App\Http\Controllers\MemberHomeController;
 use App\Http\Controllers\MemberImportTemplateController;
 use App\Http\Controllers\PositionController;
@@ -90,6 +91,8 @@ Route::middleware(['auth', 'internal'])->group(function () {
         ->name('members.import.store');
     Route::get('members/import/template', [MemberImportTemplateController::class, 'download'])
         ->name('members.import.template');
+    Route::get('members/export', MemberExportController::class)
+        ->name('members.export');
     Route::resource('members', MemberController::class);
     Route::resource('departments', DepartmentController::class);
     Route::resource('positions', PositionController::class);

@@ -9,12 +9,19 @@ use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 use ZipArchive;
 
 class MemberCrudTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
 
     public function test_authenticated_user_can_manage_members(): void
     {
@@ -45,6 +52,7 @@ class MemberCrudTest extends TestCase
                 'member_status' => 'active',
             ]))
             ->assertOk()
+            ->assertSee('Export Excel')
             ->assertSee('Ahmad Cirengit')
             ->assertSee('PC-001')
             ->assertSee('Pendidikan')
@@ -227,6 +235,72 @@ class MemberCrudTest extends TestCase
             ->assertSessionHasErrors(['file']);
     }
 
+    public function test_internal_user_can_export_filtered_members_to_excel(): void
+    {
+        Carbon::setTestNow('2026-06-10 09:00:00');
+        $user = User::factory()->create(['role' => 'secretary']);
+        $education = Department::create(['name' => 'Pendidikan', 'status' => 'active']);
+        $dakwah = Department::create(['name' => 'Dakwah', 'status' => 'active']);
+        $memberPosition = Position::create(['name' => 'Anggota', 'status' => 'active']);
+        $leaderPosition = Position::create(['name' => 'Ketua', 'status' => 'active']);
+        $included = Member::create([
+            'department_id' => $education->id,
+            'position_id' => $memberPosition->id,
+            'npa' => '20.0001',
+            'full_name' => 'Ahmad Pendidikan',
+            'phone' => '081234567890',
+            'email' => 'ahmad@example.test',
+            'address' => 'Kp. Cirengit',
+            'joined_at' => '2026-06-10',
+            'member_status' => 'active',
+            'notes' => 'Catatan export',
+        ]);
+        Member::create([
+            'department_id' => $dakwah->id,
+            'position_id' => $leaderPosition->id,
+            'npa' => '30.0001',
+            'full_name' => 'Budi Dakwah',
+            'phone' => '089999999999',
+            'email' => 'budi@example.test',
+            'member_status' => 'inactive',
+        ]);
+        User::factory()->create(['role' => 'member', 'member_id' => $included->id]);
+
+        $response = $this->actingAs($user)->get(route('members.export', [
+            'search' => 'Ahmad',
+            'department_id' => $education->id,
+            'position_id' => $memberPosition->id,
+            'member_status' => 'active',
+        ]));
+
+        $response->assertOk()
+            ->assertDownload('data-anggota-pemuda-cirengit-2026-06-10.xlsx');
+
+        $worksheet = $this->worksheetXmlFromDownload($response);
+
+        foreach (['No', 'NPA', 'Nama Lengkap', 'No HP', 'Email', 'Alamat', 'Tanggal Bergabung', 'Bidang', 'Jabatan', 'Status Anggota', 'Status Akun Login', 'Catatan'] as $header) {
+            $this->assertStringContainsString($header, $worksheet);
+        }
+
+        foreach (['20.0001', 'Ahmad Pendidikan', '081234567890', 'ahmad@example.test', 'Kp. Cirengit', '10/06/2026', 'Pendidikan', 'Anggota', 'Aktif', 'Sudah Ada', 'Catatan export'] as $value) {
+            $this->assertStringContainsString($value, $worksheet);
+        }
+
+        $this->assertStringNotContainsString('Budi Dakwah', $worksheet);
+        $this->assertStringNotContainsString('30.0001', $worksheet);
+    }
+
+    public function test_member_role_cannot_export_members(): void
+    {
+        $member = Member::create(['full_name' => 'Anggota', 'member_status' => 'active']);
+        $user = User::factory()->create(['role' => 'member', 'member_id' => $member->id]);
+
+        $this->actingAs($user)
+            ->get(route('members.export'))
+            ->assertRedirect(route('member.home'))
+            ->assertSessionHas('warning', 'Dashboard admin hanya dapat diakses oleh pengurus.');
+    }
+
     public function test_member_role_cannot_download_member_import_template(): void
     {
         $member = Member::create(['full_name' => 'Anggota', 'member_status' => 'active']);
@@ -301,5 +375,15 @@ XML);
             null,
             true
         );
+    }
+
+    private function worksheetXmlFromDownload($response): string
+    {
+        $zip = new ZipArchive();
+        $zip->open($response->baseResponse->getFile()->getPathname());
+        $worksheet = $zip->getFromName('xl/worksheets/sheet1.xml');
+        $zip->close();
+
+        return $worksheet;
     }
 }
