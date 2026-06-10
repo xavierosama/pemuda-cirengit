@@ -59,6 +59,22 @@ class MemberCrudTest extends TestCase
             ->assertSee('Anggota');
 
         $this->actingAs($user)
+            ->get(route('members.create'))
+            ->assertOk()
+            ->assertSee('Identitas Anggota')
+            ->assertSee('Contoh: 20.0001')
+            ->assertSee('Digunakan untuk akun login anggota.')
+            ->assertSee('Format tampilan: dd/mm/yyyy.');
+
+        $this->actingAs($user)
+            ->get(route('members.edit', $member))
+            ->assertOk()
+            ->assertSee('Edit Anggota')
+            ->assertSee('Terakhir diperbarui')
+            ->assertSee('Struktur Organisasi')
+            ->assertSee('Batal/Kembali');
+
+        $this->actingAs($user)
             ->get(route('members.show', $member))
             ->assertOk()
             ->assertSee('Ahmad Cirengit')
