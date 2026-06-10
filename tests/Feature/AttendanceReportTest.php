@@ -31,6 +31,8 @@ class AttendanceReportTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Rekap Presensi')
+            ->assertSee('Pantau kehadiran anggota berdasarkan periode, bidang, dan kegiatan.')
+            ->assertSee('01/06/2026 - 30/06/2026')
             ->assertSee('10/06/2026')
             ->assertSee('Rapat Dakwah')
             ->assertSee('Kajian Pendidikan')
@@ -56,6 +58,23 @@ class AttendanceReportTest extends TestCase
                 && $rows->first()['member']->is($data['firstMember'])
                 && $rows->first()['counts']['present'] === 2
                 && $rows->first()['attendance_percentage'] === 100.0);
+    }
+
+    public function test_attendance_report_shows_empty_state_when_period_has_no_attendance_data(): void
+    {
+        Carbon::setTestNow('2026-06-15 10:00:00');
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($admin)
+            ->get(route('attendance-reports.index', [
+                'start_date' => '2026-07-01',
+                'end_date' => '2026-07-31',
+            ]))
+            ->assertOk()
+            ->assertSee('01/07/2026 - 31/07/2026')
+            ->assertSee('Belum ada data presensi pada periode terpilih.')
+            ->assertSee('Belum ada kegiatan pada periode ini.')
+            ->assertSee('Belum ada anggota aktif sesuai filter.');
     }
 
     public function test_attendance_report_can_be_filtered_by_department(): void
