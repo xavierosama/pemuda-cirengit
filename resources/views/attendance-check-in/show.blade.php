@@ -63,7 +63,7 @@
                         <dl class="mt-5 grid gap-4 sm:grid-cols-2">
                             <div><dt class="text-xs font-semibold uppercase text-slate-500">Status Kehadiran</dt><dd class="mt-1 text-sm font-semibold text-slate-800">{{ $attendanceLabels[$attendance->status] }}</dd></div>
                             <div><dt class="text-xs font-semibold uppercase text-slate-500">Verifikasi</dt><dd class="mt-1 text-sm font-semibold text-slate-800">{{ $verificationLabels[$attendance->verification_status] }}</dd></div>
-                            <div><dt class="text-xs font-semibold uppercase text-slate-500">Waktu Check-in</dt><dd class="mt-1 text-sm text-slate-700">{{ $attendance->checked_in_at?->format('d/m/Y H:i:s') ?? '-' }}</dd></div>
+                            <div><dt class="text-xs font-semibold uppercase text-slate-500">Waktu Check-in</dt><dd class="mt-1 text-sm text-slate-700">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</dd></div>
                             <div><dt class="text-xs font-semibold uppercase text-slate-500">Jarak</dt><dd class="mt-1 text-sm text-slate-700">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' meter' : '-' }}</dd></div>
                         </dl>
                     </section>
