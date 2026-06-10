@@ -20,6 +20,7 @@ class MemberAccountTest extends TestCase
         $admin = User::factory()->create(['role' => 'admin']);
         $member = Member::create([
             'full_name' => 'Anggota Login',
+            'npa' => 'NPA-LOGIN',
             'email' => 'anggota@example.test',
             'member_status' => 'active',
         ]);
@@ -125,6 +126,7 @@ class MemberAccountTest extends TestCase
             ->get(route('members.show', $memberWithoutAccount))
             ->assertOk()
             ->assertSee('Belum Ada')
+            ->assertSee('NPA sebaiknya dilengkapi karena menjadi identitas utama anggota.')
             ->assertSee('Buat Akun Login')
             ->assertDontSee('Reset Password');
 

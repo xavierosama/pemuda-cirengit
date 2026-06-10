@@ -127,9 +127,16 @@ class MemberController extends Controller
 
     private function validatedData(Request $request): array
     {
+        $member = $request->route('member');
+
         return $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
-            'npa' => ['nullable', 'string', 'max:255'],
+            'npa' => [
+                'nullable',
+                'string',
+                'max:255',
+                Rule::unique('members', 'npa')->ignore($member),
+            ],
             'phone' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
             'address' => ['nullable', 'string'],
@@ -138,6 +145,8 @@ class MemberController extends Controller
             'position_id' => ['nullable', 'exists:positions,id'],
             'member_status' => ['required', Rule::in(['active', 'inactive', 'alumni', 'moved'])],
             'notes' => ['nullable', 'string'],
+        ], [
+            'npa.unique' => 'NPA sudah digunakan oleh anggota lain.',
         ]);
     }
 }

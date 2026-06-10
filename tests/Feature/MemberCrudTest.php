@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\Member;
 use App\Models\Position;
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -93,6 +94,50 @@ class MemberCrudTest extends TestCase
             'department_id',
             'position_id',
             'member_status',
+        ]);
+    }
+
+    public function test_npa_is_nullable_and_unique_when_filled(): void
+    {
+        $user = User::factory()->create();
+        $member = Member::create([
+            'full_name' => 'Anggota NPA',
+            'npa' => 'NPA-001',
+            'member_status' => 'active',
+        ]);
+
+        Member::create(['full_name' => 'NPA Kosong 1', 'npa' => null, 'member_status' => 'active']);
+        Member::create(['full_name' => 'NPA Kosong 2', 'npa' => null, 'member_status' => 'active']);
+
+        $this->actingAs($user)->post(route('members.store'), [
+            'full_name' => 'Duplikat NPA',
+            'npa' => 'NPA-001',
+            'member_status' => 'active',
+        ])->assertSessionHasErrors([
+            'npa' => 'NPA sudah digunakan oleh anggota lain.',
+        ]);
+
+        $this->actingAs($user)->put(route('members.update', $member), [
+            'full_name' => 'Anggota NPA Updated',
+            'npa' => 'NPA-001',
+            'member_status' => 'active',
+        ])->assertRedirect(route('members.index'));
+    }
+
+    public function test_npa_unique_constraint_exists_in_database(): void
+    {
+        Member::create([
+            'full_name' => 'Anggota NPA',
+            'npa' => 'NPA-UNIK',
+            'member_status' => 'active',
+        ]);
+
+        $this->expectException(QueryException::class);
+
+        Member::create([
+            'full_name' => 'Anggota Duplikat',
+            'npa' => 'NPA-UNIK',
+            'member_status' => 'active',
         ]);
     }
 }

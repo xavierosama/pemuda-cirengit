@@ -26,6 +26,10 @@
             <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{{ $message }}</div>
         @enderror
 
+        @error('npa')
+            <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-800">{{ $message }}</div>
+        @enderror
+
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <a href="{{ route('members.index') }}" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Kembali ke Data Anggota</a>
             <a href="{{ route('members.edit', $member) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800">Edit Anggota</a>
@@ -75,6 +79,12 @@
                     {{ $member->user ? 'Sudah Ada' : 'Belum Ada' }}
                 </span>
             </div>
+
+            @unless ($member->npa)
+                <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">
+                    NPA sebaiknya dilengkapi karena menjadi identitas utama anggota.
+                </div>
+            @endunless
 
             @if ($member->user)
                 <dl class="mt-5 grid gap-4 border-t border-slate-200 pt-5 sm:grid-cols-2">
