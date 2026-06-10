@@ -12,7 +12,8 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'admin' => \App\Http\Middleware\EnsureUserIsNotMember::class,
+            'internal' => \App\Http\Middleware\EnsureUserHasInternalRole::class,
+            'member' => \App\Http\Middleware\EnsureUserIsMember::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

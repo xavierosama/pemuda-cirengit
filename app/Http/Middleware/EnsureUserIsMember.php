@@ -6,11 +6,11 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnsureUserIsNotMember
+class EnsureUserIsMember
 {
     public function handle(Request $request, Closure $next): Response
     {
-        abort_if($request->user()?->role === 'member', 403, 'Akun anggota hanya dapat mengakses halaman presensi.');
+        abort_unless($request->user()?->role === 'member', 403, 'Halaman ini hanya untuk akun anggota.');
 
         return $next($request);
     }

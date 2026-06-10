@@ -85,13 +85,33 @@ class MemberAccountTest extends TestCase
             'attendance_token' => 'member-access-token',
         ]);
 
-        $this->actingAs($user)->get(route('dashboard'))->assertForbidden();
-        $this->actingAs($user)->get(route('members.index'))->assertForbidden();
+        $this->actingAs($user)
+            ->get(route('dashboard'))
+            ->assertRedirect(route('member.home'))
+            ->assertSessionHas('warning', 'Dashboard admin hanya dapat diakses oleh pengurus.');
+        $this->actingAs($user)
+            ->get(route('members.index'))
+            ->assertRedirect(route('member.home'))
+            ->assertSessionHas('warning', 'Dashboard admin hanya dapat diakses oleh pengurus.');
+        $this->actingAs($user)
+            ->get(route('member.home'))
+            ->assertOk()
+            ->assertSee('Silakan akses presensi melalui link atau QR kegiatan yang diberikan pengurus.');
+        $this->actingAs($user)->get(route('profile.edit'))->assertOk();
         $this->actingAs($user)
             ->get(route('attendance.check-in.show', $activity->attendance_token))
             ->assertOk()
             ->assertSee('Kegiatan Anggota');
 
         Carbon::setTestNow();
+    }
+
+    public function test_secretary_can_access_internal_routes(): void
+    {
+        $secretary = User::factory()->create(['role' => 'secretary']);
+
+        $this->actingAs($secretary)
+            ->get(route('dashboard'))
+            ->assertOk();
     }
 }

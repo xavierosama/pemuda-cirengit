@@ -9,6 +9,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberAccountController;
+use App\Http\Controllers\MemberHomeController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -18,17 +19,25 @@ Route::get('/', function () {
 });
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified', 'admin'])
+    ->middleware(['auth', 'verified', 'internal'])
     ->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/member', MemberHomeController::class)
+        ->middleware('member')
+        ->name('member.home');
+
     Route::get('attendance/check-in/{token}', [AttendanceCheckInController::class, 'show'])
         ->name('attendance.check-in.show');
     Route::post('attendance/check-in/{token}', [AttendanceCheckInController::class, 'store'])
         ->name('attendance.check-in.store');
+
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'internal'])->group(function () {
     Route::get('agenda-schedules/{agenda_schedule}/activities/create', [ActivityController::class, 'createFromSchedule'])
         ->name('agenda-schedules.activities.create');
     Route::post('agenda-schedules/{agenda_schedule}/activities', [ActivityController::class, 'storeFromSchedule'])
@@ -67,10 +76,6 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::resource('members', MemberController::class);
     Route::resource('departments', DepartmentController::class);
     Route::resource('positions', PositionController::class);
-
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 require __DIR__.'/auth.php';
