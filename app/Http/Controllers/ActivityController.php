@@ -63,9 +63,20 @@ class ActivityController extends Controller
 
     public function show(Activity $activity): View
     {
-        $activity->load(['agendaSchedule', 'department', 'pic', 'creator']);
+        $activity->load(['agendaSchedule', 'department', 'pic', 'creator', 'attendances']);
 
-        return view('activities.show', compact('activity'));
+        $attendanceSummary = [
+            'present' => $activity->attendances->where('status', 'present')->count(),
+            'permission' => $activity->attendances->where('status', 'permission')->count(),
+            'absent' => $activity->attendances->where('status', 'absent')->count(),
+            'need_verification' => $activity->attendances->where('status', 'need_verification')->count(),
+        ];
+        $totalAttendances = array_sum($attendanceSummary);
+        $attendanceSummary['attendance_percentage'] = $totalAttendances > 0
+            ? round(($attendanceSummary['present'] / $totalAttendances) * 100, 2)
+            : 0;
+
+        return view('activities.show', compact('activity', 'attendanceSummary'));
     }
 
     public function edit(Activity $activity): View
