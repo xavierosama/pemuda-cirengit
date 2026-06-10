@@ -16,7 +16,13 @@
 
         <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div><a href="{{ route('activities.show', $activity) }}" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Kembali ke Detail Kegiatan</a><h2 class="mt-3 text-2xl font-bold text-slate-950">{{ $activity->title }}</h2><p class="mt-2 text-sm text-slate-500">{{ $activity->activity_date->format('d/m/Y') }} - {{ $activity->location ?: 'Lokasi belum diisi' }}</p></div>
-            <div class="flex flex-col gap-2 sm:flex-row"><a href="{{ route('activities.attendances.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Input Satu Anggota</a><a href="{{ route('activities.attendances.bulk.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Input Massal</a></div>
+            <div class="flex flex-col gap-2 sm:flex-row">
+                <form method="POST" action="{{ route('activities.attendances.sync-participants', $activity) }}">
+                    @csrf
+                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Sinkronkan Peserta Presensi</button>
+                </form>
+                <a href="{{ route('activities.attendances.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Input Satu Anggota</a><a href="{{ route('activities.attendances.bulk.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Input Massal</a>
+            </div>
         </div>
 
         <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

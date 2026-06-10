@@ -141,6 +141,10 @@ class AttendanceCheckInController extends Controller
             return true;
         }
 
+        if ($attendance->status === 'absent') {
+            return true;
+        }
+
         return $attendance->status === 'need_verification'
             && $attendance->verification_status === 'need_verification'
             && $attendance->verified_by === null

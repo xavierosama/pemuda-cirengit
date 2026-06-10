@@ -151,15 +151,102 @@ class AttendanceCrudTest extends TestCase
             ->assertSessionHasErrors(['activity_id', 'member_id', 'status']);
     }
 
-    private function createActivity(User $user): Activity
+    public function test_attendance_participants_can_be_synced_without_changing_existing_records(): void
     {
-        return Activity::create([
+        $user = User::factory()->create(['role' => 'secretary']);
+        $department = Department::create(['name' => 'Pendidikan', 'status' => 'active']);
+        $otherDepartment = Department::create(['name' => 'Dakwah', 'status' => 'active']);
+        $activity = $this->createActivity($user, ['department_id' => $department->id]);
+        $presentMember = Member::create([
+            'department_id' => $department->id,
+            'full_name' => 'Anggota Hadir',
+            'member_status' => 'active',
+        ]);
+        $newMember = Member::create([
+            'department_id' => $department->id,
+            'full_name' => 'Anggota Belum Ada',
+            'member_status' => 'active',
+        ]);
+        Member::create([
+            'department_id' => $otherDepartment->id,
+            'full_name' => 'Anggota Bidang Lain',
+            'member_status' => 'active',
+        ]);
+        Member::create([
+            'department_id' => $department->id,
+            'full_name' => 'Anggota Nonaktif',
+            'member_status' => 'inactive',
+        ]);
+        Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $presentMember->id,
+            'status' => 'present',
+            'attendance_method' => 'link',
+            'verification_status' => 'valid',
+            'checked_in_at' => '2026-06-25 10:00:00',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('activities.attendances.sync-participants', $activity))
+            ->assertRedirect(route('activities.attendances.index', $activity))
+            ->assertSessionHas('success', 'Sinkronisasi peserta selesai. 1 anggota baru ditambahkan ke daftar hadir, 1 anggota sudah ada sebelumnya.');
+
+        $this->assertSame(2, Attendance::where('activity_id', $activity->id)->count());
+        $this->assertDatabaseHas('attendances', [
+            'activity_id' => $activity->id,
+            'member_id' => $presentMember->id,
+            'status' => 'present',
+            'attendance_method' => 'link',
+        ]);
+        $this->assertDatabaseHas('attendances', [
+            'activity_id' => $activity->id,
+            'member_id' => $newMember->id,
+            'status' => 'absent',
+            'attendance_method' => 'manual',
+            'verification_status' => 'valid',
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('activities.attendances.sync-participants', $activity))
+            ->assertSessionHas('success', 'Sinkronisasi peserta selesai. 0 anggota baru ditambahkan ke daftar hadir, 2 anggota sudah ada sebelumnya.');
+
+        $attendance = Attendance::where('activity_id', $activity->id)->where('member_id', $newMember->id)->firstOrFail();
+
+        $this->actingAs($user)
+            ->put(route('attendances.update', $attendance), [
+                'status' => 'permission',
+                'notes' => 'Izin setelah sinkronisasi.',
+            ])
+            ->assertRedirect(route('activities.attendances.index', $activity));
+
+        $this->assertDatabaseHas('attendances', [
+            'id' => $attendance->id,
+            'status' => 'permission',
+            'notes' => 'Izin setelah sinkronisasi.',
+        ]);
+    }
+
+    public function test_sync_button_is_visible_on_activity_attendance_page(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $activity = $this->createActivity($user);
+
+        $this->actingAs($user)
+            ->get(route('activities.attendances.index', $activity))
+            ->assertOk()
+            ->assertSee('Sinkronkan Peserta Presensi');
+    }
+
+    private function createActivity(User $user, array $overrides = []): Activity
+    {
+        return Activity::create(array_merge([
             'title' => 'Kajian Kehadiran',
             'activity_date' => '2026-06-25',
             'attendance_radius' => 100,
             'status' => 'scheduled',
             'attendance_enabled' => true,
             'created_by' => $user->id,
-        ]);
+        ], $overrides));
     }
 }

@@ -85,6 +85,32 @@ class AttendanceCheckInTest extends TestCase
         $this->assertSame('8.50', $attendance->location_accuracy);
     }
 
+    public function test_member_check_in_can_update_synced_absent_attendance_to_present(): void
+    {
+        Carbon::setTestNow('2026-06-25 10:00:00');
+        [$user, $member] = $this->createMemberUser();
+        $activity = $this->createOpenActivity();
+        Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $member->id,
+            'status' => 'absent',
+            'attendance_method' => 'manual',
+            'verification_status' => 'valid',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('attendance.check-in.store', $activity->attendance_token), $this->nearbyLocation())
+            ->assertRedirect(route('attendance.check-in.show', $activity->attendance_token))
+            ->assertSessionHas('success');
+
+        $this->assertSame(1, Attendance::count());
+        $attendance = Attendance::firstOrFail();
+        $this->assertSame('present', $attendance->status);
+        $this->assertSame('link', $attendance->attendance_method);
+        $this->assertSame('valid', $attendance->verification_status);
+        $this->assertNotNull($attendance->checked_in_at);
+    }
+
     public function test_outside_radius_requires_verification_and_can_retry_before_admin_action(): void
     {
         Carbon::setTestNow('2026-06-25 10:00:00');

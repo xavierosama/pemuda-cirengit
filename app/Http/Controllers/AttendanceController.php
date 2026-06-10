@@ -154,6 +154,41 @@ class AttendanceController extends Controller
             ->with('success', 'Daftar hadir massal berhasil disimpan.');
     }
 
+    public function syncParticipants(Request $request, Activity $activity): RedirectResponse
+    {
+        $members = Member::query()
+            ->where('member_status', 'active')
+            ->when($activity->department_id, fn ($query) => $query->where('department_id', $activity->department_id))
+            ->get(['id']);
+
+        $existingMemberIds = $activity->attendances()
+            ->whereIn('member_id', $members->pluck('id'))
+            ->pluck('member_id');
+
+        $newMemberIds = $members->pluck('id')->diff($existingMemberIds);
+
+        DB::transaction(function () use ($activity, $newMemberIds, $request) {
+            foreach ($newMemberIds as $memberId) {
+                Attendance::create([
+                    'activity_id' => $activity->id,
+                    'member_id' => $memberId,
+                    'status' => 'absent',
+                    'attendance_method' => 'manual',
+                    'verification_status' => 'valid',
+                    'created_by' => $request->user()->id,
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('activities.attendances.index', $activity)
+            ->with('success', sprintf(
+                'Sinkronisasi peserta selesai. %d anggota baru ditambahkan ke daftar hadir, %d anggota sudah ada sebelumnya.',
+                $newMemberIds->count(),
+                $existingMemberIds->count()
+            ));
+    }
+
     public function edit(Attendance $attendance): View
     {
         $attendance->load(['activity', 'member.department']);

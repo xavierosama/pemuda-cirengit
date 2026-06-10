@@ -72,6 +72,8 @@ Route::middleware(['auth', 'internal'])->group(function () {
         ->name('activities.attendances.bulk.create');
     Route::put('activities/{activity}/attendances/bulk', [AttendanceController::class, 'storeBulk'])
         ->name('activities.attendances.bulk.store');
+    Route::post('activities/{activity}/attendances/sync-participants', [AttendanceController::class, 'syncParticipants'])
+        ->name('activities.attendances.sync-participants');
     Route::resource('activities', ActivityController::class);
 
     Route::get('attendances', [AttendanceController::class, 'index'])->name('attendances.index');
