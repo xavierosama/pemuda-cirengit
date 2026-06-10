@@ -3,6 +3,7 @@
 use App\Http\Controllers\AgendaScheduleController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\AttendanceController;
+use App\Http\Controllers\AttendanceCheckInController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\PositionController;
@@ -18,6 +19,11 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    Route::get('attendance/check-in/{token}', [AttendanceCheckInController::class, 'show'])
+        ->name('attendance.check-in.show');
+    Route::post('attendance/check-in/{token}', [AttendanceCheckInController::class, 'store'])
+        ->name('attendance.check-in.store');
+
     Route::get('agenda-schedules/{agenda_schedule}/activities/create', [ActivityController::class, 'createFromSchedule'])
         ->name('agenda-schedules.activities.create');
     Route::post('agenda-schedules/{agenda_schedule}/activities', [ActivityController::class, 'storeFromSchedule'])
@@ -44,6 +50,8 @@ Route::middleware('auth')->group(function () {
     Route::get('attendances/{attendance}/edit', [AttendanceController::class, 'edit'])->name('attendances.edit');
     Route::put('attendances/{attendance}', [AttendanceController::class, 'update'])->name('attendances.update');
     Route::delete('attendances/{attendance}', [AttendanceController::class, 'destroy'])->name('attendances.destroy');
+    Route::patch('attendances/{attendance}/verify', [AttendanceController::class, 'verify'])->name('attendances.verify');
+    Route::patch('attendances/{attendance}/reject', [AttendanceController::class, 'reject'])->name('attendances.reject');
 
     Route::resource('members', MemberController::class);
     Route::resource('departments', DepartmentController::class);

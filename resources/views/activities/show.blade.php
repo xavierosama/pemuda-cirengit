@@ -49,6 +49,9 @@
                     <div><dt class="text-xs font-semibold uppercase text-slate-500">Radius</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->attendance_radius }} meter</dd></div>
                     <div><dt class="text-xs font-semibold uppercase text-slate-500">Koordinat</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->latitude ?: '-' }}, {{ $activity->longitude ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase text-slate-500">Token</dt><dd class="mt-1 break-all font-mono text-xs text-slate-600">{{ $activity->attendance_token ?: '-' }}</dd></div>
+                    @if ($activity->attendance_token)
+                        <div><dt class="text-xs font-semibold uppercase text-slate-500">Link Presensi</dt><dd class="mt-2"><a href="{{ route('attendance.check-in.show', $activity->attendance_token) }}" class="text-sm font-semibold text-emerald-700 hover:text-emerald-800">Buka Link Presensi</a></dd></div>
+                    @endif
                 </dl>
             </section>
         </div>

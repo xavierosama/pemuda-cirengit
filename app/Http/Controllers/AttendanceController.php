@@ -171,7 +171,7 @@ class AttendanceController extends Controller
             'notes' => ['nullable', 'string'],
         ]);
 
-        $attendance->update(array_merge($validated, ['attendance_method' => 'manual']));
+        $attendance->update($validated);
 
         return redirect()
             ->route('activities.attendances.index', $attendance->activity_id)
@@ -186,6 +186,30 @@ class AttendanceController extends Controller
         return redirect()
             ->route('activities.attendances.index', $activityId)
             ->with('success', 'Data kehadiran berhasil dihapus.');
+    }
+
+    public function verify(Request $request, Attendance $attendance): RedirectResponse
+    {
+        $attendance->update([
+            'status' => 'present',
+            'verification_status' => 'valid',
+            'verified_by' => $request->user()->id,
+            'verified_at' => now(),
+        ]);
+
+        return back()->with('success', 'Presensi berhasil diverifikasi sebagai valid.');
+    }
+
+    public function reject(Request $request, Attendance $attendance): RedirectResponse
+    {
+        $attendance->update([
+            'status' => 'need_verification',
+            'verification_status' => 'rejected',
+            'verified_by' => $request->user()->id,
+            'verified_at' => now(),
+        ]);
+
+        return back()->with('success', 'Presensi telah ditolak.');
     }
 
     private function statuses(): array
