@@ -48,6 +48,11 @@ class AgendaScheduleCrudTest extends TestCase
                 'is_active' => '1',
             ]))
             ->assertOk()
+            ->assertSee('Kelola agenda rutin dan jadwal kegiatan Pemuda Persis Cirengit.')
+            ->assertSee('Total Jadwal Aktif')
+            ->assertSee('Total Agenda Mingguan')
+            ->assertSee('Filter Jadwal Agenda')
+            ->assertSee('Tabel Jadwal Agenda')
             ->assertSee('Kajian Pekanan')
             ->assertSee('19:30')
             ->assertSee('21:00')

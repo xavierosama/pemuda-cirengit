@@ -18,27 +18,46 @@ class ActivityController extends Controller
     {
         $search = $request->string('search')->toString();
         $activityDate = $request->string('activity_date')->toString();
+        $startDate = $request->string('start_date')->toString();
+        $endDate = $request->string('end_date')->toString();
         $departmentId = $request->integer('department_id') ?: null;
         $status = $request->string('status')->toString();
         $agendaScheduleId = $request->integer('agenda_schedule_id') ?: null;
+        $attendanceStatus = $request->string('attendance_enabled')->toString();
 
         $activities = Activity::query()
             ->with(['agendaSchedule', 'department', 'pic'])
             ->when($search, fn ($query) => $query->where('title', 'like', "%{$search}%"))
             ->when($activityDate, fn ($query) => $query->whereDate('activity_date', $activityDate))
+            ->when($startDate, fn ($query) => $query->whereDate('activity_date', '>=', $startDate))
+            ->when($endDate, fn ($query) => $query->whereDate('activity_date', '<=', $endDate))
             ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
             ->when(
                 in_array($status, $this->statuses(), true),
                 fn ($query) => $query->where('status', $status)
             )
             ->when($agendaScheduleId, fn ($query) => $query->where('agenda_schedule_id', $agendaScheduleId))
+            ->when(
+                in_array($attendanceStatus, ['0', '1'], true),
+                fn ($query) => $query->where('attendance_enabled', $attendanceStatus === '1')
+            )
             ->orderByDesc('activity_date')
             ->orderByDesc('start_time')
             ->paginate(10)
             ->withQueryString();
 
+        $activityStats = [
+            'current_month' => Activity::whereYear('activity_date', now()->year)
+                ->whereMonth('activity_date', now()->month)
+                ->count(),
+            'scheduled' => Activity::where('status', 'scheduled')->count(),
+            'completed' => Activity::where('status', 'completed')->count(),
+            'postponed_cancelled' => Activity::whereIn('status', ['postponed', 'cancelled'])->count(),
+            'attendance_enabled' => Activity::where('attendance_enabled', true)->count(),
+        ];
+
         return view('activities.index', array_merge(
-            compact('activities', 'search', 'activityDate', 'departmentId', 'status', 'agendaScheduleId'),
+            compact('activities', 'activityStats', 'search', 'activityDate', 'startDate', 'endDate', 'departmentId', 'status', 'agendaScheduleId', 'attendanceStatus'),
             $this->filterOptions()
         ));
     }

@@ -45,7 +45,23 @@ class ActivityCrudTest extends TestCase
         $this->actingAs($user)
             ->get(route('activities.index', ['search' => 'Kajian', 'activity_date' => '2026-06-20', 'department_id' => $department->id, 'status' => 'scheduled']))
             ->assertOk()
+            ->assertSee('Kelola kegiatan berjalan, perubahan jadwal, dan pengaturan presensi.')
+            ->assertSee('Kegiatan Bulan Ini')
+            ->assertSee('Presensi Aktif')
+            ->assertSee('Filter Kegiatan Aktual')
+            ->assertSee('Tabel Kegiatan Aktual')
             ->assertSee('Kajian Aktual');
+
+        $this->actingAs($user)
+            ->get(route('activities.index', [
+                'start_date' => '2026-06-01',
+                'end_date' => '2026-06-30',
+                'attendance_enabled' => '1',
+            ]))
+            ->assertOk()
+            ->assertSee('Kajian Aktual')
+            ->assertSee('QR Presensi')
+            ->assertSee('Daftar Hadir');
 
         $this->actingAs($user)
             ->get(route('activities.create'))

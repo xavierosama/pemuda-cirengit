@@ -39,10 +39,17 @@ class AgendaScheduleController extends Controller
             ->withQueryString();
 
         $departments = Department::orderBy('name')->get(['id', 'name']);
+        $agendaStats = [
+            'active' => AgendaSchedule::where('is_active', true)->count(),
+            'inactive' => AgendaSchedule::where('is_active', false)->count(),
+            'weekly' => AgendaSchedule::where('schedule_type', 'weekly')->count(),
+            'monthly' => AgendaSchedule::where('schedule_type', 'monthly')->count(),
+        ];
 
         return view('agenda-schedules.index', compact(
             'agendaSchedules',
             'departments',
+            'agendaStats',
             'search',
             'departmentId',
             'scheduleType',
