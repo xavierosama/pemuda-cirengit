@@ -3,7 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Activity;
+use App\Models\AgendaSchedule;
+use App\Models\Attendance;
+use App\Models\Department;
 use App\Models\Member;
+use App\Models\Position;
 use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -167,12 +171,148 @@ class MemberAccountTest extends TestCase
         $this->actingAs($user)
             ->get(route('member.home'))
             ->assertOk()
-            ->assertSee('Silakan akses presensi melalui link atau QR kegiatan yang diberikan pengurus.');
+            ->assertSee('Silakan akses presensi melalui QR atau link kegiatan yang diberikan pengurus.')
+            ->assertSee('Profil Anggota')
+            ->assertSee('Panduan Presensi')
+            ->assertSee('Belum ada riwayat presensi.');
         $this->actingAs($user)->get(route('profile.edit'))->assertOk();
         $this->actingAs($user)
             ->get(route('attendance.check-in.show', $activity->attendance_token))
             ->assertOk()
             ->assertSee('Kegiatan Anggota');
+
+        Carbon::setTestNow();
+    }
+
+    public function test_member_home_shows_profile_guidance_and_attendance_history(): void
+    {
+        Carbon::setTestNow('2026-06-13 08:00:00');
+        $department = Department::create(['name' => 'Pendidikan', 'status' => 'active']);
+        $position = Position::create(['name' => 'Anggota', 'status' => 'active']);
+        $member = Member::create([
+            'department_id' => $department->id,
+            'position_id' => $position->id,
+            'full_name' => 'Ahmad Anggota',
+            'npa' => '20.0001',
+            'email' => 'ahmad.member@example.test',
+            'phone' => '081234567890',
+            'member_status' => 'active',
+        ]);
+        $user = User::factory()->create([
+            'member_id' => $member->id,
+            'name' => 'Ahmad User',
+            'email' => 'ahmad.member@example.test',
+            'role' => 'member',
+        ]);
+        $activity = Activity::create([
+            'title' => 'Kajian Member',
+            'activity_date' => '2026-06-10',
+            'attendance_radius' => 100,
+            'status' => 'scheduled',
+            'attendance_enabled' => true,
+        ]);
+        Activity::create([
+            'department_id' => $department->id,
+            'pic_id' => $member->id,
+            'title' => 'Kajian Mendatang',
+            'activity_date' => '2026-06-13',
+            'start_time' => '20:00',
+            'end_time' => '21:30',
+            'location' => 'Masjid Cirengit',
+            'attendance_radius' => 100,
+            'status' => 'scheduled',
+            'attendance_enabled' => true,
+        ]);
+        Activity::create([
+            'department_id' => $department->id,
+            'pic_id' => $member->id,
+            'title' => 'Kajian Sedang Berlangsung',
+            'activity_date' => '2026-06-13',
+            'start_time' => '08:00',
+            'end_time' => '09:00',
+            'location' => 'Aula Cirengit',
+            'latitude' => '-6.2000000',
+            'longitude' => '107.2000000',
+            'attendance_radius' => 100,
+            'status' => 'scheduled',
+            'attendance_enabled' => true,
+            'attendance_open_at' => '2026-06-13 07:30:00',
+            'attendance_close_at' => '2026-06-13 09:30:00',
+        ]);
+        Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $member->id,
+            'status' => 'present',
+            'attendance_method' => 'link',
+            'checked_in_at' => '2026-06-10 20:05:00',
+            'verification_status' => 'valid',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('member.home'))
+            ->assertOk()
+            ->assertSee("Assalamu'alaikum, Ahmad Anggota", false)
+            ->assertSee('20.0001')
+            ->assertSee('Pendidikan')
+            ->assertSee('Anggota')
+            ->assertSee('Scan QR atau buka link kegiatan')
+            ->assertSee('Pastikan berada dalam radius lokasi kegiatan')
+            ->assertSee('Kegiatan Sekarang')
+            ->assertSee('Kajian Sedang Berlangsung')
+            ->assertSee('Saya Hadir')
+            ->assertSee('13/06/2026 07:30 - 13/06/2026 09:30')
+            ->assertSee('Kegiatan Mendatang')
+            ->assertSee('Kajian Mendatang')
+            ->assertSee('Hari ini')
+            ->assertSee('20:00 - 21:30')
+            ->assertSee('Masjid Cirengit')
+            ->assertSee('Kajian Member')
+            ->assertSee('10/06/2026')
+            ->assertSee('10/06/2026 20:05')
+            ->assertSee('Hadir')
+            ->assertSee('Valid')
+            ->assertSee('Edit Profil')
+            ->assertSee('Logout');
+
+        Carbon::setTestNow();
+    }
+
+    public function test_member_home_falls_back_to_active_agenda_schedules_when_no_upcoming_activity(): void
+    {
+        Carbon::setTestNow('2026-06-13 08:00:00');
+        $department = Department::create(['name' => 'Dakwah', 'status' => 'active']);
+        $member = Member::create(['full_name' => 'Anggota Agenda', 'member_status' => 'active']);
+        $user = User::factory()->create(['member_id' => $member->id, 'role' => 'member']);
+        Activity::create([
+            'title' => 'Kegiatan Batal',
+            'activity_date' => '2026-06-14',
+            'attendance_radius' => 100,
+            'status' => 'cancelled',
+            'attendance_enabled' => false,
+        ]);
+        AgendaSchedule::create([
+            'department_id' => $department->id,
+            'title' => 'Kajian Rutin Dakwah',
+            'schedule_type' => 'weekly',
+            'day_of_week' => 5,
+            'start_time' => '19:30',
+            'end_time' => '21:00',
+            'default_location' => 'Sekretariat',
+            'default_radius' => 100,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('member.home'))
+            ->assertOk()
+            ->assertSee('Kegiatan Mendatang')
+            ->assertSee('Kajian Rutin Dakwah')
+            ->assertSee('Jadwal Rutin')
+            ->assertSee('Mingguan')
+            ->assertSee('19:30 - 21:00')
+            ->assertSee('Sekretariat')
+            ->assertSee('Dakwah')
+            ->assertDontSee('Kegiatan Batal');
 
         Carbon::setTestNow();
     }

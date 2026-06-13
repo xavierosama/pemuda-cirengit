@@ -185,6 +185,74 @@ class AttendanceCheckInTest extends TestCase
         $this->assertSame('rejected', $attendance->fresh()->verification_status);
     }
 
+    public function test_member_dashboard_check_in_uses_radius_logic_and_updates_synced_absent_record(): void
+    {
+        Carbon::setTestNow('2026-06-25 10:00:00');
+        [$user, $member] = $this->createMemberUser();
+        $user->update(['role' => 'member']);
+        $activity = $this->createOpenActivity();
+        Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $member->id,
+            'status' => 'absent',
+            'attendance_method' => 'manual',
+            'verification_status' => 'valid',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('member.activities.check-in', $activity), $this->nearbyLocation())
+            ->assertRedirect(route('member.home'))
+            ->assertSessionHas('success');
+
+        $this->assertSame(1, Attendance::count());
+        $attendance = Attendance::firstOrFail();
+        $this->assertSame('present', $attendance->status);
+        $this->assertSame('link', $attendance->attendance_method);
+        $this->assertSame('valid', $attendance->verification_status);
+        $this->assertLessThanOrEqual(100, (float) $attendance->distance_from_activity);
+        $this->assertSame('8.50', $attendance->location_accuracy);
+    }
+
+    public function test_member_dashboard_check_in_outside_radius_requires_verification_and_does_not_duplicate(): void
+    {
+        Carbon::setTestNow('2026-06-25 10:00:00');
+        [$user] = $this->createMemberUser();
+        $user->update(['role' => 'member']);
+        $activity = $this->createOpenActivity();
+
+        $this->actingAs($user)
+            ->post(route('member.activities.check-in', $activity), [
+                'latitude' => -6.2100000,
+                'longitude' => 107.2000000,
+                'location_accuracy' => 12,
+            ])
+            ->assertRedirect(route('member.home'))
+            ->assertSessionHas('warning');
+
+        $attendance = Attendance::firstOrFail();
+        $this->assertSame('need_verification', $attendance->status);
+        $this->assertSame('need_verification', $attendance->verification_status);
+
+        $this->actingAs($user)
+            ->post(route('member.activities.check-in', $activity), $this->nearbyLocation())
+            ->assertSessionHas('info');
+
+        $this->assertSame(1, Attendance::count());
+        $this->assertSame('need_verification', $attendance->fresh()->status);
+    }
+
+    public function test_member_dashboard_check_in_requires_member_role(): void
+    {
+        Carbon::setTestNow('2026-06-25 10:00:00');
+        [$user] = $this->createMemberUser();
+        $user->update(['role' => 'admin']);
+        $activity = $this->createOpenActivity();
+
+        $this->actingAs($user)
+            ->post(route('member.activities.check-in', $activity), $this->nearbyLocation())
+            ->assertForbidden();
+    }
+
     private function createMemberUser(): array
     {
         $member = Member::create(['full_name' => 'Anggota Login', 'member_status' => 'active']);

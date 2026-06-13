@@ -11,6 +11,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberAccountController;
+use App\Http\Controllers\MemberDashboardAttendanceController;
 use App\Http\Controllers\MemberExportController;
 use App\Http\Controllers\MemberHomeController;
 use App\Http\Controllers\MemberImportTemplateController;
@@ -36,6 +37,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/member', MemberHomeController::class)
         ->middleware('member')
         ->name('member.home');
+    Route::post('/member/activities/{activity}/check-in', [MemberDashboardAttendanceController::class, 'store'])
+        ->middleware('member')
+        ->name('member.activities.check-in');
 
     Route::get('attendance/check-in/{token}', [AttendanceCheckInController::class, 'show'])
         ->name('attendance.check-in.show');
