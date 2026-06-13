@@ -7,13 +7,13 @@
 @section('content')
     @php
         $statusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Pindah Lokasi', 'cancelled' => 'Dibatalkan'];
-        $statusClasses = ['scheduled' => 'bg-sky-50 text-sky-700 ring-sky-200', 'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'holiday' => 'bg-slate-100 text-slate-600 ring-slate-200', 'postponed' => 'bg-amber-50 text-amber-700 ring-amber-200', 'relocated' => 'bg-violet-50 text-violet-700 ring-violet-200', 'cancelled' => 'bg-red-50 text-red-700 ring-red-200'];
+        $statusClasses = ['scheduled' => 'bg-sky-50 text-sky-700 ring-sky-200', 'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'holiday' => 'bg-slate-100 text-slate-600 ring-slate-200', 'postponed' => 'bg-amber-50 text-amber-700 ring-amber-200', 'relocated' => 'bg-cyan-50 text-cyan-700 ring-cyan-200', 'cancelled' => 'bg-red-50 text-red-700 ring-red-200'];
         $attendanceUrl = $activity->attendance_token ? route('attendance.check-in.show', $activity->attendance_token, true) : null;
         $activityTime = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
         $summaryCards = [
             ['label' => 'Total Hadir', 'value' => $attendanceSummary['present'], 'class' => 'border-l-emerald-500'],
             ['label' => 'Total Izin', 'value' => $attendanceSummary['permission'], 'class' => 'border-l-sky-500'],
-            ['label' => 'Total Tidak Hadir', 'value' => $attendanceSummary['absent'], 'class' => 'border-l-red-500'],
+            ['label' => 'Total Tidak Hadir', 'value' => $attendanceSummary['absent'], 'class' => 'border-l-slate-500'],
             ['label' => 'Total Perlu Verifikasi', 'value' => $attendanceSummary['need_verification'], 'class' => 'border-l-amber-500'],
         ];
     @endphp

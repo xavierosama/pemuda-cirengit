@@ -12,7 +12,7 @@
             'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
             'holiday' => 'bg-slate-100 text-slate-600 ring-slate-200',
             'postponed' => 'bg-amber-50 text-amber-700 ring-amber-200',
-            'relocated' => 'bg-violet-50 text-violet-700 ring-violet-200',
+            'relocated' => 'bg-cyan-50 text-cyan-700 ring-cyan-200',
             'cancelled' => 'bg-red-50 text-red-700 ring-red-200',
         ];
         $typeLabels = ['once' => 'Satu Kali', 'daily' => 'Harian', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan'];
@@ -27,7 +27,7 @@
         $attendanceCards = [
             ['label' => 'Total Hadir', 'value' => $monthlyAttendanceSummary['present'], 'color' => 'text-emerald-700'],
             ['label' => 'Total Izin', 'value' => $monthlyAttendanceSummary['permission'], 'color' => 'text-sky-700'],
-            ['label' => 'Total Tidak Hadir', 'value' => $monthlyAttendanceSummary['absent'], 'color' => 'text-red-700'],
+            ['label' => 'Total Tidak Hadir', 'value' => $monthlyAttendanceSummary['absent'], 'color' => 'text-slate-700'],
             ['label' => 'Total Perlu Verifikasi', 'value' => $monthlyAttendanceSummary['need_verification'], 'color' => 'text-amber-700'],
         ];
     @endphp
@@ -76,7 +76,7 @@
                                     <td class="whitespace-nowrap px-5 py-4 text-sm text-slate-600">{{ $activity->start_time ? substr($activity->start_time, 0, 5) : '-' }}{{ $activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : '' }}</td>
                                     <td class="max-w-64 px-5 py-4 text-sm text-slate-600">{{ str($activity->location ?: '-')->limit(55) }}</td>
                                     <td class="whitespace-nowrap px-5 py-4"><span class="{{ $statusClasses[$activity->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$activity->status] }}</span></td>
-                                    <td class="whitespace-nowrap px-5 py-4 text-right"><a href="{{ route('activities.show', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Detail</a></td>
+                                    <td class="whitespace-nowrap px-5 py-4 text-right"><x-action-icon :href="route('activities.show', $activity)" label="Detail" icon="eye" variant="blue" /></td>
                                 </tr>
                             @empty
                                 <tr><td colspan="6" class="px-5 py-10 text-center text-sm text-slate-500">Belum ada kegiatan terdekat.</td></tr>
@@ -136,7 +136,7 @@
                                 <div><p class="text-sm font-semibold text-slate-900">{{ $agendaSchedule->title }}</p><p class="mt-1 text-xs text-slate-500">{{ $pattern }}</p></div>
                                 <div><p class="text-xs font-semibold uppercase text-slate-500">Tipe</p><p class="mt-1 text-sm text-slate-700">{{ $typeLabels[$agendaSchedule->schedule_type] }}</p></div>
                                 <div><p class="text-xs font-semibold uppercase text-slate-500">Bidang</p><p class="mt-1 text-sm text-slate-700">{{ $agendaSchedule->department?->name ?? '-' }}</p></div>
-                                <div><p class="text-xs font-semibold uppercase text-slate-500">Waktu & Lokasi</p><p class="mt-1 text-sm text-slate-700">{{ $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '-' }}{{ $agendaSchedule->end_time ? ' - '.substr($agendaSchedule->end_time, 0, 5) : '' }} · {{ str($agendaSchedule->default_location ?: '-')->limit(40) }}</p></div>
+                                <div><p class="text-xs font-semibold uppercase text-slate-500">Waktu & Lokasi</p><p class="mt-1 text-sm text-slate-700">{{ $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '-' }}{{ $agendaSchedule->end_time ? ' - '.substr($agendaSchedule->end_time, 0, 5) : '' }} - {{ str($agendaSchedule->default_location ?: '-')->limit(40) }}</p></div>
                             </div>
                         </a>
                     @empty

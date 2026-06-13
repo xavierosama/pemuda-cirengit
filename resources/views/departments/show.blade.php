@@ -20,7 +20,7 @@
                     <h2 class="mt-2 text-2xl font-bold text-slate-950">{{ $department->name }}</h2>
                 </div>
                 <span class="{{ $department->status === 'active' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">
-                    {{ ucfirst($department->status) }}
+                    {{ $department->status === 'active' ? 'Aktif' : 'Tidak Aktif' }}
                 </span>
             </div>
 

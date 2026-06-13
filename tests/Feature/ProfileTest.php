@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Department;
+use App\Models\Member;
+use App\Models\Position;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -19,6 +22,40 @@ class ProfileTest extends TestCase
             ->get('/profile');
 
         $response->assertOk();
+    }
+
+    public function test_profile_page_uses_role_specific_back_link_and_member_information(): void
+    {
+        $department = Department::create(['name' => 'Pendidikan', 'status' => 'active']);
+        $position = Position::create(['name' => 'Anggota', 'status' => 'active']);
+        $member = Member::create([
+            'department_id' => $department->id,
+            'position_id' => $position->id,
+            'full_name' => 'Ahmad Anggota',
+            'npa' => '20.0001',
+            'phone' => '081234567890',
+            'member_status' => 'active',
+        ]);
+        $memberUser = User::factory()->create([
+            'member_id' => $member->id,
+            'role' => 'member',
+        ]);
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $this->actingAs($memberUser)
+            ->get('/profile')
+            ->assertOk()
+            ->assertSee('Kembali ke Dashboard Anggota')
+            ->assertSee('Informasi Anggota')
+            ->assertSee('Ahmad Anggota')
+            ->assertSee('20.0001')
+            ->assertSee('Pendidikan')
+            ->assertSee('Anggota');
+
+        $this->actingAs($admin)
+            ->get('/profile')
+            ->assertOk()
+            ->assertSee('Kembali ke Dashboard Admin');
     }
 
     public function test_profile_information_can_be_updated(): void
