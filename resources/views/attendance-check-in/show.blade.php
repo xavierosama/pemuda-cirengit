@@ -12,28 +12,55 @@
     <body class="bg-slate-100 font-sans antialiased text-slate-900">
         @php
             $attendanceLabels = ['present' => 'Hadir', 'permission' => 'Izin', 'absent' => 'Tidak Hadir', 'need_verification' => 'Perlu Verifikasi'];
+            $attendanceClasses = [
+                'present' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                'permission' => 'bg-sky-50 text-sky-700 ring-sky-200',
+                'absent' => 'bg-slate-100 text-slate-600 ring-slate-200',
+                'need_verification' => 'bg-amber-50 text-amber-700 ring-amber-200',
+            ];
             $verificationLabels = ['valid' => 'Valid', 'need_verification' => 'Perlu Verifikasi', 'rejected' => 'Ditolak'];
+            $verificationClasses = [
+                'valid' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                'need_verification' => 'bg-amber-50 text-amber-700 ring-amber-200',
+                'rejected' => 'bg-red-50 text-red-700 ring-red-200',
+            ];
             $availabilityMessages = [
                 'disabled' => 'Presensi belum diaktifkan untuk kegiatan ini.',
                 'not_configured' => 'Waktu presensi belum dikonfigurasi oleh admin.',
                 'not_open' => 'Presensi belum dibuka.',
                 'closed' => 'Presensi sudah ditutup.',
             ];
-            $canSubmit = $member && $availability === 'open' && $canRetry && $activity->latitude !== null && $activity->longitude !== null;
+            $availabilityLabels = [
+                'open' => 'Dibuka',
+                'closed' => 'Ditutup',
+                'not_open' => 'Belum Dibuka',
+                'disabled' => 'Ditutup',
+                'not_configured' => 'Ditutup',
+            ];
+            $availabilityClasses = [
+                'open' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+                'closed' => 'bg-red-50 text-red-700 ring-red-200',
+                'not_open' => 'bg-amber-50 text-amber-700 ring-amber-200',
+                'disabled' => 'bg-slate-100 text-slate-600 ring-slate-200',
+                'not_configured' => 'bg-slate-100 text-slate-600 ring-slate-200',
+            ];
+            $hasRecordedAttendance = $attendance && $attendance->status !== 'absent';
+            $canSubmit = $member && $availability === 'open' && ! $hasRecordedAttendance && $activity->latitude !== null && $activity->longitude !== null;
+            $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
         @endphp
 
         <div class="min-h-screen">
             <header class="border-b border-slate-200 bg-white">
-                <div class="mx-auto flex h-16 max-w-3xl items-center justify-between px-4 sm:px-6">
-                    <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-700 text-xs font-bold text-white">PC</span>
+                <div class="mx-auto flex h-14 max-w-2xl items-center justify-between px-4 sm:px-6">
+                    <a href="{{ Auth::user()->role === 'member' ? route('member.home') : route('dashboard') }}" class="flex items-center gap-3">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 text-xs font-bold text-white">PC</span>
                         <span class="text-sm font-bold text-slate-900">Pemuda Cirengit</span>
                     </a>
-                    <span class="text-sm font-semibold text-slate-600">{{ Auth::user()->name }}</span>
+                    <span class="max-w-36 truncate text-xs font-semibold text-slate-500 sm:max-w-none sm:text-sm">{{ Auth::user()->name }}</span>
                 </div>
             </header>
 
-            <main class="mx-auto max-w-3xl space-y-5 px-4 py-6 sm:px-6 sm:py-10">
+            <main class="mx-auto max-w-2xl space-y-4 px-4 py-5 sm:px-6 sm:py-8">
                 @foreach ([
                     'success' => 'border-emerald-200 bg-emerald-50 text-emerald-800',
                     'warning' => 'border-amber-200 bg-amber-50 text-amber-800',
@@ -41,103 +68,194 @@
                     'info' => 'border-sky-200 bg-sky-50 text-sky-800',
                 ] as $flash => $classes)
                     @if (session($flash))
-                        <div class="{{ $classes }} rounded-lg border px-4 py-3 text-sm font-medium">{{ session($flash) }}</div>
+                        <div class="{{ $classes }} rounded-xl border px-4 py-3 text-sm font-medium">{{ session($flash) }}</div>
                     @endif
                 @endforeach
 
-                <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                    <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Presensi Kegiatan</p>
-                    <h1 class="mt-2 text-2xl font-bold text-slate-950">{{ $activity->title }}</h1>
-                    <dl class="mt-6 grid gap-4 border-t border-slate-200 pt-6 sm:grid-cols-2">
-                        <div><dt class="text-xs font-semibold uppercase text-slate-500">Tanggal</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->activity_date->format('d/m/Y') }}</dd></div>
-                        <div><dt class="text-xs font-semibold uppercase text-slate-500">Waktu</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->start_time ? substr($activity->start_time, 0, 5) : '-' }}{{ $activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : '' }}</dd></div>
-                        <div class="sm:col-span-2"><dt class="text-xs font-semibold uppercase text-slate-500">Lokasi</dt><dd class="mt-1 text-sm text-slate-700">{{ $activity->location ?: '-' }}</dd></div>
+                <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                    <div class="border-b border-slate-100 p-5">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Presensi Kegiatan</p>
+                                <h1 class="mt-1 text-xl font-bold text-slate-950 sm:text-2xl">{{ $activity->title }}</h1>
+                            </div>
+                            <span class="{{ $availabilityClasses[$availability] ?? $availabilityClasses['disabled'] }} inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset">
+                                {{ $availabilityLabels[$availability] ?? 'Ditutup' }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <dl class="grid gap-4 p-5 sm:grid-cols-2">
+                        <div>
+                            <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Tanggal</dt>
+                            <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu</dt>
+                            <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $time !== '' ? $time : '-' }}</dd>
+                        </div>
+                        <div class="sm:col-span-2">
+                            <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Lokasi</dt>
+                            <dd class="mt-1 text-sm text-slate-700">{{ $activity->location ?: '-' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Bidang</dt>
+                            <dd class="mt-1 text-sm text-slate-700">{{ $activity->department?->name ?? '-' }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">PIC</dt>
+                            <dd class="mt-1 text-sm text-slate-700">{{ $activity->pic?->full_name ?? '-' }}</dd>
+                        </div>
                     </dl>
                 </section>
 
                 @if (! $member)
-                    <div class="rounded-lg border border-red-200 bg-red-50 p-5 text-sm text-red-800">Akun Anda belum terhubung dengan data anggota. Hubungi admin untuk mengatur member_id akun.</div>
-                @elseif ($attendance && ! $canRetry)
-                    <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-                        <h2 class="text-base font-bold text-slate-950">Presensi Sudah Tercatat</h2>
+                    <section class="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm">
+                        <h2 class="text-base font-bold text-red-900">Akun belum terhubung</h2>
+                        <p class="mt-2 text-sm leading-6 text-red-800">Akun Anda belum terhubung dengan data anggota.</p>
+                        <p class="mt-1 text-sm leading-6 text-red-700">Silakan hubungi pengurus untuk menghubungkan akun dengan data anggota.</p>
+                    </section>
+                @elseif ($hasRecordedAttendance)
+                    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                                <h2 class="text-base font-bold text-slate-950">Presensi Sudah Tercatat</h2>
+                                <p class="mt-1 text-sm text-slate-500">Terima kasih, data presensi Anda sudah masuk ke sistem.</p>
+                            </div>
+                            <span class="{{ $attendanceClasses[$attendance->status] ?? $attendanceClasses['absent'] }} inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset">{{ $attendanceLabels[$attendance->status] ?? $attendance->status }}</span>
+                        </div>
                         <dl class="mt-5 grid gap-4 sm:grid-cols-2">
-                            <div><dt class="text-xs font-semibold uppercase text-slate-500">Status Kehadiran</dt><dd class="mt-1 text-sm font-semibold text-slate-800">{{ $attendanceLabels[$attendance->status] }}</dd></div>
-                            <div><dt class="text-xs font-semibold uppercase text-slate-500">Verifikasi</dt><dd class="mt-1 text-sm font-semibold text-slate-800">{{ $verificationLabels[$attendance->verification_status] }}</dd></div>
-                            <div><dt class="text-xs font-semibold uppercase text-slate-500">Waktu Check-in</dt><dd class="mt-1 text-sm text-slate-700">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</dd></div>
-                            <div><dt class="text-xs font-semibold uppercase text-slate-500">Jarak</dt><dd class="mt-1 text-sm text-slate-700">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' meter' : '-' }}</dd></div>
+                            <div>
+                                <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Status Kehadiran</dt>
+                                <dd class="mt-1">
+                                    <span class="{{ $attendanceClasses[$attendance->status] ?? $attendanceClasses['absent'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $attendanceLabels[$attendance->status] ?? $attendance->status }}</span>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Status Verifikasi</dt>
+                                <dd class="mt-1">
+                                    <span class="{{ $verificationClasses[$attendance->verification_status] ?? $verificationClasses['need_verification'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $verificationLabels[$attendance->verification_status] ?? $attendance->verification_status }}</span>
+                                </dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu Presensi</dt>
+                                <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Jarak dari Lokasi</dt>
+                                <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' meter' : '-' }}</dd>
+                            </div>
                         </dl>
                     </section>
                 @else
                     @if ($availability !== 'open')
-                        <div class="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm font-medium text-amber-800">{{ $availabilityMessages[$availability] }}</div>
+                        <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
+                            <h2 class="text-base font-bold text-amber-900">{{ $availabilityMessages[$availability] ?? 'Presensi tidak tersedia.' }}</h2>
+                            <p class="mt-2 text-sm leading-6 text-amber-800">Silakan kembali ke halaman ini sesuai waktu presensi yang ditentukan pengurus.</p>
+                        </section>
                     @elseif ($activity->latitude === null || $activity->longitude === null)
-                        <div class="rounded-lg border border-red-200 bg-red-50 p-5 text-sm font-medium text-red-800">Titik lokasi kegiatan belum dikonfigurasi oleh admin.</div>
-                    @endif
-
-                    @if ($attendance && $canRetry)
-                        <div class="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm text-amber-800">Presensi sebelumnya masih perlu verifikasi dan belum diproses admin. Anda boleh mengambil ulang lokasi.</div>
+                        <section class="rounded-2xl border border-red-200 bg-red-50 p-5 shadow-sm">
+                            <h2 class="text-base font-bold text-red-900">Lokasi kegiatan belum siap</h2>
+                            <p class="mt-2 text-sm leading-6 text-red-800">Titik lokasi kegiatan belum dikonfigurasi oleh admin.</p>
+                        </section>
                     @endif
 
                     <section
                         x-data="{
-                            latitude: '', longitude: '', accuracy: '', locating: false,
-                            locationReady: false, message: '',
-                            getLocation() {
-                                if (!navigator.geolocation) {
-                                    this.message = 'Browser Anda tidak mendukung geolocation.';
+                            latitude: '',
+                            longitude: '',
+                            accuracy: '',
+                            locating: false,
+                            processing: false,
+                            message: 'Tekan tombol Saya Hadir untuk mengambil lokasi dan mengirim presensi.',
+                            submitAttendance(form) {
+                                if (!@js($canSubmit)) {
                                     return;
                                 }
+
+                                if (!navigator.geolocation) {
+                                    this.message = 'Browser Anda belum mendukung akses lokasi.';
+                                    return;
+                                }
+
                                 this.locating = true;
+                                this.processing = false;
                                 this.message = 'Mengambil lokasi...';
+
                                 navigator.geolocation.getCurrentPosition(
                                     position => {
                                         this.latitude = position.coords.latitude;
                                         this.longitude = position.coords.longitude;
-                                        this.accuracy = position.coords.accuracy;
-                                        this.locationReady = true;
+                                        this.accuracy = position.coords.accuracy ?? 0;
                                         this.locating = false;
-                                        this.message = 'Lokasi berhasil diperoleh.';
+                                        this.processing = true;
+                                        this.message = 'Memproses presensi...';
+
+                                        this.$nextTick(() => form.submit());
                                     },
                                     error => {
                                         this.locating = false;
-                                        this.locationReady = false;
+                                        this.processing = false;
                                         this.message = error.code === 1
-                                            ? 'Izin lokasi ditolak. Aktifkan izin lokasi pada browser.'
-                                            : 'Lokasi tidak dapat diperoleh. Silakan coba lagi.';
+                                            ? 'Izin lokasi ditolak. Aktifkan izin lokasi pada browser, lalu coba lagi.'
+                                            : 'Lokasi tidak dapat diperoleh. Pastikan GPS aktif lalu coba lagi.';
                                     },
                                     { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
                                 );
                             }
                         }"
-                        class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+                        class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
                     >
-                        <h2 class="text-base font-bold text-slate-950">Lokasi Presensi</h2>
-                        <p class="mt-2 text-sm leading-6 text-slate-600">Gunakan lokasi perangkat sebelum mengirim kehadiran. Jarak akan dihitung oleh server.</p>
+                        <div class="text-center">
+                            <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Status Akses Presensi</p>
+                            @if ($availability === 'open' && $activity->latitude !== null && $activity->longitude !== null)
+                                <h2 class="mt-2 text-lg font-bold text-slate-950">Presensi sedang dibuka.</h2>
+                                <p class="mt-2 text-sm leading-6 text-slate-600">Sistem akan meminta lokasi perangkat untuk memverifikasi jarak dari titik kegiatan.</p>
+                            @elseif ($availability === 'not_open')
+                                <h2 class="mt-2 text-lg font-bold text-slate-950">Presensi belum dibuka.</h2>
+                            @elseif ($availability === 'closed')
+                                <h2 class="mt-2 text-lg font-bold text-slate-950">Presensi sudah ditutup.</h2>
+                            @else
+                                <h2 class="mt-2 text-lg font-bold text-slate-950">Presensi tidak tersedia.</h2>
+                            @endif
+                        </div>
 
-                        <form method="POST" action="{{ route('attendance.check-in.store', $activity->attendance_token) }}" class="mt-6 space-y-4">
+                        <form method="POST" action="{{ route('attendance.check-in.store', $activity->attendance_token) }}" class="mt-5 space-y-4" @submit.prevent="submitAttendance($el)">
                             @csrf
                             <input type="hidden" name="latitude" x-model="latitude">
                             <input type="hidden" name="longitude" x-model="longitude">
                             <input type="hidden" name="location_accuracy" x-model="accuracy">
 
-                            <div class="rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
-                                <p x-text="message || 'Lokasi belum diambil.'"></p>
-                                <template x-if="locationReady"><p class="mt-2 text-xs" x-text="'Akurasi: ' + Number(accuracy).toFixed(2) + ' meter'"></p></template>
+                            <div @class([
+                                'rounded-xl border px-4 py-3 text-sm font-medium',
+                                'border-slate-200 bg-slate-50 text-slate-700' => ! $errors->any(),
+                                'border-red-200 bg-red-50 text-red-700' => $errors->any(),
+                            ])>
+                                @if ($errors->any())
+                                    Lokasi tidak valid. Silakan izinkan akses lokasi dan coba lagi.
+                                @else
+                                    <span x-text="message"></span>
+                                @endif
                             </div>
 
-                            @if ($errors->any())
-                                <div class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Lokasi tidak valid. Silakan ambil ulang lokasi perangkat.</div>
-                            @endif
-
-                            <div class="grid gap-3 sm:grid-cols-2">
-                                <button type="button" @click="getLocation" :disabled="locating || !@js($canSubmit)" class="inline-flex items-center justify-center rounded-lg border border-emerald-700 px-4 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50">
-                                    <span x-text="locating ? 'Mengambil Lokasi...' : 'Gunakan Lokasi Saya'"></span>
-                                </button>
-                                <button type="submit" :disabled="!locationReady || !@js($canSubmit)" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">Saya Hadir</button>
-                            </div>
+                            <button type="submit" :disabled="locating || processing || !@js($canSubmit)" class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-700 px-5 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                <span x-text="locating ? 'Mengambil lokasi...' : (processing ? 'Memproses presensi...' : 'Saya Hadir')"></span>
+                            </button>
                         </form>
                     </section>
                 @endif
+
+                <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <h2 class="text-base font-bold text-slate-950">Catatan Presensi</h2>
+                    <ul class="mt-4 space-y-3 text-sm text-slate-700">
+                        @foreach (['Pastikan berada di lokasi kegiatan.', 'Izinkan akses lokasi pada browser.', 'Jarak dari lokasi akan diverifikasi oleh sistem.'] as $note)
+                            <li class="flex gap-3">
+                                <span class="mt-1 h-2 w-2 shrink-0 rounded-full bg-emerald-500"></span>
+                                <span>{{ $note }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </section>
             </main>
         </div>
     </body>
