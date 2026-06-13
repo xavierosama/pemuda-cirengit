@@ -6,6 +6,8 @@ use App\Models\Activity;
 use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Member;
+use App\Support\TableControls;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +25,16 @@ class AttendanceController extends Controller
         $startDate = $request->string('start_date')->toString();
         $endDate = $request->string('end_date')->toString();
         $activityStatuses = ['scheduled', 'completed', 'holiday', 'postponed', 'relocated', 'cancelled'];
+        $allowedSorts = [
+            'title' => 'title',
+            'activity_date' => 'activity_date',
+            'start_time' => 'start_time',
+            'status' => 'status',
+            'attendance_enabled' => 'attendance_enabled',
+        ];
+        $currentSort = TableControls::sort($request, $allowedSorts);
+        $currentDirection = TableControls::direction($request);
+        $perPage = TableControls::perPage($request);
 
         $activities = Activity::query()
             ->with(['department', 'pic'])
@@ -41,9 +53,8 @@ class AttendanceController extends Controller
             )
             ->when($startDate, fn ($query) => $query->whereDate('activity_date', '>=', $startDate))
             ->when($endDate, fn ($query) => $query->whereDate('activity_date', '<=', $endDate))
-            ->orderByDesc('activity_date')
-            ->orderByDesc('start_time')
-            ->paginate(10)
+            ->tap(fn ($query) => TableControls::applySort($query, $currentSort, $currentDirection, $allowedSorts, fn ($query) => $query->orderByDesc('activity_date')->orderByDesc('start_time')))
+            ->paginate($perPage)
             ->withQueryString();
 
         $monthActivityIds = Activity::whereYear('activity_date', now()->year)
@@ -70,7 +81,7 @@ class AttendanceController extends Controller
             'attendanceStatus' => $attendanceStatus,
             'startDate' => $startDate,
             'endDate' => $endDate,
-        ]);
+        ] + TableControls::viewData($request, $currentSort, $currentDirection, $perPage));
     }
 
     public function byActivity(Request $request, Activity $activity): View
@@ -79,6 +90,16 @@ class AttendanceController extends Controller
         $search = $request->string('search')->toString();
         $status = $request->string('status')->toString();
         $departmentId = $request->integer('department_id') ?: null;
+        $allowedSorts = [
+            'npa' => fn (Attendance $attendance) => $attendance->member->npa ?? '',
+            'full_name' => fn (Attendance $attendance) => $attendance->member->full_name,
+            'status' => fn (Attendance $attendance) => $attendance->status,
+            'checked_in_at' => fn (Attendance $attendance) => $attendance->checked_in_at?->timestamp ?? 0,
+            'verification_status' => fn (Attendance $attendance) => $attendance->verification_status,
+        ];
+        $currentSort = TableControls::sort($request, $allowedSorts);
+        $currentDirection = TableControls::direction($request);
+        $perPage = TableControls::perPage($request);
 
         $allAttendances = $activity->attendances()
             ->with(['member.department', 'member.position'])
@@ -102,11 +123,24 @@ class AttendanceController extends Controller
             })
             ->when(in_array($status, $this->statuses(), true), fn ($rows) => $rows->where('status', $status))
             ->when($departmentId, fn ($rows) => $rows->filter(fn (Attendance $attendance) => (int) $attendance->member->department_id === (int) $departmentId))
+            ->when(
+                $currentSort,
+                fn ($rows) => $currentDirection === 'desc'
+                    ? $rows->sortByDesc($allowedSorts[$currentSort], SORT_NATURAL | SORT_FLAG_CASE)
+                    : $rows->sortBy($allowedSorts[$currentSort], SORT_NATURAL | SORT_FLAG_CASE)
+            )
             ->values();
+        $attendances = new LengthAwarePaginator(
+            $attendances->forPage(LengthAwarePaginator::resolveCurrentPage(), $perPage)->values(),
+            $attendances->count(),
+            $perPage,
+            LengthAwarePaginator::resolveCurrentPage(),
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         $departments = Department::orderBy('name')->get(['id', 'name']);
 
-        return view('attendances.activity', compact(
+        return view('attendances.activity', array_merge(compact(
             'activity',
             'attendances',
             'summary',
@@ -115,7 +149,7 @@ class AttendanceController extends Controller
             'search',
             'status',
             'departmentId'
-        ));
+        ), TableControls::viewData($request, $currentSort, $currentDirection, $perPage)));
     }
 
     public function createManual(Activity $activity): View

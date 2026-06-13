@@ -28,7 +28,7 @@ class DashboardTest extends TestCase
             ->get(route('dashboard'))
             ->assertOk()
             ->assertSee('Belum ada kegiatan terdekat.')
-            ->assertSee('Belum ada jadwal agenda aktif.')
+            ->assertSee('Tidak ada presensi yang perlu diverifikasi.')
             ->assertSee('Aksi Cepat');
     }
 
@@ -97,7 +97,7 @@ class DashboardTest extends TestCase
         $response->assertOk()
             ->assertViewHas('statistics', fn (array $statistics) => $statistics === [
                 'active_members' => 6,
-                'active_departments' => 1,
+                'members_without_account' => 6,
                 'active_agenda_schedules' => 6,
                 'monthly_activities' => 6,
                 'need_verification_attendances' => 3,
@@ -117,13 +117,14 @@ class DashboardTest extends TestCase
                 'need_verification' => 3,
                 'attendance_percentage' => 16.67,
             ])
-            ->assertViewHas('activeAgendaSchedules', fn ($schedules) => $schedules->count() === 5)
+            ->assertViewHas('needVerificationAttendances', fn ($attendances) => $attendances->count() === 3)
             ->assertSee('Ringkasan Utama')
+            ->assertSee('Anggota Belum Punya Akun')
             ->assertSee('Kegiatan Mendatang 1')
             ->assertSee('20:00 - 21:00')
             ->assertSee('Rekap Presensi Bulan Ini')
             ->assertSee('16.67%')
-            ->assertSee('Jadwal Agenda Aktif')
+            ->assertSee('Presensi Perlu Verifikasi')
             ->assertSee('Aksi Cepat');
     }
 }

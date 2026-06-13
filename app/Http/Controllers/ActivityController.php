@@ -6,6 +6,9 @@ use App\Models\Activity;
 use App\Models\AgendaSchedule;
 use App\Models\Department;
 use App\Models\Member;
+use App\Support\SystemSettings;
+use App\Support\TableControls;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -24,6 +27,17 @@ class ActivityController extends Controller
         $status = $request->string('status')->toString();
         $agendaScheduleId = $request->integer('agenda_schedule_id') ?: null;
         $attendanceStatus = $request->string('attendance_enabled')->toString();
+        $allowedSorts = [
+            'title' => 'title',
+            'activity_date' => 'activity_date',
+            'start_time' => 'start_time',
+            'status' => 'status',
+            'attendance_enabled' => 'attendance_enabled',
+            'created_at' => 'created_at',
+        ];
+        $currentSort = TableControls::sort($request, $allowedSorts);
+        $currentDirection = TableControls::direction($request);
+        $perPage = TableControls::perPage($request);
 
         $activities = Activity::query()
             ->with(['agendaSchedule', 'department', 'pic'])
@@ -41,9 +55,8 @@ class ActivityController extends Controller
                 in_array($attendanceStatus, ['0', '1'], true),
                 fn ($query) => $query->where('attendance_enabled', $attendanceStatus === '1')
             )
-            ->orderByDesc('activity_date')
-            ->orderByDesc('start_time')
-            ->paginate(10)
+            ->tap(fn ($query) => TableControls::applySort($query, $currentSort, $currentDirection, $allowedSorts, fn ($query) => $query->orderByDesc('activity_date')->orderByDesc('start_time')))
+            ->paginate($perPage)
             ->withQueryString();
 
         $activityStats = [
@@ -58,7 +71,8 @@ class ActivityController extends Controller
 
         return view('activities.index', array_merge(
             compact('activities', 'activityStats', 'search', 'activityDate', 'startDate', 'endDate', 'departmentId', 'status', 'agendaScheduleId', 'attendanceStatus'),
-            $this->filterOptions()
+            $this->filterOptions(),
+            TableControls::viewData($request, $currentSort, $currentDirection, $perPage)
         ));
     }
 
@@ -70,6 +84,7 @@ class ActivityController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validatedData($request);
+        $this->applyAttendanceDefaults($data);
         $data['created_by'] = $request->user()->id;
         $this->ensureAttendanceToken($data);
 
@@ -152,6 +167,16 @@ class ActivityController extends Controller
         $validated = $request->validate([
             'activity_date' => ['required', 'date'],
         ]);
+        $attendanceDefaults = app(SystemSettings::class)->attendanceDefaults();
+        $attendanceEnabled = false;
+        $attendanceTimes = $attendanceEnabled
+            ? $this->defaultAttendanceTimes(
+                $validated['activity_date'],
+                $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : null,
+                $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : null,
+                $attendanceDefaults
+            )
+            : [];
 
         $activity = Activity::create([
             'agenda_schedule_id' => $agendaSchedule->id,
@@ -164,9 +189,11 @@ class ActivityController extends Controller
             'location' => $agendaSchedule->default_location,
             'latitude' => $agendaSchedule->default_latitude,
             'longitude' => $agendaSchedule->default_longitude,
-            'attendance_radius' => $agendaSchedule->default_radius,
+            'attendance_radius' => $attendanceDefaults['radius'],
             'status' => 'scheduled',
-            'attendance_enabled' => false,
+            'attendance_enabled' => $attendanceEnabled,
+            'attendance_open_at' => $attendanceTimes['open_at'] ?? null,
+            'attendance_close_at' => $attendanceTimes['close_at'] ?? null,
             'created_by' => $request->user()->id,
         ]);
 
@@ -216,6 +243,41 @@ class ActivityController extends Controller
         $data['attendance_token'] = $token;
     }
 
+    private function applyAttendanceDefaults(array &$data): void
+    {
+        if (! $data['attendance_enabled']) {
+            return;
+        }
+
+        $attendanceTimes = $this->defaultAttendanceTimes(
+            $data['activity_date'],
+            $data['start_time'] ?? null,
+            $data['end_time'] ?? null,
+            app(SystemSettings::class)->attendanceDefaults()
+        );
+
+        $data['attendance_open_at'] = ($data['attendance_open_at'] ?? null) ?: ($attendanceTimes['open_at'] ?? null);
+        $data['attendance_close_at'] = ($data['attendance_close_at'] ?? null) ?: ($attendanceTimes['close_at'] ?? null);
+    }
+
+    private function defaultAttendanceTimes(string $activityDate, ?string $startTime, ?string $endTime, array $attendanceDefaults): array
+    {
+        $times = [];
+        $date = Carbon::parse($activityDate)->format('Y-m-d');
+
+        if ($startTime) {
+            $times['open_at'] = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$startTime}")
+                ->subMinutes($attendanceDefaults['open_minutes_before']);
+        }
+
+        if ($endTime) {
+            $times['close_at'] = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$endTime}")
+                ->addMinutes($attendanceDefaults['close_minutes_after']);
+        }
+
+        return $times;
+    }
+
     private function formOptions(): array
     {
         return [
@@ -223,6 +285,7 @@ class ActivityController extends Controller
             'departments' => Department::where('status', 'active')->orderBy('name')->get(),
             'members' => Member::where('member_status', 'active')->orderBy('full_name')->get(),
             'statuses' => $this->statuses(),
+            'attendanceDefaults' => app(SystemSettings::class)->attendanceDefaults(),
         ];
     }
 

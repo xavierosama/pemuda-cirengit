@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Models\Member;
+use App\Models\User;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -28,9 +30,16 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
+            'email' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'email' => trim((string) $this->input('email')),
+        ]);
     }
 
     /**
@@ -42,7 +51,10 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (! Auth::attempt([
+            'email' => $this->loginEmail(),
+            'password' => $this->string('password')->toString(),
+        ], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
@@ -51,6 +63,40 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
+    }
+
+    private function loginEmail(): string
+    {
+        $login = $this->string('email')->toString();
+        $email = User::query()
+            ->where('email', $login)
+            ->value('email');
+
+        if ($email) {
+            return $email;
+        }
+
+        $member = Member::query()
+            ->where('npa', $login)
+            ->first(['id']);
+
+        if (! $member) {
+            return $login;
+        }
+
+        $email = User::query()
+            ->where('member_id', $member->id)
+            ->value('email');
+
+        if ($email) {
+            return $email;
+        }
+
+        RateLimiter::hit($this->throttleKey());
+
+        throw ValidationException::withMessages([
+            'email' => 'NPA ditemukan, tetapi belum memiliki akun login. Silakan hubungi pengurus.',
+        ]);
     }
 
     /**

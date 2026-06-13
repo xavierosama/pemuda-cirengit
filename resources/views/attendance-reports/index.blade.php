@@ -55,6 +55,11 @@
                 <p class="mt-1 text-sm text-slate-500">Atur periode dan cakupan data yang ingin dimonitor.</p>
             </div>
             <form method="GET" action="{{ route('attendance-reports.index') }}" class="grid gap-4 md:grid-cols-2 xl:grid-cols-[160px_160px_190px_minmax(240px,1fr)_auto]">
+                <input type="hidden" name="per_page" value="{{ $perPage }}">
+                <input type="hidden" name="activity_sort" value="{{ $activitySort }}">
+                <input type="hidden" name="activity_direction" value="{{ $activityDirection }}">
+                <input type="hidden" name="member_sort" value="{{ $memberSort }}">
+                <input type="hidden" name="member_direction" value="{{ $memberDirection }}">
                 <div>
                     <label for="start_date" class="block text-sm font-semibold text-slate-700">Tanggal Mulai</label>
                     <input id="start_date" name="start_date" type="date" value="{{ $filters['start_date'] }}" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
@@ -159,17 +164,26 @@
         </section>
 
         <section class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-200 px-5 py-4">
-                <h2 class="text-base font-bold text-slate-950">Ringkasan per Kegiatan</h2>
-                <p class="mt-1 text-sm text-slate-500">Persentase dihitung dari hadir dibagi jumlah anggota aktif dalam filter.</p>
+            <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-950">Ringkasan per Kegiatan</h2>
+                    <p class="mt-1 text-sm text-slate-500">Persentase dihitung dari hadir dibagi jumlah anggota aktif dalam filter.</p>
+                </div>
+                <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" id="activity_per_page" />
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            @foreach (['Tanggal', 'Nama Kegiatan', 'Bidang', 'Hadir', 'Izin', 'Tidak Hadir', 'Perlu Verifikasi', 'Persentase Kehadiran', 'Aksi'] as $heading)
-                                <th class="{{ $heading === 'Aksi' ? 'text-right' : 'text-left' }} px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
-                            @endforeach
+                            <x-sortable-th field="activity_date" label="Tanggal" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
+                            <x-sortable-th field="title" label="Nama Kegiatan" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
+                            <x-sortable-th field="department" label="Bidang" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
+                            <x-sortable-th field="present" label="Hadir" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
+                            <x-sortable-th field="permission" label="Izin" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
+                            <x-sortable-th field="absent" label="Tidak Hadir" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
+                            <x-sortable-th field="need_verification" label="Perlu Verifikasi" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
+                            <x-sortable-th field="attendance_percentage" label="Persentase Kehadiran" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
+                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -191,20 +205,30 @@
                     </tbody>
                 </table>
             </div>
+            <div class="border-t border-slate-200 px-5 py-4">
+                {{ $activityRows->links() }}
+            </div>
         </section>
 
         <section class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-200 px-5 py-4">
-                <h2 class="text-base font-bold text-slate-950">Ringkasan per Anggota</h2>
-                <p class="mt-1 text-sm text-slate-500">Persentase dihitung dari hadir dibagi jumlah kegiatan dalam filter.</p>
+            <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h2 class="text-base font-bold text-slate-950">Ringkasan per Anggota</h2>
+                    <p class="mt-1 text-sm text-slate-500">Persentase dihitung dari hadir dibagi jumlah kegiatan dalam filter.</p>
+                </div>
+                <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" id="member_per_page" />
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            @foreach (['NPA', 'Nama Anggota', 'Bidang', 'Hadir', 'Izin', 'Tidak Hadir', 'Perlu Verifikasi', 'Persentase Kehadiran'] as $heading)
-                                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
-                            @endforeach
+                            <x-sortable-th field="npa" label="NPA" :current-sort="$memberSort" :current-direction="$memberDirection" :query="$queryParams" sort-param="member_sort" direction-param="member_direction" page-param="member_page" />
+                            <x-sortable-th field="full_name" label="Nama Anggota" :current-sort="$memberSort" :current-direction="$memberDirection" :query="$queryParams" sort-param="member_sort" direction-param="member_direction" page-param="member_page" />
+                            <x-sortable-th field="present" label="Hadir" :current-sort="$memberSort" :current-direction="$memberDirection" :query="$queryParams" sort-param="member_sort" direction-param="member_direction" page-param="member_page" />
+                            <x-sortable-th field="permission" label="Izin" :current-sort="$memberSort" :current-direction="$memberDirection" :query="$queryParams" sort-param="member_sort" direction-param="member_direction" page-param="member_page" />
+                            <x-sortable-th field="absent" label="Tidak Hadir" :current-sort="$memberSort" :current-direction="$memberDirection" :query="$queryParams" sort-param="member_sort" direction-param="member_direction" page-param="member_page" />
+                            <x-sortable-th field="need_verification" label="Perlu Verifikasi" :current-sort="$memberSort" :current-direction="$memberDirection" :query="$queryParams" sort-param="member_sort" direction-param="member_direction" page-param="member_page" />
+                            <x-sortable-th field="attendance_percentage" label="Persentase Kehadiran" :current-sort="$memberSort" :current-direction="$memberDirection" :query="$queryParams" sort-param="member_sort" direction-param="member_direction" page-param="member_page" />
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -212,7 +236,6 @@
                             <tr>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $row['member']->npa ?: '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">{{ $row['member']->full_name }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $row['member']->department?->name ?? '-' }}</td>
                                 <td class="px-4 py-4"><span class="{{ $statusBadgeClasses['present'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['counts']['present']) }}</span></td>
                                 <td class="px-4 py-4"><span class="{{ $statusBadgeClasses['permission'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['counts']['permission']) }}</span></td>
                                 <td class="px-4 py-4"><span class="{{ $statusBadgeClasses['absent'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['counts']['absent']) }}</span></td>
@@ -220,10 +243,13 @@
                                 <td class="whitespace-nowrap px-4 py-4"><span class="{{ $percentageClass($row['attendance_percentage']) }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['attendance_percentage'], 2) }}%</span></td>
                             </tr>
                         @empty
-                            <tr><td colspan="8" class="px-4 py-10 text-center text-sm text-slate-500">Belum ada anggota aktif sesuai filter.</td></tr>
+                            <tr><td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">Belum ada anggota aktif sesuai filter.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+            <div class="border-t border-slate-200 px-5 py-4">
+                {{ $memberRows->links() }}
             </div>
         </section>
     </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Position;
+use App\Support\TableControls;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -17,13 +18,21 @@ class PositionController extends Controller
     {
         $search = $request->string('search')->toString();
         $status = $request->string('status')->toString();
+        $allowedSorts = [
+            'name' => 'name',
+            'status' => 'status',
+            'created_at' => 'created_at',
+        ];
+        $currentSort = TableControls::sort($request, $allowedSorts);
+        $currentDirection = TableControls::direction($request);
+        $perPage = TableControls::perPage($request);
 
         $positions = Position::query()
             ->withCount('members')
             ->when($search, fn ($query) => $query->where('name', 'like', "%{$search}%"))
             ->when(in_array($status, ['active', 'inactive'], true), fn ($query) => $query->where('status', $status))
-            ->latest()
-            ->paginate(10)
+            ->tap(fn ($query) => TableControls::applySort($query, $currentSort, $currentDirection, $allowedSorts, fn ($query) => $query->latest()))
+            ->paginate($perPage)
             ->withQueryString();
 
         $positionStats = [
@@ -32,7 +41,10 @@ class PositionController extends Controller
             'inactive' => Position::where('status', 'inactive')->count(),
         ];
 
-        return view('positions.index', compact('positions', 'positionStats', 'search', 'status'));
+        return view('positions.index', array_merge(
+            compact('positions', 'positionStats', 'search', 'status'),
+            TableControls::viewData($request, $currentSort, $currentDirection, $perPage)
+        ));
     }
 
     /**

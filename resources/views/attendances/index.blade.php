@@ -63,6 +63,9 @@
                 <p class="mt-1 text-sm text-slate-500">Saring kegiatan berdasarkan nama, bidang, status kegiatan, status presensi, dan periode.</p>
             </div>
             <form method="GET" action="{{ route('attendances.index') }}" class="grid gap-4 lg:grid-cols-12">
+                <input type="hidden" name="sort" value="{{ $currentSort }}">
+                <input type="hidden" name="direction" value="{{ $currentDirection }}">
+                <input type="hidden" name="per_page" value="{{ $perPage }}">
                 <div class="lg:col-span-3">
                     <label for="search" class="text-sm font-semibold text-slate-700">Search nama kegiatan</label>
                     <input id="search" name="search" type="search" value="{{ $search }}" placeholder="Cari nama kegiatan" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
@@ -109,17 +112,29 @@
         </div>
 
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-200 px-5 py-4">
-                <h3 class="text-base font-bold text-slate-950">Tabel Daftar Hadir</h3>
-                <p class="mt-1 text-sm text-slate-500">Ringkasan presensi per kegiatan. Gunakan scroll horizontal pada layar kecil.</p>
+            <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-slate-950">Tabel Daftar Hadir</h3>
+                    <p class="mt-1 text-sm text-slate-500">Ringkasan presensi per kegiatan. Gunakan scroll horizontal pada layar kecil.</p>
+                </div>
+                <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" />
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            @foreach (['No', 'Nama Kegiatan', 'Tanggal', 'Waktu', 'Bidang', 'Lokasi', 'Status Kegiatan', 'Status Presensi', 'Total Hadir', 'Total Izin', 'Total Tidak Hadir', 'Perlu Verifikasi'] as $heading)
-                                <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
-                            @endforeach
+                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">No</th>
+                            <x-sortable-th field="title" label="Nama Kegiatan" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <x-sortable-th field="activity_date" label="Tanggal" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <x-sortable-th field="start_time" label="Waktu" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Bidang</th>
+                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Lokasi</th>
+                            <x-sortable-th field="status" label="Status Kegiatan" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <x-sortable-th field="attendance_enabled" label="Status Presensi" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Total Hadir</th>
+                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Total Izin</th>
+                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Total Tidak Hadir</th>
+                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Perlu Verifikasi</th>
                             <th class="whitespace-nowrap px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
                         </tr>
                     </thead>

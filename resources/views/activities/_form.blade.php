@@ -9,14 +9,62 @@
         'relocated' => 'Pindah Lokasi',
         'cancelled' => 'Dibatalkan',
     ];
+    $isCreateForm = ! isset($activity);
+    $attendanceDefaults = $attendanceDefaults ?? [
+        'radius' => 100,
+        'open_minutes_before' => 30,
+        'close_minutes_after' => 30,
+        'location_accuracy_tolerance' => 50,
+    ];
     $attendanceEnabled = (string) old('attendance_enabled', isset($activity) ? (int) $activity->attendance_enabled : 0);
+    $attendanceRadiusValue = old('attendance_radius', $activity->attendance_radius ?? $attendanceDefaults['radius']);
+    $attendanceOpenAtValue = old('attendance_open_at', isset($activity) && $activity->attendance_open_at ? $activity->attendance_open_at->format('Y-m-d\TH:i') : '');
+    $attendanceCloseAtValue = old('attendance_close_at', isset($activity) && $activity->attendance_close_at ? $activity->attendance_close_at->format('Y-m-d\TH:i') : '');
     $inputClass = 'mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600';
     $labelClass = 'block text-sm font-semibold text-slate-700';
     $helperClass = 'mt-1 text-xs text-slate-500';
     $errorClass = 'mt-2 text-sm text-red-600';
 @endphp
 
-<div x-data="{ attendanceEnabled: @js($attendanceEnabled) }" class="space-y-5">
+<div
+    x-data="{
+        attendanceEnabled: @js($attendanceEnabled),
+        isCreateForm: @js($isCreateForm),
+        defaults: @js($attendanceDefaults),
+        activityDate: @js(old('activity_date', isset($activity) && $activity->activity_date ? $activity->activity_date->format('Y-m-d') : '')),
+        startTime: @js(old('start_time', isset($activity) && $activity->start_time ? substr($activity->start_time, 0, 5) : '')),
+        endTime: @js(old('end_time', isset($activity) && $activity->end_time ? substr($activity->end_time, 0, 5) : '')),
+        attendanceRadius: @js((string) $attendanceRadiusValue),
+        attendanceOpenAt: @js($attendanceOpenAtValue),
+        attendanceCloseAt: @js($attendanceCloseAtValue),
+        generatedOpenAt: '',
+        generatedCloseAt: '',
+        toDatetimeLocal(date, time, minutes) {
+            if (! date || ! time) return '';
+            const value = new Date(`${date}T${time}`);
+            if (Number.isNaN(value.getTime())) return '';
+            value.setMinutes(value.getMinutes() + minutes);
+            const offset = value.getTimezoneOffset();
+            return new Date(value.getTime() - offset * 60000).toISOString().slice(0, 16);
+        },
+        applyDefaults() {
+            if (! this.isCreateForm || this.attendanceEnabled !== '1') return;
+            if (! this.attendanceRadius) this.attendanceRadius = String(this.defaults.radius);
+            const nextOpenAt = this.toDatetimeLocal(this.activityDate, this.startTime, -Number(this.defaults.open_minutes_before));
+            const nextCloseAt = this.toDatetimeLocal(this.activityDate, this.endTime, Number(this.defaults.close_minutes_after));
+            if (nextOpenAt && (! this.attendanceOpenAt || this.attendanceOpenAt === this.generatedOpenAt)) {
+                this.attendanceOpenAt = nextOpenAt;
+                this.generatedOpenAt = nextOpenAt;
+            }
+            if (nextCloseAt && (! this.attendanceCloseAt || this.attendanceCloseAt === this.generatedCloseAt)) {
+                this.attendanceCloseAt = nextCloseAt;
+                this.generatedCloseAt = nextCloseAt;
+            }
+        },
+    }"
+    x-init="$watch('attendanceEnabled', () => applyDefaults()); $watch('activityDate', () => applyDefaults()); $watch('startTime', () => applyDefaults()); $watch('endTime', () => applyDefaults()); applyDefaults();"
+    class="space-y-5"
+>
     @if (session('success'))
         <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ session('success') }}</div>
     @endif
@@ -94,28 +142,28 @@
         <div class="grid gap-5 md:grid-cols-2">
             <div>
                 <label for="activity_date" class="{{ $labelClass }}">Tanggal kegiatan</label>
-                <input id="activity_date" name="activity_date" type="date" value="{{ old('activity_date', isset($activity) && $activity->activity_date ? $activity->activity_date->format('Y-m-d') : '') }}" class="{{ $inputClass }}" required>
+                <input id="activity_date" name="activity_date" type="date" x-model="activityDate" class="{{ $inputClass }}" required>
                 <p class="{{ $helperClass }}">Format tampilan setelah tersimpan: dd/mm/yyyy.</p>
                 @error('activity_date') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div>
                 <label for="attendance_radius" class="{{ $labelClass }}">Radius presensi</label>
-                <input id="attendance_radius" name="attendance_radius" type="number" min="1" value="{{ old('attendance_radius', $activity->attendance_radius ?? 100) }}" class="{{ $inputClass }}" required>
-                <p class="{{ $helperClass }}">Dalam meter, contoh: 100.</p>
+                <input id="attendance_radius" name="attendance_radius" type="number" min="1" x-model="attendanceRadius" class="{{ $inputClass }}" required>
+                <p class="{{ $helperClass }}">Dalam meter, contoh: {{ $attendanceDefaults['radius'] }}. Nilai default presensi dapat diubah di Pengaturan Sistem.</p>
                 @error('attendance_radius') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div>
                 <label for="start_time" class="{{ $labelClass }}">Waktu mulai</label>
-                <input id="start_time" name="start_time" type="text" inputmode="numeric" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" placeholder="Contoh: 20:00" value="{{ old('start_time', isset($activity) && $activity->start_time ? substr($activity->start_time, 0, 5) : '') }}" class="{{ $inputClass }}">
+                <input id="start_time" name="start_time" type="text" inputmode="numeric" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" placeholder="Contoh: 20:00" x-model="startTime" class="{{ $inputClass }}">
                 <p class="{{ $helperClass }}">Gunakan format 24 jam, contoh 20:00.</p>
                 @error('start_time') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div>
                 <label for="end_time" class="{{ $labelClass }}">Waktu selesai</label>
-                <input id="end_time" name="end_time" type="text" inputmode="numeric" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" placeholder="Contoh: 20:00" value="{{ old('end_time', isset($activity) && $activity->end_time ? substr($activity->end_time, 0, 5) : '') }}" class="{{ $inputClass }}">
+                <input id="end_time" name="end_time" type="text" inputmode="numeric" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" placeholder="Contoh: 20:00" x-model="endTime" class="{{ $inputClass }}">
                 <p class="{{ $helperClass }}">Gunakan format 24 jam, contoh 20:00.</p>
                 @error('end_time') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
@@ -168,15 +216,15 @@
 
             <div x-show="attendanceEnabled === '1'" x-cloak>
                 <label for="attendance_open_at" class="{{ $labelClass }}">Waktu buka presensi</label>
-                <input id="attendance_open_at" name="attendance_open_at" type="datetime-local" value="{{ old('attendance_open_at', isset($activity) && $activity->attendance_open_at ? $activity->attendance_open_at->format('Y-m-d\TH:i') : '') }}" class="{{ $inputClass }}">
-                <p class="{{ $helperClass }}">Gunakan format waktu 24 jam. Tampilan tersimpan: dd/mm/yyyy HH:mm.</p>
+                <input id="attendance_open_at" name="attendance_open_at" type="datetime-local" x-model="attendanceOpenAt" class="{{ $inputClass }}">
+                <p class="{{ $helperClass }}">Gunakan format waktu 24 jam. Nilai default presensi dapat diubah di Pengaturan Sistem.</p>
                 @error('attendance_open_at') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div x-show="attendanceEnabled === '1'" x-cloak>
                 <label for="attendance_close_at" class="{{ $labelClass }}">Waktu tutup presensi</label>
-                <input id="attendance_close_at" name="attendance_close_at" type="datetime-local" value="{{ old('attendance_close_at', isset($activity) && $activity->attendance_close_at ? $activity->attendance_close_at->format('Y-m-d\TH:i') : '') }}" class="{{ $inputClass }}">
-                <p class="{{ $helperClass }}">Gunakan format waktu 24 jam. Tampilan tersimpan: dd/mm/yyyy HH:mm.</p>
+                <input id="attendance_close_at" name="attendance_close_at" type="datetime-local" x-model="attendanceCloseAt" class="{{ $inputClass }}">
+                <p class="{{ $helperClass }}">Gunakan format waktu 24 jam. Nilai default presensi dapat diubah di Pengaturan Sistem.</p>
                 @error('attendance_close_at') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
         </div>

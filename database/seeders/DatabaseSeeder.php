@@ -15,8 +15,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            AdminUserSeeder::class,
             DepartmentSeeder::class,
             PositionSeeder::class,
         ]);
+
+        if ($this->command?->getLaravel()->environment('local')) {
+            $this->call(DemoMemberSeeder::class);
+        }
     }
 }

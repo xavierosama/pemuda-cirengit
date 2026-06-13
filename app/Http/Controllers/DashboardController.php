@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\AgendaSchedule;
 use App\Models\Attendance;
-use App\Models\Department;
 use App\Models\Member;
 use Illuminate\View\View;
 
@@ -18,7 +17,7 @@ class DashboardController extends Controller
 
         $statistics = [
             'active_members' => Member::where('member_status', 'active')->count(),
-            'active_departments' => Department::where('status', 'active')->count(),
+            'members_without_account' => Member::where('member_status', 'active')->whereDoesntHave('user')->count(),
             'active_agenda_schedules' => AgendaSchedule::where('is_active', true)->count(),
             'monthly_activities' => Activity::whereBetween('activity_date', [$monthStart, $monthEnd])->count(),
             'need_verification_attendances' => Attendance::where('verification_status', 'need_verification')->count(),
@@ -54,10 +53,10 @@ class DashboardController extends Controller
                 : 0,
         ];
 
-        $activeAgendaSchedules = AgendaSchedule::query()
-            ->with(['department', 'pic'])
-            ->where('is_active', true)
-            ->latest('updated_at')
+        $needVerificationAttendances = Attendance::query()
+            ->with(['activity.department', 'member'])
+            ->where('verification_status', 'need_verification')
+            ->latest('checked_in_at')
             ->limit(5)
             ->get();
 
@@ -65,7 +64,7 @@ class DashboardController extends Controller
             'statistics',
             'upcomingActivities',
             'monthlyAttendanceSummary',
-            'activeAgendaSchedules'
+            'needVerificationAttendances'
         ));
     }
 }

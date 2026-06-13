@@ -15,11 +15,9 @@
             'relocated' => 'bg-cyan-50 text-cyan-700 ring-cyan-200',
             'cancelled' => 'bg-red-50 text-red-700 ring-red-200',
         ];
-        $typeLabels = ['once' => 'Satu Kali', 'daily' => 'Harian', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan'];
-        $dayLabels = [0 => 'Minggu', 1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'];
         $summaryCards = [
             ['label' => 'Total Anggota Aktif', 'value' => $statistics['active_members'], 'note' => 'Anggota berstatus aktif', 'color' => 'border-l-emerald-600'],
-            ['label' => 'Total Bidang Aktif', 'value' => $statistics['active_departments'], 'note' => 'Bidang yang aktif', 'color' => 'border-l-sky-600'],
+            ['label' => 'Anggota Belum Punya Akun', 'value' => $statistics['members_without_account'], 'note' => 'Anggota aktif tanpa akun login', 'color' => 'border-l-sky-600'],
             ['label' => 'Agenda Aktif', 'value' => $statistics['active_agenda_schedules'], 'note' => 'Jadwal agenda berjalan', 'color' => 'border-l-cyan-600'],
             ['label' => 'Kegiatan Bulan Ini', 'value' => $statistics['monthly_activities'], 'note' => 'Periode '.now()->format('m/Y'), 'color' => 'border-l-violet-600'],
             ['label' => 'Presensi Perlu Verifikasi', 'value' => $statistics['need_verification_attendances'], 'note' => 'Menunggu keputusan admin', 'color' => 'border-l-amber-500'],
@@ -115,32 +113,36 @@
             <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
                 <div class="flex items-center justify-between border-b border-slate-200 px-5 py-4">
                     <div>
-                        <h2 class="text-base font-bold text-slate-950">Jadwal Agenda Aktif</h2>
-                        <p class="mt-1 text-sm text-slate-500">Maksimal lima jadwal agenda aktif.</p>
+                        <h2 class="text-base font-bold text-slate-950">Presensi Perlu Verifikasi</h2>
+                        <p class="mt-1 text-sm text-slate-500">Maksimal lima presensi terbaru yang menunggu keputusan admin.</p>
                     </div>
-                    <a href="{{ route('agenda-schedules.index') }}" class="text-sm font-semibold text-emerald-700 hover:text-emerald-800">Lihat semua</a>
+                    <a href="{{ route('attendances.index') }}" class="text-sm font-semibold text-emerald-700 hover:text-emerald-800">Buka daftar hadir</a>
                 </div>
 
                 <div class="divide-y divide-slate-100">
-                    @forelse ($activeAgendaSchedules as $agendaSchedule)
-                        @php
-                            $pattern = match ($agendaSchedule->schedule_type) {
-                                'once' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
-                                'daily' => 'Setiap hari',
-                                'weekly' => isset($dayLabels[$agendaSchedule->day_of_week]) ? 'Setiap '.$dayLabels[$agendaSchedule->day_of_week] : 'Mingguan',
-                                'monthly' => $agendaSchedule->day_of_month ? 'Setiap tanggal '.$agendaSchedule->day_of_month : 'Bulanan',
-                            };
-                        @endphp
-                        <a href="{{ route('agenda-schedules.show', $agendaSchedule) }}" class="block px-5 py-4 hover:bg-slate-50">
-                            <div class="grid gap-3 lg:grid-cols-[1fr_150px_170px_1fr] lg:items-center">
-                                <div><p class="text-sm font-semibold text-slate-900">{{ $agendaSchedule->title }}</p><p class="mt-1 text-xs text-slate-500">{{ $pattern }}</p></div>
-                                <div><p class="text-xs font-semibold uppercase text-slate-500">Tipe</p><p class="mt-1 text-sm text-slate-700">{{ $typeLabels[$agendaSchedule->schedule_type] }}</p></div>
-                                <div><p class="text-xs font-semibold uppercase text-slate-500">Bidang</p><p class="mt-1 text-sm text-slate-700">{{ $agendaSchedule->department?->name ?? '-' }}</p></div>
-                                <div><p class="text-xs font-semibold uppercase text-slate-500">Waktu & Lokasi</p><p class="mt-1 text-sm text-slate-700">{{ $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '-' }}{{ $agendaSchedule->end_time ? ' - '.substr($agendaSchedule->end_time, 0, 5) : '' }} - {{ str($agendaSchedule->default_location ?: '-')->limit(40) }}</p></div>
+                    @forelse ($needVerificationAttendances as $attendance)
+                        <a href="{{ $attendance->activity ? route('activities.attendances.index', $attendance->activity) : route('attendances.index') }}" class="block px-5 py-4 hover:bg-slate-50">
+                            <div class="grid gap-3 lg:grid-cols-[1fr_180px_160px_120px] lg:items-center">
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-900">{{ $attendance->member?->full_name ?? 'Anggota tidak tersedia' }}</p>
+                                    <p class="mt-1 text-xs text-slate-500">{{ $attendance->activity?->title ?? 'Kegiatan tidak tersedia' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold uppercase text-slate-500">Kegiatan</p>
+                                    <p class="mt-1 text-sm text-slate-700">{{ $attendance->activity?->activity_date?->format('d/m/Y') ?? '-' }}{{ $attendance->activity?->start_time ? ' '.substr($attendance->activity->start_time, 0, 5) : '' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold uppercase text-slate-500">Bidang</p>
+                                    <p class="mt-1 text-sm text-slate-700">{{ $attendance->activity?->department?->name ?? '-' }}</p>
+                                </div>
+                                <div>
+                                    <p class="text-xs font-semibold uppercase text-slate-500">Jarak</p>
+                                    <p class="mt-1 text-sm text-slate-700">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' m' : '-' }}</p>
+                                </div>
                             </div>
                         </a>
                     @empty
-                        <div class="px-5 py-10 text-center text-sm text-slate-500">Belum ada jadwal agenda aktif.</div>
+                        <div class="px-5 py-10 text-center text-sm text-slate-500">Tidak ada presensi yang perlu diverifikasi.</div>
                     @endforelse
                 </div>
             </div>

@@ -1,11 +1,31 @@
+@php
+    $systemSettings = app(\App\Support\SystemSettings::class);
+    $appName = $systemSettings->get('app_name');
+    $faviconUrl = $systemSettings->assetUrl('favicon');
+    $themeMode = $systemSettings->themeMode();
+@endphp
+
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $themeMode === 'dark' ? 'dark' : '' }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Laravel') }}</title>
+        <title>{{ $appName }}</title>
+
+        @if ($faviconUrl)
+            <link rel="icon" href="{{ $faviconUrl }}">
+        @endif
+
+        <script>
+            (() => {
+                const themeMode = @json($themeMode);
+                if (themeMode === 'dark' || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                }
+            })();
+        </script>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -15,7 +35,7 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
+        <div class="min-h-screen bg-gray-100 dark:bg-slate-950">
             @include('layouts.navigation')
 
             <!-- Page Heading -->

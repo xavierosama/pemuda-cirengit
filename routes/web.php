@@ -17,6 +17,7 @@ use App\Http\Controllers\MemberHomeController;
 use App\Http\Controllers\MemberImportTemplateController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SystemSettingController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -48,12 +49,18 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::patch('/profile/member', [ProfileController::class, 'updateMember'])->name('profile.member.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
 Route::middleware(['auth', 'internal'])->group(function () {
     Route::get('attendance-reports', [AttendanceReportController::class, 'index'])
         ->name('attendance-reports.index');
+
+    Route::get('settings', [SystemSettingController::class, 'edit'])
+        ->name('settings.edit');
+    Route::put('settings', [SystemSettingController::class, 'update'])
+        ->name('settings.update');
 
     Route::get('agenda-schedules/{agenda_schedule}/activities/create', [ActivityController::class, 'createFromSchedule'])
         ->name('agenda-schedules.activities.create');

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Member;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -14,7 +15,9 @@ class AuthenticationTest extends TestCase
     {
         $response = $this->get('/login');
 
-        $response->assertStatus(200);
+        $response->assertStatus(200)
+            ->assertSee('Email atau NPA')
+            ->assertSee('Masukkan email atau NPA');
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -28,6 +31,79 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_member_can_authenticate_using_npa(): void
+    {
+        $member = Member::create([
+            'full_name' => 'Anggota NPA',
+            'npa' => '12.3456',
+            'member_status' => 'active',
+        ]);
+        $user = User::factory()->create([
+            'member_id' => $member->id,
+            'role' => 'member',
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $member->npa,
+            'password' => 'password',
+            'remember' => 'on',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('member.home', absolute: false));
+    }
+
+    public function test_internal_user_can_authenticate_using_npa_and_redirects_to_dashboard(): void
+    {
+        $member = Member::create([
+            'full_name' => 'Pengurus NPA',
+            'npa' => '12.9999',
+            'member_status' => 'active',
+        ]);
+        $user = User::factory()->create([
+            'member_id' => $member->id,
+            'role' => 'secretary',
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $member->npa,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_npa_without_user_account_shows_clear_login_error(): void
+    {
+        $member = Member::create([
+            'full_name' => 'Anggota Tanpa Akun',
+            'npa' => '99.0001',
+            'member_status' => 'active',
+        ]);
+
+        $this->post('/login', [
+            'email' => $member->npa,
+            'password' => 'password',
+        ])->assertSessionHasErrors([
+            'email' => 'NPA ditemukan, tetapi belum memiliki akun login. Silakan hubungi pengurus.',
+        ]);
+
+        $this->assertGuest();
+    }
+
+    public function test_unknown_npa_uses_general_login_error(): void
+    {
+        $this->post('/login', [
+            'email' => '00.0000',
+            'password' => 'password',
+        ])->assertSessionHasErrors([
+            'email' => trans('auth.failed'),
+        ]);
+
+        $this->assertGuest();
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

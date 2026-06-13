@@ -58,6 +58,9 @@
                 <p class="mt-1 text-sm text-slate-500">Saring kegiatan berdasarkan nama, bidang, status, periode, dan status presensi.</p>
             </div>
             <form method="GET" action="{{ route('activities.index') }}" class="grid gap-4 lg:grid-cols-12">
+                <input type="hidden" name="sort" value="{{ $currentSort }}">
+                <input type="hidden" name="direction" value="{{ $currentDirection }}">
+                <input type="hidden" name="per_page" value="{{ $perPage }}">
                 <div class="lg:col-span-3">
                     <label for="search" class="text-sm font-semibold text-slate-700">Search nama kegiatan</label>
                     <input id="search" name="search" type="search" value="{{ $search }}" placeholder="Cari nama kegiatan" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
@@ -104,17 +107,27 @@
         </div>
 
         <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-200 px-5 py-4">
-                <h3 class="text-base font-bold text-slate-950">Tabel Kegiatan Aktual</h3>
-                <p class="mt-1 text-sm text-slate-500">Daftar kegiatan sesuai filter aktif. Gunakan scroll horizontal pada layar kecil.</p>
+            <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="text-base font-bold text-slate-950">Tabel Kegiatan Aktual</h3>
+                    <p class="mt-1 text-sm text-slate-500">Daftar kegiatan sesuai filter aktif. Gunakan scroll horizontal pada layar kecil.</p>
+                </div>
+                <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" />
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            @foreach (['No', 'Nama Kegiatan', 'Tanggal', 'Waktu', 'Bidang', 'PIC', 'Lokasi', 'Status Kegiatan', 'Status Presensi'] as $heading)
-                                <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
-                            @endforeach
+                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">No</th>
+                            <x-sortable-th field="title" label="Nama Kegiatan" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <x-sortable-th field="activity_date" label="Tanggal" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <x-sortable-th field="start_time" label="Waktu" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Bidang</th>
+                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">PIC</th>
+                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Lokasi</th>
+                            <x-sortable-th field="status" label="Status Kegiatan" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <x-sortable-th field="attendance_enabled" label="Status Presensi" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <x-sortable-th field="created_at" label="Dibuat" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
                             <th class="whitespace-nowrap px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
                         </tr>
                     </thead>
@@ -133,6 +146,7 @@
                                 <td class="max-w-56 px-4 py-4 text-sm text-slate-600">{{ str($activity->location ?: '-')->limit(45) }}</td>
                                 <td class="whitespace-nowrap px-4 py-4"><span class="{{ $statusClasses[$activity->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$activity->status] }}</span></td>
                                 <td class="whitespace-nowrap px-4 py-4"><span class="{{ $activity->attendance_enabled ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif' }}</span></td>
+                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->created_at?->format('d/m/Y') ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
                                         <x-action-icon :href="route('activities.show', $activity)" label="Detail" icon="eye" variant="blue" />
@@ -147,7 +161,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="px-4 py-14 text-center">
+                                <td colspan="11" class="px-4 py-14 text-center">
                                     <p class="text-base font-semibold text-slate-800">Belum ada kegiatan aktual.</p>
                                     <p class="mt-1 text-sm text-slate-500">Tambahkan kegiatan baru atau ubah filter pencarian.</p>
                                 </td>

@@ -7,6 +7,7 @@ use App\Models\AgendaSchedule;
 use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Member;
+use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -95,6 +96,11 @@ class ActivityCrudTest extends TestCase
     public function test_activity_can_be_generated_from_agenda_schedule_defaults(): void
     {
         $user = User::factory()->create();
+        Setting::create([
+            'key' => 'default_attendance_radius',
+            'value' => '175',
+            'type' => 'integer',
+        ]);
         $department = Department::create(['name' => 'Pendidikan', 'status' => 'active']);
         $pic = Member::create(['full_name' => 'PIC Pendidikan', 'member_status' => 'active']);
         $agendaSchedule = AgendaSchedule::create([
@@ -128,12 +134,81 @@ class ActivityCrudTest extends TestCase
             'pic_id' => $pic->id,
             'title' => 'Kajian Pendidikan',
             'location' => 'Sekretariat',
-            'attendance_radius' => 125,
+            'attendance_radius' => 175,
+            'attendance_enabled' => false,
             'created_by' => $user->id,
         ]);
 
         $generatedActivity = Activity::where('agenda_schedule_id', $agendaSchedule->id)->firstOrFail();
         $this->assertSame('2026-06-22', $generatedActivity->activity_date->format('Y-m-d'));
+        $this->assertNull($generatedActivity->attendance_open_at);
+        $this->assertNull($generatedActivity->attendance_close_at);
+    }
+
+    public function test_new_activity_uses_attendance_defaults_when_enabled(): void
+    {
+        $user = User::factory()->create();
+        Setting::insert([
+            ['key' => 'default_attendance_radius', 'value' => '180', 'type' => 'integer', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'default_attendance_open_minutes_before', 'value' => '45', 'type' => 'integer', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'default_attendance_close_minutes_after', 'value' => '20', 'type' => 'integer', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+
+        $this->actingAs($user)->post(route('activities.store'), [
+            'title' => 'Kajian Default Presensi',
+            'activity_date' => '2026-06-20',
+            'start_time' => '19:30',
+            'end_time' => '21:00',
+            'attendance_radius' => 180,
+            'status' => 'scheduled',
+            'attendance_enabled' => 1,
+        ])->assertRedirect();
+
+        $activity = Activity::where('title', 'Kajian Default Presensi')->firstOrFail();
+
+        $this->assertSame(180, $activity->attendance_radius);
+        $this->assertSame('2026-06-20 18:45:00', $activity->attendance_open_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-06-20 21:20:00', $activity->attendance_close_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_edit_activity_keeps_existing_attendance_values(): void
+    {
+        $user = User::factory()->create();
+        Setting::insert([
+            ['key' => 'default_attendance_radius', 'value' => '300', 'type' => 'integer', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'default_attendance_open_minutes_before', 'value' => '90', 'type' => 'integer', 'created_at' => now(), 'updated_at' => now()],
+            ['key' => 'default_attendance_close_minutes_after', 'value' => '90', 'type' => 'integer', 'created_at' => now(), 'updated_at' => now()],
+        ]);
+        $activity = Activity::create([
+            'title' => 'Kajian Existing',
+            'activity_date' => '2026-06-20',
+            'start_time' => '19:30',
+            'end_time' => '21:00',
+            'attendance_radius' => 120,
+            'status' => 'scheduled',
+            'attendance_enabled' => true,
+            'attendance_open_at' => '2026-06-20 19:00:00',
+            'attendance_close_at' => '2026-06-20 21:30:00',
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)->put(route('activities.update', $activity), [
+            'title' => 'Kajian Existing Updated',
+            'activity_date' => '2026-06-20',
+            'start_time' => '19:30',
+            'end_time' => '21:00',
+            'attendance_radius' => 120,
+            'status' => 'scheduled',
+            'attendance_enabled' => 1,
+            'attendance_open_at' => '2026-06-20 19:00',
+            'attendance_close_at' => '2026-06-20 21:30',
+        ])->assertRedirect(route('activities.show', $activity));
+
+        $activity->refresh();
+
+        $this->assertSame(120, $activity->attendance_radius);
+        $this->assertSame('2026-06-20 19:00:00', $activity->attendance_open_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-06-20 21:30:00', $activity->attendance_close_at->format('Y-m-d H:i:s'));
     }
 
     public function test_activity_detail_page_shows_control_center_sections(): void

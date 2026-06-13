@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\Member;
 use App\Models\Position;
+use App\Support\TableControls;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -22,6 +23,16 @@ class MemberController extends Controller
         $positionId = $request->integer('position_id') ?: null;
         $memberStatus = $request->string('member_status')->toString();
         $accountStatus = $request->string('account_status')->toString();
+        $allowedSorts = [
+            'npa' => 'npa',
+            'full_name' => 'full_name',
+            'email' => 'email',
+            'member_status' => 'member_status',
+            'created_at' => 'created_at',
+        ];
+        $currentSort = TableControls::sort($request, $allowedSorts);
+        $currentDirection = TableControls::direction($request);
+        $perPage = TableControls::perPage($request);
 
         $members = Member::query()
             ->with(['department', 'position', 'user'])
@@ -41,8 +52,8 @@ class MemberController extends Controller
             )
             ->when($accountStatus === 'exists', fn ($query) => $query->whereHas('user'))
             ->when($accountStatus === 'missing', fn ($query) => $query->whereDoesntHave('user'))
-            ->latest()
-            ->paginate(10)
+            ->tap(fn ($query) => TableControls::applySort($query, $currentSort, $currentDirection, $allowedSorts, fn ($query) => $query->latest()))
+            ->paginate($perPage)
             ->withQueryString();
 
         $departments = Department::orderBy('name')->get(['id', 'name']);
@@ -56,7 +67,7 @@ class MemberController extends Controller
             'account_missing' => Member::whereDoesntHave('user')->count(),
         ];
 
-        return view('members.index', compact(
+        return view('members.index', array_merge(compact(
             'members',
             'departments',
             'positions',
@@ -66,7 +77,7 @@ class MemberController extends Controller
             'positionId',
             'memberStatus',
             'accountStatus'
-        ));
+        ), TableControls::viewData($request, $currentSort, $currentDirection, $perPage)));
     }
 
     /**

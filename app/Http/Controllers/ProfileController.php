@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
@@ -37,6 +38,40 @@ class ProfileController extends Controller
         $request->user()->save();
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
+    }
+
+    /**
+     * Update the connected member's personal profile fields.
+     */
+    public function updateMember(Request $request): RedirectResponse
+    {
+        $user = $request->user()->load('member');
+        $member = $user->member;
+
+        if (! $member) {
+            return Redirect::route('profile.edit')
+                ->with('error', 'Akun Anda belum terhubung dengan data anggota.');
+        }
+
+        $validated = $request->validate([
+            'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+            'phone' => ['nullable', 'string', 'max:50'],
+            'address' => ['nullable', 'string'],
+        ]);
+
+        if ($request->hasFile('profile_photo')) {
+            if ($member->profile_photo) {
+                Storage::disk('public')->delete($member->profile_photo);
+            }
+
+            $validated['profile_photo'] = $request->file('profile_photo')->store('member-photos', 'public');
+        } else {
+            unset($validated['profile_photo']);
+        }
+
+        $member->update($validated);
+
+        return Redirect::route('profile.edit')->with('status', 'member-profile-updated');
     }
 
     /**

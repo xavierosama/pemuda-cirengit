@@ -1,22 +1,45 @@
+@php
+    $systemSettings = app(\App\Support\SystemSettings::class);
+    $appName = $systemSettings->get('app_name');
+    $organizationName = $systemSettings->get('organization_name');
+    $appLogoUrl = $systemSettings->assetUrl('app_logo');
+    $faviconUrl = $systemSettings->assetUrl('favicon');
+    $themeMode = $systemSettings->themeMode();
+@endphp
+
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $themeMode === 'dark' ? 'dark' : '' }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>Halaman Anggota - Pemuda Cirengit</title>
+        <title>Halaman Anggota - {{ $appName }}</title>
+
+        @if ($faviconUrl)
+            <link rel="icon" href="{{ $faviconUrl }}">
+        @endif
+
+        <script>
+            (() => {
+                const themeMode = @json($themeMode);
+                if (themeMode === 'dark' || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                }
+            })();
+        </script>
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="bg-slate-100 font-sans antialiased text-slate-900">
+    <body class="bg-slate-100 font-sans antialiased text-slate-900 dark:bg-slate-950 dark:text-slate-100">
         @php
             $member = $user->member;
             $displayName = $member?->full_name ?? $user->name;
             $initial = strtoupper(substr($displayName, 0, 1));
+            $profilePhotoUrl = $member?->profile_photo ? asset('storage/'.$member->profile_photo) : null;
             $memberStatusLabels = ['active' => 'Aktif', 'inactive' => 'Tidak Aktif', 'alumni' => 'Alumni', 'moved' => 'Pindah'];
             $memberStatusClasses = [
                 'active' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
@@ -50,31 +73,50 @@
         @endphp
 
         <div class="min-h-screen">
-            <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-                <div class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+            <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/90 shadow-sm shadow-slate-200/50 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 dark:shadow-black/20">
+                <div class="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-2.5 sm:px-6 lg:px-8">
                     <div>
-                        <p class="text-sm font-bold text-slate-950">Pemuda Cirengit</p>
-                        <p class="text-xs text-slate-500">Dashboard Anggota</p>
+                        <div class="flex items-center gap-3">
+                            <div class="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-emerald-700 text-xs font-bold text-white">
+                                @if ($appLogoUrl)
+                                    <img src="{{ $appLogoUrl }}" alt="{{ $appName }}" class="h-full w-full object-contain p-1.5">
+                                @else
+                                    {{ str($appName)->substr(0, 2)->upper() }}
+                                @endif
+                            </div>
+                            <div>
+                                <p class="max-w-40 truncate text-sm font-bold text-slate-950 dark:text-white sm:max-w-none">{{ $appName }}</p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">Dashboard Anggota</p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
-                        <button type="button" class="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-700 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" @click="open = ! open" aria-label="Menu anggota" :aria-expanded="open.toString()">
-                            {{ $initial }}
+                        <button type="button" class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-700 text-sm font-bold text-white shadow-sm ring-1 ring-inset ring-emerald-800 transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" @click="open = ! open" aria-label="Menu anggota" :aria-expanded="open.toString()">
+                            @if ($profilePhotoUrl)
+                                <img src="{{ $profilePhotoUrl }}" alt="Foto profil {{ $displayName }}" class="h-full w-full object-cover">
+                            @else
+                                {{ $initial }}
+                            @endif
                         </button>
 
-                        <div x-cloak x-show="open" x-transition.origin.top.right class="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
-                            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50">Edit Profil</a>
+                        <div x-cloak x-show="open" x-transition.origin.top.right class="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-800 dark:bg-slate-900">
+                            <div class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
+                                <p class="truncate text-sm font-bold text-slate-950 dark:text-white">{{ $displayName }}</p>
+                                <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $user->email }}</p>
+                            </div>
+                            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Edit Profil</a>
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
-                                <button type="submit" class="block w-full px-4 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50">Logout</button>
+                                <button type="submit" class="block w-full px-4 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10">Logout</button>
                             </form>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <main class="px-4 py-5 sm:px-6 lg:px-8">
-                <div class="mx-auto max-w-5xl space-y-4 sm:space-y-5">
+            <main class="px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
+                <div class="mx-auto max-w-5xl space-y-4">
                     @foreach (['warning' => 'amber', 'success' => 'emerald', 'error' => 'red', 'info' => 'sky'] as $sessionKey => $color)
                         @if (session($sessionKey))
                             <div @class([
@@ -87,13 +129,22 @@
                         @endif
                     @endforeach
 
-                    <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+                    <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
                         <h2 class="sr-only">Profil Anggota</h2>
                         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                            <div>
-                                <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Pemuda Persis Cirengit</p>
-                                <h1 class="mt-1 text-xl font-bold text-slate-950 sm:text-2xl">Assalamu'alaikum, {{ $displayName }}</h1>
-                                <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Silakan akses presensi melalui QR atau link kegiatan yang diberikan pengurus.</p>
+                            <div class="flex min-w-0 gap-4">
+                                <div class="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-emerald-700 text-lg font-bold text-white ring-1 ring-inset ring-emerald-800">
+                                    @if ($profilePhotoUrl)
+                                        <img src="{{ $profilePhotoUrl }}" alt="Foto profil {{ $displayName }}" class="h-full w-full object-cover">
+                                    @else
+                                        {{ $initial }}
+                                    @endif
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">{{ $organizationName }}</p>
+                                    <h1 class="mt-1 text-xl font-bold text-slate-950 sm:text-2xl">Assalamu'alaikum, {{ $displayName }}</h1>
+                                    <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Silakan akses presensi melalui QR atau link kegiatan yang diberikan pengurus.</p>
+                                </div>
                             </div>
                             <div class="flex flex-wrap gap-2">
                                 <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">NPA: {{ $member?->npa ?: '-' }}</span>
@@ -102,7 +153,7 @@
                             </div>
                         </div>
 
-                        <div class="mt-4 grid gap-3 border-t border-slate-100 pt-4 sm:grid-cols-2 lg:grid-cols-5">
+                        <div class="mt-4 grid gap-3 border-t border-slate-100 pt-4 dark:border-slate-800 sm:grid-cols-2 lg:grid-cols-5">
                             <div>
                                 <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Nama</p>
                                 <p class="mt-1 truncate text-sm font-semibold text-slate-900">{{ $member?->full_name ?? $user->name }}</p>
@@ -130,8 +181,8 @@
                         </div>
                     </section>
 
-                    <section class="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm sm:p-5">
-                        <div class="flex flex-col gap-1 border-b border-slate-100 pb-4 sm:flex-row sm:items-end sm:justify-between">
+                    <section class="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm ring-1 ring-emerald-50 dark:border-emerald-900/60 dark:bg-slate-900 dark:ring-emerald-400/10 sm:p-5">
+                        <div class="flex flex-col gap-1 border-b border-slate-100 pb-3 dark:border-slate-800 sm:flex-row sm:items-end sm:justify-between">
                             <div>
                                 <h2 class="text-base font-bold text-slate-950">Kegiatan Sekarang</h2>
                                 <p class="mt-1 text-sm text-slate-500">Prioritas presensi yang sedang dibuka saat ini.</p>
@@ -146,14 +197,14 @@
                                         $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
                                         $canCheckIn = ! $attendance || $attendance->status === 'absent';
                                     @endphp
-                                    <article class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-4">
+                                    <article class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 dark:border-emerald-900/60 dark:bg-emerald-500/5 sm:p-4">
                                         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                             <div class="min-w-0">
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <h3 class="text-base font-bold text-slate-950">{{ $activity->title }}</h3>
                                                     <span class="{{ $activityStatusClasses[$activity->status] ?? $activityStatusClasses['scheduled'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $activityStatusLabels[$activity->status] ?? $activity->status }}</span>
                                                 </div>
-                                                <div class="mt-3 grid gap-2 text-sm text-slate-700 sm:grid-cols-2 lg:grid-cols-4">
+                                                <div class="mt-3 grid gap-x-4 gap-y-1.5 text-sm text-slate-700 dark:text-slate-300 sm:grid-cols-2 lg:grid-cols-4">
                                                     <p><span class="font-semibold text-slate-900">Tanggal:</span> {{ $activity->activity_date->format('d/m/Y') }}</p>
                                                     <p><span class="font-semibold text-slate-900">Waktu:</span> {{ $time !== '' ? $time : '-' }}</p>
                                                     <p class="sm:col-span-2"><span class="font-semibold text-slate-900">Lokasi:</span> {{ $activity->location ?: '-' }}</p>
@@ -197,8 +248,8 @@
                     </section>
 
                     <div class="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
-                        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-                            <div class="border-b border-slate-100 pb-4">
+                        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+                            <div class="border-b border-slate-100 pb-3 dark:border-slate-800">
                                 <h2 class="text-base font-bold text-slate-950">Kegiatan Mendatang</h2>
                                 <p class="mt-1 text-sm text-slate-500">Maksimal 5 agenda terdekat untuk anggota.</p>
                             </div>
@@ -217,7 +268,7 @@
                                             }
                                             $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
                                         @endphp
-                                        <article class="flex gap-3 py-3 first:pt-0 last:pb-0">
+                                        <article class="flex gap-3 py-2.5 first:pt-0 last:pb-0">
                                             <div class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500 ring-4 ring-emerald-50"></div>
                                             <div class="min-w-0 flex-1">
                                                 <div class="flex flex-wrap items-center gap-2">
@@ -227,8 +278,8 @@
                                                         <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">{{ $dateLabel }}</span>
                                                     @endif
                                                 </div>
-                                                <p class="mt-1 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }} · {{ $time !== '' ? $time : '-' }}</p>
-                                                <p class="mt-1 truncate text-xs text-slate-500">{{ $activity->location ?: '-' }} · {{ $activity->department?->name ?? '-' }}</p>
+                                                <p class="mt-1 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }} &middot; {{ $time !== '' ? $time : '-' }}</p>
+                                                <p class="mt-1 truncate text-xs text-slate-500">{{ $activity->location ?: '-' }} &middot; {{ $activity->department?->name ?? '-' }}</p>
                                                 @if ($activity->pic)
                                                     <p class="mt-1 text-xs text-slate-500">PIC: {{ $activity->pic->full_name }}</p>
                                                 @endif
@@ -242,15 +293,15 @@
                                         @php
                                             $time = trim(($agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '').($agendaSchedule->end_time ? ' - '.substr($agendaSchedule->end_time, 0, 5) : ''));
                                         @endphp
-                                        <article class="flex gap-3 py-3 first:pt-0 last:pb-0">
+                                        <article class="flex gap-3 py-2.5 first:pt-0 last:pb-0">
                                             <div class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500 ring-4 ring-sky-50"></div>
                                             <div class="min-w-0 flex-1">
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <h3 class="truncate text-sm font-bold text-slate-950">{{ $agendaSchedule->title }}</h3>
                                                     <span class="inline-flex rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700 ring-1 ring-inset ring-sky-200">Jadwal Rutin</span>
                                                 </div>
-                                                <p class="mt-1 text-sm text-slate-600">{{ $scheduleTypeLabels[$agendaSchedule->schedule_type] ?? $agendaSchedule->schedule_type }} · {{ $time !== '' ? $time : '-' }}</p>
-                                                <p class="mt-1 truncate text-xs text-slate-500">{{ $agendaSchedule->default_location ?: '-' }} · {{ $agendaSchedule->department?->name ?? '-' }}</p>
+                                                <p class="mt-1 text-sm text-slate-600">{{ $scheduleTypeLabels[$agendaSchedule->schedule_type] ?? $agendaSchedule->schedule_type }} &middot; {{ $time !== '' ? $time : '-' }}</p>
+                                                <p class="mt-1 truncate text-xs text-slate-500">{{ $agendaSchedule->default_location ?: '-' }} &middot; {{ $agendaSchedule->department?->name ?? '-' }}</p>
                                             </div>
                                         </article>
                                     @endforeach
@@ -262,8 +313,8 @@
                             @endif
                         </section>
 
-                        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm" x-data="{ open: false }">
-                            <button type="button" class="flex w-full items-center justify-between gap-3 p-4 text-left sm:p-5" @click="open = ! open" :aria-expanded="open.toString()">
+                        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900" x-data="{ open: false }">
+                            <button type="button" class="flex w-full items-center justify-between gap-3 p-4 text-left" @click="open = ! open" :aria-expanded="open.toString()">
                                 <span>
                                     <span class="block text-base font-bold text-slate-950">Panduan Presensi</span>
                                     <span class="mt-1 block text-sm text-slate-500">Buka saat perlu mengingat langkah presensi.</span>
@@ -272,8 +323,8 @@
                                     <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
                                 </svg>
                             </button>
-                            <div x-cloak x-show="open" x-transition class="border-t border-slate-100 px-4 pb-4 sm:px-5 sm:pb-5">
-                                <ol class="mt-4 space-y-3">
+                            <div x-cloak x-show="open" x-transition class="border-t border-slate-100 px-4 pb-4 dark:border-slate-800">
+                                <ol class="mt-3 space-y-2.5">
                                     @foreach (['Scan QR atau buka link kegiatan', 'Login dengan akun anggota', 'Izinkan akses lokasi', 'Klik Saya Hadir', 'Pastikan berada dalam radius lokasi kegiatan'] as $step)
                                         <li class="flex gap-3 text-sm text-slate-700">
                                             <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">{{ $loop->iteration }}</span>
@@ -285,8 +336,8 @@
                         </section>
                     </div>
 
-                    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        <div class="border-b border-slate-200 px-4 py-4 sm:px-5">
+                    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800 sm:px-5">
                             <h2 class="text-base font-bold text-slate-950">Riwayat Presensi Pribadi</h2>
                             <p class="mt-1 text-sm text-slate-500">Maksimal 10 presensi terbaru yang tercatat.</p>
                         </div>
@@ -295,20 +346,20 @@
                                 <thead class="bg-slate-50">
                                     <tr>
                                         @foreach (['Kegiatan', 'Tanggal', 'Waktu Presensi', 'Kehadiran', 'Verifikasi'] as $heading)
-                                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
+                                            <th class="whitespace-nowrap px-4 py-2.5 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
                                         @endforeach
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100 bg-white">
                                     @forelse ($attendanceHistory as $attendance)
                                         <tr class="transition hover:bg-slate-50/70">
-                                            <td class="px-4 py-3"><p class="whitespace-nowrap text-sm font-semibold text-slate-900">{{ $attendance->activity?->title ?? '-' }}</p></td>
-                                            <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ $attendance->activity?->activity_date?->format('d/m/Y') ?? '-' }}</td>
-                                            <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-600">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</td>
-                                            <td class="whitespace-nowrap px-4 py-3">
+                                            <td class="px-4 py-2.5"><p class="whitespace-nowrap text-sm font-semibold text-slate-900">{{ $attendance->activity?->title ?? '-' }}</p></td>
+                                            <td class="whitespace-nowrap px-4 py-2.5 text-sm text-slate-600">{{ $attendance->activity?->activity_date?->format('d/m/Y') ?? '-' }}</td>
+                                            <td class="whitespace-nowrap px-4 py-2.5 text-sm text-slate-600">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                            <td class="whitespace-nowrap px-4 py-2.5">
                                                 <span class="{{ $attendanceClasses[$attendance->status] ?? $attendanceClasses['absent'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $attendanceLabels[$attendance->status] ?? $attendance->status }}</span>
                                             </td>
-                                            <td class="whitespace-nowrap px-4 py-3">
+                                            <td class="whitespace-nowrap px-4 py-2.5">
                                                 <span class="{{ $verificationClasses[$attendance->verification_status] ?? $verificationClasses['need_verification'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $verificationLabels[$attendance->verification_status] ?? $attendance->verification_status }}</span>
                                             </td>
                                         </tr>

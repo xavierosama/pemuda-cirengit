@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AgendaSchedule;
 use App\Models\Department;
 use App\Models\Member;
+use App\Support\TableControls;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -21,6 +22,16 @@ class AgendaScheduleController extends Controller
         $departmentId = $request->integer('department_id') ?: null;
         $scheduleType = $request->string('schedule_type')->toString();
         $activeStatus = $request->string('is_active')->toString();
+        $allowedSorts = [
+            'title' => 'title',
+            'schedule_type' => 'schedule_type',
+            'start_time' => 'start_time',
+            'is_active' => 'is_active',
+            'created_at' => 'created_at',
+        ];
+        $currentSort = TableControls::sort($request, $allowedSorts);
+        $currentDirection = TableControls::direction($request);
+        $perPage = TableControls::perPage($request);
 
         $agendaSchedules = AgendaSchedule::query()
             ->with(['department', 'pic'])
@@ -34,8 +45,8 @@ class AgendaScheduleController extends Controller
                 in_array($activeStatus, ['0', '1'], true),
                 fn ($query) => $query->where('is_active', $activeStatus === '1')
             )
-            ->latest()
-            ->paginate(10)
+            ->tap(fn ($query) => TableControls::applySort($query, $currentSort, $currentDirection, $allowedSorts, fn ($query) => $query->latest()))
+            ->paginate($perPage)
             ->withQueryString();
 
         $departments = Department::orderBy('name')->get(['id', 'name']);
@@ -46,7 +57,7 @@ class AgendaScheduleController extends Controller
             'monthly' => AgendaSchedule::where('schedule_type', 'monthly')->count(),
         ];
 
-        return view('agenda-schedules.index', compact(
+        return view('agenda-schedules.index', array_merge(compact(
             'agendaSchedules',
             'departments',
             'agendaStats',
@@ -54,7 +65,7 @@ class AgendaScheduleController extends Controller
             'departmentId',
             'scheduleType',
             'activeStatus'
-        ));
+        ), TableControls::viewData($request, $currentSort, $currentDirection, $perPage)));
     }
 
     /**

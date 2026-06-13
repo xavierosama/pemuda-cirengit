@@ -17,6 +17,7 @@ class Member extends Model
         'phone',
         'email',
         'address',
+        'profile_photo',
         'joined_at',
         'member_status',
         'notes',

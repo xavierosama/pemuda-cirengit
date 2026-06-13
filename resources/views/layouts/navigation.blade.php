@@ -1,4 +1,10 @@
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
+@php
+    $systemSettings = app(\App\Support\SystemSettings::class);
+    $appName = $systemSettings->get('app_name');
+    $appLogoUrl = $systemSettings->assetUrl('app_logo');
+@endphp
+
+<nav x-data="{ open: false }" class="bg-white border-b border-gray-100 dark:border-slate-800 dark:bg-slate-900">
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -6,7 +12,11 @@
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
                     <a href="{{ route('dashboard') }}">
-                        <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                        @if ($appLogoUrl)
+                            <img src="{{ $appLogoUrl }}" alt="{{ $appName }}" class="block h-9 w-auto object-contain">
+                        @else
+                            <x-application-logo class="block h-9 w-auto fill-current text-gray-800" />
+                        @endif
                     </a>
                 </div>
 

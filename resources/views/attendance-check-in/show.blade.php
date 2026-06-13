@@ -1,15 +1,34 @@
+@php
+    $systemSettings = app(\App\Support\SystemSettings::class);
+    $appName = $systemSettings->get('app_name');
+    $appLogoUrl = $systemSettings->assetUrl('app_logo');
+    $faviconUrl = $systemSettings->assetUrl('favicon');
+    $themeMode = $systemSettings->themeMode();
+@endphp
+
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="{{ $themeMode === 'dark' ? 'dark' : '' }}">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <title>Presensi {{ $activity->title }} - Pemuda Cirengit</title>
+        <title>Presensi {{ $activity->title }} - {{ $appName }}</title>
+        @if ($faviconUrl)
+            <link rel="icon" href="{{ $faviconUrl }}">
+        @endif
+        <script>
+            (() => {
+                const themeMode = @json($themeMode);
+                if (themeMode === 'dark' || (themeMode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    document.documentElement.classList.add('dark');
+                }
+            })();
+        </script>
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700&display=swap" rel="stylesheet" />
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="bg-slate-100 font-sans antialiased text-slate-900">
+    <body class="bg-slate-100 font-sans antialiased text-slate-900 dark:bg-slate-950 dark:text-slate-100">
         @php
             $attendanceLabels = ['present' => 'Hadir', 'permission' => 'Izin', 'absent' => 'Tidak Hadir', 'need_verification' => 'Perlu Verifikasi'];
             $attendanceClasses = [
@@ -50,11 +69,17 @@
         @endphp
 
         <div class="min-h-screen">
-            <header class="border-b border-slate-200 bg-white">
+            <header class="border-b border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
                 <div class="mx-auto flex h-14 max-w-2xl items-center justify-between px-4 sm:px-6">
                     <a href="{{ Auth::user()->role === 'member' ? route('member.home') : route('dashboard') }}" class="flex items-center gap-3">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-700 text-xs font-bold text-white">PC</span>
-                        <span class="text-sm font-bold text-slate-900">Pemuda Cirengit</span>
+                        <span class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-emerald-700 text-xs font-bold text-white">
+                            @if ($appLogoUrl)
+                                <img src="{{ $appLogoUrl }}" alt="{{ $appName }}" class="h-full w-full object-contain p-1.5">
+                            @else
+                                {{ str($appName)->substr(0, 2)->upper() }}
+                            @endif
+                        </span>
+                        <span class="text-sm font-bold text-slate-900 dark:text-white">{{ $appName }}</span>
                     </a>
                     <span class="max-w-36 truncate text-xs font-semibold text-slate-500 sm:max-w-none sm:text-sm">{{ Auth::user()->name }}</span>
                 </div>

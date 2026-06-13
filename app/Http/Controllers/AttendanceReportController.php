@@ -6,7 +6,9 @@ use App\Models\Activity;
 use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Member;
+use App\Support\TableControls;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
 
@@ -20,6 +22,37 @@ class AttendanceReportController extends Controller
             'department_id' => ['nullable', 'exists:departments,id'],
             'activity_id' => ['nullable', 'exists:activities,id'],
         ]);
+        $perPage = TableControls::perPage($request);
+        $activityAllowedSorts = [
+            'activity_date' => fn (array $row) => $row['activity']->activity_date?->timestamp ?? 0,
+            'title' => fn (array $row) => $row['activity']->title,
+            'department' => fn (array $row) => $row['activity']->department?->name ?? '',
+            'present' => fn (array $row) => $row['counts']['present'],
+            'permission' => fn (array $row) => $row['counts']['permission'],
+            'absent' => fn (array $row) => $row['counts']['absent'],
+            'need_verification' => fn (array $row) => $row['counts']['need_verification'],
+            'attendance_percentage' => fn (array $row) => $row['attendance_percentage'],
+        ];
+        $memberAllowedSorts = [
+            'npa' => fn (array $row) => $row['member']->npa ?? '',
+            'full_name' => fn (array $row) => $row['member']->full_name,
+            'department' => fn (array $row) => $row['member']->department?->name ?? '',
+            'present' => fn (array $row) => $row['counts']['present'],
+            'permission' => fn (array $row) => $row['counts']['permission'],
+            'absent' => fn (array $row) => $row['counts']['absent'],
+            'need_verification' => fn (array $row) => $row['counts']['need_verification'],
+            'attendance_percentage' => fn (array $row) => $row['attendance_percentage'],
+        ];
+        $activitySort = $request->string('activity_sort')->toString();
+        $activitySort = array_key_exists($activitySort, $activityAllowedSorts) ? $activitySort : null;
+        $activityDirection = in_array($request->string('activity_direction')->lower()->toString(), ['asc', 'desc'], true)
+            ? $request->string('activity_direction')->lower()->toString()
+            : 'asc';
+        $memberSort = $request->string('member_sort')->toString();
+        $memberSort = array_key_exists($memberSort, $memberAllowedSorts) ? $memberSort : null;
+        $memberDirection = in_array($request->string('member_direction')->lower()->toString(), ['asc', 'desc'], true)
+            ? $request->string('member_direction')->lower()->toString()
+            : 'asc';
 
         $startDate = isset($validated['start_date'])
             ? Carbon::parse($validated['start_date'])->startOfDay()
@@ -86,6 +119,8 @@ class AttendanceReportController extends Controller
                 'attendance_percentage' => $this->percentage($counts['present'], $members->count()),
             ];
         });
+        $activityRows = $this->sortRows($activityRows, $activitySort, $activityDirection, $activityAllowedSorts);
+        $activityRowsForChart = $activityRows;
 
         $attendancesByMember = $attendances->groupBy('member_id');
         $memberRows = $members->map(function (Member $member) use ($attendancesByMember, $activities, $statuses) {
@@ -98,6 +133,9 @@ class AttendanceReportController extends Controller
                 'attendance_percentage' => $this->percentage($counts['present'], $activities->count()),
             ];
         });
+        $memberRows = $this->sortRows($memberRows, $memberSort, $memberDirection, $memberAllowedSorts);
+        $activityRows = $this->paginateCollection($activityRows, $perPage, 'activity_page', $request);
+        $memberRows = $this->paginateCollection($memberRows, $perPage, 'member_page', $request);
 
         $departmentRows = $attendances
             ->where('status', 'present')
@@ -120,10 +158,10 @@ class AttendanceReportController extends Controller
                 ],
             ],
             'activityTrend' => [
-                'labels' => $activityRows
+                'labels' => $activityRowsForChart
                     ->map(fn (array $row) => $row['activity']->activity_date->format('d/m/Y').' - '.$row['activity']->title)
                     ->values(),
-                'data' => $activityRows->map(fn (array $row) => $row['counts']['present'])->values(),
+                'data' => $activityRowsForChart->map(fn (array $row) => $row['counts']['present'])->values(),
             ],
             'departmentAttendance' => [
                 'labels' => $departmentRows->pluck('department')->values(),
@@ -145,7 +183,39 @@ class AttendanceReportController extends Controller
             'activityRows' => $activityRows,
             'memberRows' => $memberRows,
             'chartData' => $chartData,
+            'perPage' => $perPage,
+            'perPageOptions' => TableControls::PER_PAGE_OPTIONS,
+            'queryParams' => $request->query(),
+            'activitySort' => $activitySort,
+            'activityDirection' => $activityDirection,
+            'memberSort' => $memberSort,
+            'memberDirection' => $memberDirection,
         ]);
+    }
+
+    private function sortRows($rows, ?string $sort, string $direction, array $allowedSorts)
+    {
+        if (! $sort) {
+            return $rows->values();
+        }
+
+        return ($direction === 'desc'
+            ? $rows->sortByDesc($allowedSorts[$sort], SORT_NATURAL | SORT_FLAG_CASE)
+            : $rows->sortBy($allowedSorts[$sort], SORT_NATURAL | SORT_FLAG_CASE)
+        )->values();
+    }
+
+    private function paginateCollection($rows, int $perPage, string $pageName, Request $request): LengthAwarePaginator
+    {
+        $page = LengthAwarePaginator::resolveCurrentPage($pageName);
+
+        return new LengthAwarePaginator(
+            $rows->forPage($page, $perPage)->values(),
+            $rows->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'pageName' => $pageName, 'query' => $request->query()]
+        );
     }
 
     private function statusCounts($attendances, array $statuses): array

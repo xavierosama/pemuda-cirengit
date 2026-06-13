@@ -36,7 +36,7 @@
                     <table class="min-w-full divide-y divide-slate-200">
                         <thead class="bg-slate-50">
                             <tr>
-                                @foreach (['Anggota', 'Bidang', 'Status', 'Catatan'] as $heading)
+                                @foreach (['Anggota', 'Status', 'Catatan'] as $heading)
                                     <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
                                 @endforeach
                             </tr>
@@ -51,7 +51,6 @@
                                         {{ $member->full_name }}
                                         <input type="hidden" name="attendances[{{ $index }}][member_id]" value="{{ $member->id }}">
                                     </td>
-                                    <td class="px-4 py-4 text-sm text-slate-600">{{ $member->department?->name ?? '-' }}</td>
                                     <td class="px-4 py-4">
                                         <select name="attendances[{{ $index }}][status]" class="block min-w-44 rounded-lg border-slate-300 text-sm shadow-sm focus:border-emerald-600 focus:ring-emerald-600" required>
                                             @foreach ($statusLabels as $value => $label)
@@ -65,7 +64,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-4 py-12 text-center">
+                                    <td colspan="3" class="px-4 py-12 text-center">
                                         <p class="text-sm font-semibold text-slate-800">Tidak ada anggota aktif.</p>
                                         <p class="mt-1 text-sm text-slate-500">Tambahkan atau aktifkan anggota terlebih dahulu sebelum input massal.</p>
                                     </td>

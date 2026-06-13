@@ -85,6 +85,9 @@
 
         <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <form method="GET" action="{{ route('activities.attendances.index', $activity) }}" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_200px_auto]">
+                <input type="hidden" name="sort" value="{{ $currentSort }}">
+                <input type="hidden" name="direction" value="{{ $currentDirection }}">
+                <input type="hidden" name="per_page" value="{{ $perPage }}">
                 <input name="search" type="search" value="{{ $search }}" placeholder="Cari nama anggota atau NPA" aria-label="Cari nama anggota atau NPA" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
                 <select name="status" aria-label="Filter status kehadiran" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
                     <option value="">Semua status</option>
@@ -106,23 +109,32 @@
         </section>
 
         <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="flex justify-end border-b border-slate-200 px-4 py-3">
+                <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" />
+            </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            @foreach (['No', 'NPA', 'Nama Anggota', 'Bidang', 'Jabatan', 'Status Kehadiran', 'Metode Presensi', 'Waktu Presensi', 'Jarak', 'Status Verifikasi', 'Catatan'] as $heading)
-                                <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
-                            @endforeach
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">No</th>
+                            <x-sortable-th field="npa" label="NPA" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <x-sortable-th field="full_name" label="Nama Anggota" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Jabatan</th>
+                            <x-sortable-th field="status" label="Status Kehadiran" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Metode Presensi</th>
+                            <x-sortable-th field="checked_in_at" label="Waktu Presensi" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Jarak</th>
+                            <x-sortable-th field="verification_status" label="Status Verifikasi" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Catatan</th>
                             <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($attendances as $attendance)
                             <tr>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $loop->iteration }}</td>
+                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendances->firstItem() + $loop->index }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->member->npa ?: '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">{{ $attendance->member->full_name }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->member->department?->name ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->member->position?->name ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4"><span class="{{ $statusClasses[$attendance->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$attendance->status] }}</span></td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm capitalize text-slate-600">{{ $attendance->attendance_method }}</td>
@@ -139,11 +151,13 @@
                                 </div></td>
                             </tr>
                         @empty
-                            <tr><td colspan="12" class="px-4 py-12 text-center text-sm text-slate-500">Belum ada peserta presensi. Klik Sinkronkan Peserta Presensi untuk membuat daftar hadir.</td></tr>
+                            <tr><td colspan="11" class="px-4 py-12 text-center text-sm text-slate-500">Belum ada peserta presensi. Klik Sinkronkan Peserta Presensi untuk membuat daftar hadir.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
+
+        {{ $attendances->links() }}
     </div>
 @endsection
