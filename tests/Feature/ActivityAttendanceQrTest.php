@@ -32,7 +32,8 @@ class ActivityAttendanceQrTest extends TestCase
             ->get(route('activities.attendance-qr', $activity))
             ->assertOk()
             ->assertSee('QR Presensi Kegiatan')
-            ->assertSee('Scan QR ini untuk melakukan presensi. Pastikan lokasi HP aktif.')
+            ->assertSee('Scan QR menggunakan kamera HP.')
+            ->assertSee('Salin Link')
             ->assertSee($attendanceUrl)
             ->assertSee('data:image/svg+xml;base64,', false);
     }
@@ -71,7 +72,7 @@ class ActivityAttendanceQrTest extends TestCase
         $this->actingAs($user)
             ->get(route('activities.attendance-qr', $activity))
             ->assertOk()
-            ->assertSee('Presensi belum diaktifkan untuk kegiatan ini.')
+            ->assertSee('Presensi kegiatan belum aktif.')
             ->assertDontSee('data:image/svg+xml;base64,', false);
     }
 }
