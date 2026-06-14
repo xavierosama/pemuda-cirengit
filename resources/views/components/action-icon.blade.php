@@ -6,6 +6,11 @@
     'icon' => 'eye',
     'variant' => 'slate',
     'confirm' => null,
+    'confirmTitle' => null,
+    'confirmDescription' => null,
+    'confirmText' => null,
+    'cancelText' => 'Batal',
+    'confirmVariant' => null,
 ])
 
 @php
@@ -21,6 +26,21 @@
     ];
     $buttonClass = ($variants[$variant] ?? $variants['slate']).' group relative inline-flex h-8 w-8 items-center justify-center rounded-lg transition focus:outline-none focus:ring-2 focus:ring-offset-2';
     $tooltipClass = 'pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-sm transition group-hover:opacity-100 group-focus:opacity-100';
+    $isDelete = strtoupper($method) === 'DELETE' || $variant === 'red' || $icon === 'trash';
+    $isReset = $icon === 'key' || str($label)->lower()->contains('reset');
+    $isSync = str($label)->lower()->contains('sinkron');
+    $resolvedTitle = $confirmTitle
+        ?? ($isDelete ? 'Hapus Data?' : ($isReset ? 'Reset Password?' : ($isSync ? 'Sinkronkan Peserta Presensi?' : 'Konfirmasi Aksi')));
+    $resolvedDescription = $confirmDescription
+        ?? ($isDelete
+            ? 'Data yang dihapus tidak dapat dikembalikan. Pastikan data ini memang sudah tidak diperlukan.'
+            : ($isReset
+                ? 'Password akun anggota akan direset. Informasikan password baru kepada anggota terkait.'
+                : ($isSync
+                    ? 'Peserta presensi akan disesuaikan dengan data anggota aktif. Data presensi yang sudah ada tetap mengikuti aturan sistem.'
+                    : ($confirm ?: 'Pastikan aksi ini memang ingin dilanjutkan.'))));
+    $resolvedConfirmText = $confirmText ?? ($isDelete ? 'Hapus' : ($isReset ? 'Reset Password' : ($isSync ? 'Sinkronkan' : 'Ya, lanjutkan')));
+    $resolvedVariant = $confirmVariant ?? ($isDelete ? 'danger' : ($isReset || $isSync ? 'warning' : 'primary'));
 @endphp
 
 @if ($href)
@@ -30,15 +50,39 @@
         @include('components.partials.action-icon-svg', ['icon' => $icon])
     </a>
 @else
-    <form method="POST" action="{{ $action }}" class="inline-flex" @if($confirm) onsubmit="return confirm('{{ $confirm }}')" @endif>
-        @csrf
-        @if (strtoupper($method) !== 'POST')
-            @method($method)
-        @endif
-        <button type="submit" title="{{ $label }}" aria-label="{{ $label }}" {{ $attributes->merge(['class' => $buttonClass]) }}>
-            <span class="{{ $tooltipClass }}">{{ $label }}</span>
-            <span class="sr-only">{{ $label }}</span>
-            @include('components.partials.action-icon-svg', ['icon' => $icon])
-        </button>
-    </form>
+    @if ($confirm)
+        <div x-data="{ open: false }" class="inline-flex" x-on:confirmed="$refs.confirmableAction.submit()">
+            <form x-ref="confirmableAction" method="POST" action="{{ $action }}" class="inline-flex" x-on:submit.prevent="open = true">
+                @csrf
+                @if (strtoupper($method) !== 'POST')
+                    @method($method)
+                @endif
+                <button type="submit" title="{{ $label }}" aria-label="{{ $label }}" {{ $attributes->merge(['class' => $buttonClass]) }}>
+                    <span class="{{ $tooltipClass }}">{{ $label }}</span>
+                    <span class="sr-only">{{ $label }}</span>
+                    @include('components.partials.action-icon-svg', ['icon' => $icon])
+                </button>
+            </form>
+
+            <x-ui.confirm-modal
+                :title="$resolvedTitle"
+                :description="$resolvedDescription"
+                :confirm-text="$resolvedConfirmText"
+                :cancel-text="$cancelText"
+                :variant="$resolvedVariant"
+            />
+        </div>
+    @else
+        <form method="POST" action="{{ $action }}" class="inline-flex">
+            @csrf
+            @if (strtoupper($method) !== 'POST')
+                @method($method)
+            @endif
+            <button type="submit" title="{{ $label }}" aria-label="{{ $label }}" {{ $attributes->merge(['class' => $buttonClass]) }}>
+                <span class="{{ $tooltipClass }}">{{ $label }}</span>
+                <span class="sr-only">{{ $label }}</span>
+                @include('components.partials.action-icon-svg', ['icon' => $icon])
+            </button>
+        </form>
+    @endif
 @endif

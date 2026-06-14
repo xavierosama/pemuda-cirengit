@@ -98,10 +98,19 @@
             <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 <a href="{{ route('activities.edit', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-amber-300 px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-50">Edit Kegiatan</a>
                 <a href="{{ route('activities.attendances.index', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Buka Daftar Hadir</a>
-                <form method="POST" action="{{ route('activities.attendances.sync-participants', $activity) }}">
-                    @csrf
-                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-300 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Sinkronkan Peserta</button>
-                </form>
+                <div x-data="{ open: false }" x-on:confirmed="$refs.syncParticipantsForm.submit()">
+                    <form x-ref="syncParticipantsForm" method="POST" action="{{ route('activities.attendances.sync-participants', $activity) }}" x-on:submit.prevent="open = true">
+                        @csrf
+                        <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-300 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Sinkronkan Peserta</button>
+                    </form>
+
+                    <x-ui.confirm-modal
+                        title="Sinkronkan Peserta Presensi?"
+                        description="Peserta presensi kegiatan ini akan disesuaikan dengan data anggota aktif. Data presensi yang sudah tersimpan tetap mengikuti aturan sistem."
+                        confirm-text="Sinkronkan"
+                        variant="warning"
+                    />
+                </div>
                 @if ($activity->attendance_enabled)
                     <a href="{{ route('activities.attendance-qr', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800">Lihat QR Presensi</a>
                 @else

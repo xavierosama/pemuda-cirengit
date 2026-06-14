@@ -7,14 +7,6 @@
 @section('content')
     @php
         $statusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Pindah Lokasi', 'cancelled' => 'Dibatalkan'];
-        $statusClasses = [
-            'scheduled' => 'bg-slate-100 text-slate-700 ring-slate-200',
-            'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-            'holiday' => 'bg-slate-100 text-slate-600 ring-slate-200',
-            'postponed' => 'bg-amber-50 text-amber-700 ring-amber-200',
-            'relocated' => 'bg-cyan-50 text-cyan-700 ring-cyan-200',
-            'cancelled' => 'bg-red-50 text-red-700 ring-red-200',
-        ];
         $summaryCards = [
             ['label' => 'Kegiatan Bulan Ini', 'value' => $activityStats['current_month'], 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-100'],
             ['label' => 'Kegiatan Terjadwal', 'value' => $activityStats['scheduled'], 'class' => 'bg-slate-50 text-slate-700 ring-slate-200'],
@@ -25,30 +17,23 @@
     @endphp
 
     <div class="space-y-6">
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Agenda & Kegiatan</p>
-                    <h2 class="mt-2 text-2xl font-bold text-slate-950">Kegiatan Aktual</h2>
-                    <p class="mt-2 max-w-2xl text-sm text-slate-500">Kelola kegiatan berjalan, perubahan jadwal, dan pengaturan presensi.</p>
-                </div>
-                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
-                    <a href="{{ route('activities.create') }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">Tambah Kegiatan</a>
-                    <a href="{{ route('agenda-schedules.index') }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">Generate dari Jadwal Agenda</a>
-                </div>
-            </div>
-        </div>
-
-        @if (session('success'))
-            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ session('success') }}</div>
-        @endif
+        <x-ui.page-header
+            title="Kegiatan Aktual"
+            eyebrow="Agenda & Kegiatan"
+            description="Kelola kegiatan berjalan, perubahan jadwal, dan pengaturan presensi."
+        >
+            <x-slot name="action">
+                <x-ui.button :href="route('activities.create')">Tambah Kegiatan</x-ui.button>
+                <x-ui.button :href="route('agenda-schedules.index')" variant="secondary">Generate dari Jadwal Agenda</x-ui.button>
+            </x-slot>
+        </x-ui.page-header>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
             @foreach ($summaryCards as $card)
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <x-ui.card padding="sm">
                     <div class="{{ $card['class'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $card['label'] }}</div>
                     <p class="mt-4 text-3xl font-bold text-slate-950">{{ number_format($card['value']) }}</p>
-                </div>
+                </x-ui.card>
             @endforeach
         </div>
 
@@ -144,26 +129,35 @@
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->department?->name ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->pic?->full_name ?? '-' }}</td>
                                 <td class="max-w-56 px-4 py-4 text-sm text-slate-600">{{ str($activity->location ?: '-')->limit(45) }}</td>
-                                <td class="whitespace-nowrap px-4 py-4"><span class="{{ $statusClasses[$activity->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$activity->status] }}</span></td>
-                                <td class="whitespace-nowrap px-4 py-4"><span class="{{ $activity->attendance_enabled ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif' }}</span></td>
+                                <td class="whitespace-nowrap px-4 py-4"><x-ui.status-badge :status="$activity->status" :label="$statusLabels[$activity->status]" /></td>
+                                <td class="whitespace-nowrap px-4 py-4"><x-ui.status-badge :status="$activity->attendance_enabled ? 'active' : 'inactive'" :label="$activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif'" /></td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->created_at?->format('d/m/Y') ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
-                                        <x-action-icon :href="route('activities.show', $activity)" label="Detail" icon="eye" variant="blue" />
-                                        <x-action-icon :href="route('activities.edit', $activity)" label="Edit" icon="pencil" variant="amber" />
-                                        <x-action-icon :href="route('activities.attendances.index', $activity)" label="Daftar Hadir" icon="check" variant="emerald" />
+                                        <x-ui.action-icon :href="route('activities.show', $activity)" label="Detail" variant="detail" />
+                                        <x-ui.action-icon :href="route('activities.edit', $activity)" label="Edit" variant="edit" />
+                                        <x-ui.action-icon :href="route('activities.attendances.index', $activity)" label="Daftar Hadir" variant="account" icon="check" />
                                         @if ($activity->attendance_enabled)
-                                            <x-action-icon :href="route('activities.attendance-qr', $activity)" label="QR Presensi" icon="qr" variant="cyan" />
+                                            <x-ui.action-icon :href="route('activities.attendance-qr', $activity)" label="QR Presensi" variant="qr" />
                                         @endif
-                                        <x-action-icon :action="route('activities.destroy', $activity)" method="DELETE" label="Hapus" icon="trash" variant="red" confirm="Yakin ingin menghapus data ini?" />
+                                        <x-ui.action-icon
+                                            :action="route('activities.destroy', $activity)"
+                                            method="DELETE"
+                                            label="Hapus"
+                                            variant="delete"
+                                            confirm="Yakin ingin menghapus data ini?"
+                                            confirm-title="Hapus Data?"
+                                            confirm-description="Kegiatan aktual akan dihapus. Pastikan kegiatan ini tidak lagi dipakai untuk presensi atau rekap."
+                                            confirm-text="Hapus"
+                                            confirm-variant="danger"
+                                        />
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="px-4 py-14 text-center">
-                                    <p class="text-base font-semibold text-slate-800">Belum ada kegiatan aktual.</p>
-                                    <p class="mt-1 text-sm text-slate-500">Tambahkan kegiatan baru atau ubah filter pencarian.</p>
+                                <td colspan="11">
+                                    <x-ui.empty-state title="Belum ada kegiatan aktual." description="Tambahkan kegiatan baru atau ubah filter pencarian." />
                                 </td>
                             </tr>
                         @endforelse

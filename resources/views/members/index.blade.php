@@ -7,12 +7,6 @@
 @section('content')
     @php
         $statusLabels = ['active' => 'Aktif', 'inactive' => 'Tidak Aktif', 'alumni' => 'Alumni', 'moved' => 'Pindah'];
-        $statusClasses = [
-            'active' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-            'inactive' => 'bg-slate-100 text-slate-600 ring-slate-200',
-            'alumni' => 'bg-sky-50 text-sky-700 ring-sky-200',
-            'moved' => 'bg-amber-50 text-amber-700 ring-amber-200',
-        ];
         $summaryCards = [
             ['label' => 'Total Anggota Aktif', 'value' => $memberStats['active'], 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-100'],
             ['label' => 'Total Anggota Nonaktif', 'value' => $memberStats['inactive'], 'class' => 'bg-slate-50 text-slate-700 ring-slate-200'],
@@ -24,32 +18,25 @@
     @endphp
 
     <div class="space-y-6">
-        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                    <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Master Data</p>
-                    <h2 class="mt-2 text-2xl font-bold text-slate-950">Data Anggota</h2>
-                    <p class="mt-2 max-w-2xl text-sm text-slate-500">Kelola data anggota, NPA, bidang, jabatan, dan akun login anggota.</p>
-                </div>
-                <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap lg:justify-end">
-                    <a href="{{ route('members.create') }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">Tambah Anggota</a>
-                    <a href="{{ route('members.import') }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">Import Excel</a>
-                    <a href="{{ route('members.import.template') }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">Download Template</a>
-                    <a href="{{ route('members.export', request()->only(['search', 'department_id', 'position_id', 'member_status'])) }}" class="inline-flex items-center justify-center rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">Export Excel</a>
-                </div>
-            </div>
-        </div>
-
-        @if (session('success'))
-            <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ session('success') }}</div>
-        @endif
+        <x-ui.page-header
+            title="Data Anggota"
+            eyebrow="Master Data"
+            description="Kelola data anggota, NPA, bidang, jabatan, dan akun login anggota."
+        >
+            <x-slot name="action">
+                <x-ui.button :href="route('members.create')">Tambah Anggota</x-ui.button>
+                <x-ui.button :href="route('members.import')" variant="secondary">Import Excel</x-ui.button>
+                <x-ui.button :href="route('members.import.template')" variant="secondary">Download Template</x-ui.button>
+                <x-ui.button :href="route('members.export', request()->only(['search', 'department_id', 'position_id', 'member_status']))" variant="secondary">Export Excel</x-ui.button>
+            </x-slot>
+        </x-ui.page-header>
 
         <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
             @foreach ($summaryCards as $card)
-                <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <x-ui.card padding="sm">
                     <div class="{{ $card['class'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $card['label'] }}</div>
                     <p class="mt-4 text-3xl font-bold text-slate-950">{{ number_format($card['value']) }}</p>
-                </div>
+                </x-ui.card>
             @endforeach
         </div>
 
@@ -143,31 +130,48 @@
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $member->phone ?: '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $member->email ?: '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4">
-                                    <span class="{{ $statusClasses[$member->member_status] ?? $statusClasses['inactive'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$member->member_status] ?? $member->member_status }}</span>
+                                    <x-ui.status-badge :status="$member->member_status" :label="$statusLabels[$member->member_status] ?? $member->member_status" />
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-4">
-                                    <span class="{{ $member->user ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-amber-50 text-amber-700 ring-amber-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $member->user ? 'Sudah Ada' : 'Belum Ada' }}</span>
+                                    <x-ui.status-badge :status="$member->user ? 'account_exists' : 'account_missing'" />
                                 </td>
                                 <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
-                                        <x-action-icon :href="route('members.show', $member)" label="Detail" icon="eye" variant="blue" />
-                                        <x-action-icon :href="route('members.edit', $member)" label="Edit" icon="pencil" variant="amber" />
+                                        <x-ui.action-icon :href="route('members.show', $member)" label="Detail" variant="detail" />
+                                        <x-ui.action-icon :href="route('members.edit', $member)" label="Edit" variant="edit" />
                                         @if ($member->user)
-                                            <x-action-icon :action="route('members.account.reset-password', $member)" method="PATCH" label="Reset Password" icon="key" variant="violet" confirm="Reset password akun ini menjadi password?" />
+                                            <x-ui.action-icon
+                                                :action="route('members.account.reset-password', $member)"
+                                                method="PATCH"
+                                                label="Reset Password"
+                                                variant="reset"
+                                                confirm="Reset password akun ini menjadi password?"
+                                                confirm-title="Reset Password?"
+                                                confirm-description="Password akun anggota ini akan direset. Informasikan password baru kepada anggota terkait."
+                                                confirm-text="Reset Password"
+                                                confirm-variant="warning"
+                                            />
                                         @else
-                                            <x-action-icon :action="route('members.account.store', $member)" label="Buat Akun" icon="user-plus" variant="emerald" />
+                                            <x-ui.action-icon :action="route('members.account.store', $member)" label="Buat Akun" variant="account" />
                                         @endif
-                                        <x-action-icon :action="route('members.destroy', $member)" method="DELETE" label="Hapus" icon="trash" variant="red" confirm="Yakin ingin menghapus data ini?" />
+                                        <x-ui.action-icon
+                                            :action="route('members.destroy', $member)"
+                                            method="DELETE"
+                                            label="Hapus"
+                                            variant="delete"
+                                            confirm="Yakin ingin menghapus data ini?"
+                                            confirm-title="Hapus Data?"
+                                            confirm-description="Data anggota akan dihapus dari sistem. Pastikan data ini tidak lagi diperlukan."
+                                            confirm-text="Hapus"
+                                            confirm-variant="danger"
+                                        />
                                     </div>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="px-4 py-14 text-center">
-                                    <div class="mx-auto max-w-sm">
-                                        <p class="text-base font-semibold text-slate-800">Belum ada data anggota.</p>
-                                        <p class="mt-1 text-sm text-slate-500">Tambahkan anggota baru atau ubah filter pencarian untuk melihat data lain.</p>
-                                    </div>
+                                <td colspan="9">
+                                    <x-ui.empty-state title="Belum ada data anggota." description="Tambahkan anggota baru atau ubah filter pencarian untuk melihat data lain." />
                                 </td>
                             </tr>
                         @endforelse

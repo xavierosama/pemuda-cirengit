@@ -104,7 +104,18 @@
                                     <div class="flex justify-end gap-1.5">
                                         <x-action-icon :href="route('positions.show', $position)" label="Detail" icon="eye" variant="blue" />
                                         <x-action-icon :href="route('positions.edit', $position)" label="Edit" icon="pencil" variant="amber" />
-                                        <x-action-icon :action="route('positions.destroy', $position)" method="DELETE" label="Hapus" icon="trash" variant="red" confirm="Yakin ingin menghapus data ini?" />
+                                        <x-action-icon
+                                            :action="route('positions.destroy', $position)"
+                                            method="DELETE"
+                                            label="Hapus"
+                                            icon="trash"
+                                            variant="red"
+                                            confirm="Yakin ingin menghapus data ini?"
+                                            confirm-title="Hapus Data?"
+                                            confirm-description="Data jabatan akan dihapus dari sistem. Pastikan jabatan ini tidak lagi digunakan."
+                                            confirm-text="Hapus"
+                                            confirm-variant="danger"
+                                        />
                                     </div>
                                 </td>
                             </tr>

@@ -55,5 +55,6 @@
                 </div>
             </div>
         @endif
+        <x-ui.toast />
     </body>
 </html>

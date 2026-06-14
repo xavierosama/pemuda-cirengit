@@ -62,10 +62,19 @@
         <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                 <a href="{{ route('activities.show', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Kembali ke Detail Kegiatan</a>
-                <form method="POST" action="{{ route('activities.attendances.sync-participants', $activity) }}">
-                    @csrf
-                    <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Sinkronkan Peserta Presensi</button>
-                </form>
+                <div x-data="{ open: false }" x-on:confirmed="$refs.syncParticipantsForm.submit()">
+                    <form x-ref="syncParticipantsForm" method="POST" action="{{ route('activities.attendances.sync-participants', $activity) }}" x-on:submit.prevent="open = true">
+                        @csrf
+                        <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Sinkronkan Peserta Presensi</button>
+                    </form>
+
+                    <x-ui.confirm-modal
+                        title="Sinkronkan Peserta Presensi?"
+                        description="Peserta presensi kegiatan ini akan disesuaikan dengan data anggota aktif. Data presensi yang sudah tersimpan tetap mengikuti aturan sistem."
+                        confirm-text="Sinkronkan"
+                        variant="warning"
+                    />
+                </div>
                 @if ($activity->attendance_enabled)
                     <a href="{{ route('activities.attendance-qr', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Lihat QR Presensi</a>
                 @else

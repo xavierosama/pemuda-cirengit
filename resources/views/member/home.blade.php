@@ -41,34 +41,9 @@
             $initial = strtoupper(substr($displayName, 0, 1));
             $profilePhotoUrl = $member?->profile_photo ? asset('storage/'.$member->profile_photo) : null;
             $memberStatusLabels = ['active' => 'Aktif', 'inactive' => 'Tidak Aktif', 'alumni' => 'Alumni', 'moved' => 'Pindah'];
-            $memberStatusClasses = [
-                'active' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                'inactive' => 'bg-slate-100 text-slate-600 ring-slate-200',
-                'alumni' => 'bg-sky-50 text-sky-700 ring-sky-200',
-                'moved' => 'bg-amber-50 text-amber-700 ring-amber-200',
-            ];
             $attendanceLabels = ['present' => 'Hadir', 'permission' => 'Izin', 'absent' => 'Tidak Hadir', 'need_verification' => 'Perlu Verifikasi'];
-            $attendanceClasses = [
-                'present' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                'permission' => 'bg-sky-50 text-sky-700 ring-sky-200',
-                'absent' => 'bg-slate-100 text-slate-600 ring-slate-200',
-                'need_verification' => 'bg-amber-50 text-amber-700 ring-amber-200',
-            ];
             $verificationLabels = ['valid' => 'Valid', 'need_verification' => 'Perlu Verifikasi', 'rejected' => 'Ditolak'];
-            $verificationClasses = [
-                'valid' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                'need_verification' => 'bg-amber-50 text-amber-700 ring-amber-200',
-                'rejected' => 'bg-red-50 text-red-700 ring-red-200',
-            ];
             $activityStatusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Dipindah', 'cancelled' => 'Dibatalkan'];
-            $activityStatusClasses = [
-                'scheduled' => 'bg-slate-100 text-slate-700 ring-slate-200',
-                'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-                'holiday' => 'bg-slate-100 text-slate-600 ring-slate-200',
-                'postponed' => 'bg-amber-50 text-amber-700 ring-amber-200',
-                'relocated' => 'bg-cyan-50 text-cyan-700 ring-cyan-200',
-                'cancelled' => 'bg-red-50 text-red-700 ring-red-200',
-            ];
             $scheduleTypeLabels = ['once' => 'Sekali', 'daily' => 'Harian', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan'];
         @endphp
 
@@ -117,18 +92,6 @@
 
             <main class="px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
                 <div class="mx-auto max-w-5xl space-y-4">
-                    @foreach (['warning' => 'amber', 'success' => 'emerald', 'error' => 'red', 'info' => 'sky'] as $sessionKey => $color)
-                        @if (session($sessionKey))
-                            <div @class([
-                                'rounded-xl border px-4 py-3 text-sm font-medium',
-                                'border-amber-200 bg-amber-50 text-amber-800' => $color === 'amber',
-                                'border-emerald-200 bg-emerald-50 text-emerald-800' => $color === 'emerald',
-                                'border-red-200 bg-red-50 text-red-800' => $color === 'red',
-                                'border-sky-200 bg-sky-50 text-sky-800' => $color === 'sky',
-                            ])>{{ session($sessionKey) }}</div>
-                        @endif
-                    @endforeach
-
                     <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
                         <h2 class="sr-only">Profil Anggota</h2>
                         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -161,9 +124,9 @@
                             <div>
                                 <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Status</p>
                                 @if ($member)
-                                    <span class="{{ $memberStatusClasses[$member->member_status] ?? $memberStatusClasses['inactive'] }} mt-1 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $memberStatusLabels[$member->member_status] ?? $member->member_status }}</span>
+                                    <x-ui.status-badge class="mt-1" :status="$member->member_status" :label="$memberStatusLabels[$member->member_status] ?? $member->member_status" />
                                 @else
-                                    <span class="mt-1 inline-flex rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">Belum terhubung</span>
+                                    <x-ui.status-badge class="mt-1" status="inactive" label="Belum terhubung" />
                                 @endif
                             </div>
                             <div>
@@ -202,7 +165,7 @@
                                             <div class="min-w-0">
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <h3 class="text-base font-bold text-slate-950">{{ $activity->title }}</h3>
-                                                    <span class="{{ $activityStatusClasses[$activity->status] ?? $activityStatusClasses['scheduled'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $activityStatusLabels[$activity->status] ?? $activity->status }}</span>
+                                                    <x-ui.status-badge :status="$activity->status" :label="$activityStatusLabels[$activity->status] ?? $activity->status" />
                                                 </div>
                                                 <div class="mt-3 grid gap-x-4 gap-y-1.5 text-sm text-slate-700 dark:text-slate-300 sm:grid-cols-2 lg:grid-cols-4">
                                                     <p><span class="font-semibold text-slate-900">Tanggal:</span> {{ $activity->activity_date->format('d/m/Y') }}</p>
@@ -228,8 +191,8 @@
                                                     <div class="rounded-xl border border-slate-200 bg-white p-3">
                                                         <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Presensi Anda</p>
                                                         <div class="mt-2 flex flex-wrap gap-2">
-                                                            <span class="{{ $attendanceClasses[$attendance->status] ?? $attendanceClasses['absent'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $attendanceLabels[$attendance->status] ?? $attendance->status }}</span>
-                                                            <span class="{{ $verificationClasses[$attendance->verification_status] ?? $verificationClasses['need_verification'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $verificationLabels[$attendance->verification_status] ?? $attendance->verification_status }}</span>
+                                                            <x-ui.status-badge :status="$attendance->status" :label="$attendanceLabels[$attendance->status] ?? $attendance->status" />
+                                                            <x-ui.status-badge :status="$attendance->verification_status" :label="$verificationLabels[$attendance->verification_status] ?? $attendance->verification_status" />
                                                         </div>
                                                         <p class="mt-2 text-xs text-slate-500">Waktu presensi</p>
                                                         <p class="text-sm font-semibold text-slate-800">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</p>
@@ -241,9 +204,7 @@
                                 @endforeach
                             </div>
                         @else
-                            <div class="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
-                                <p class="text-sm font-semibold text-slate-800">Belum ada kegiatan yang membuka presensi saat ini.</p>
-                            </div>
+                            <x-ui.empty-state class="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50" title="Belum ada kegiatan yang membuka presensi saat ini." />
                         @endif
                     </section>
 
@@ -273,7 +234,7 @@
                                             <div class="min-w-0 flex-1">
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <h3 class="truncate text-sm font-bold text-slate-950">{{ $activity->title }}</h3>
-                                                    <span class="{{ $activityStatusClasses[$activity->status] ?? $activityStatusClasses['scheduled'] }} inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset">{{ $activityStatusLabels[$activity->status] ?? $activity->status }}</span>
+                                                    <x-ui.status-badge class="px-2 py-0.5 text-[11px]" :status="$activity->status" :label="$activityStatusLabels[$activity->status] ?? $activity->status" />
                                                     @if ($dateLabel)
                                                         <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">{{ $dateLabel }}</span>
                                                     @endif
@@ -307,9 +268,7 @@
                                     @endforeach
                                 </div>
                             @else
-                                <div class="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center">
-                                    <p class="text-sm font-semibold text-slate-800">Belum ada kegiatan mendatang.</p>
-                                </div>
+                                <x-ui.empty-state class="mt-4 rounded-xl border border-dashed border-slate-300 bg-slate-50" title="Belum ada kegiatan mendatang." />
                             @endif
                         </section>
 
@@ -357,16 +316,16 @@
                                             <td class="whitespace-nowrap px-4 py-2.5 text-sm text-slate-600">{{ $attendance->activity?->activity_date?->format('d/m/Y') ?? '-' }}</td>
                                             <td class="whitespace-nowrap px-4 py-2.5 text-sm text-slate-600">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</td>
                                             <td class="whitespace-nowrap px-4 py-2.5">
-                                                <span class="{{ $attendanceClasses[$attendance->status] ?? $attendanceClasses['absent'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $attendanceLabels[$attendance->status] ?? $attendance->status }}</span>
+                                                <x-ui.status-badge :status="$attendance->status" :label="$attendanceLabels[$attendance->status] ?? $attendance->status" />
                                             </td>
                                             <td class="whitespace-nowrap px-4 py-2.5">
-                                                <span class="{{ $verificationClasses[$attendance->verification_status] ?? $verificationClasses['need_verification'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $verificationLabels[$attendance->verification_status] ?? $attendance->verification_status }}</span>
+                                                <x-ui.status-badge :status="$attendance->verification_status" :label="$verificationLabels[$attendance->verification_status] ?? $attendance->verification_status" />
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="5" class="px-4 py-8 text-center">
-                                                <p class="text-sm font-semibold text-slate-800">Belum ada riwayat presensi.</p>
+                                            <td colspan="5">
+                                                <x-ui.empty-state title="Belum ada riwayat presensi." description="Riwayat presensi akan muncul setelah Anda melakukan presensi." />
                                             </td>
                                         </tr>
                                     @endforelse
@@ -415,5 +374,6 @@
                 });
             });
         </script>
+        <x-ui.toast />
     </body>
 </html>

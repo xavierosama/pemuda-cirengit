@@ -52,5 +52,6 @@
                 {{ $slot }}
             </main>
         </div>
+        <x-ui.toast />
     </body>
 </html>

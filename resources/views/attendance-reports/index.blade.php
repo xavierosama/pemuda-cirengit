@@ -12,12 +12,6 @@
             'absent' => 'Tidak Hadir',
             'need_verification' => 'Perlu Verifikasi',
         ];
-        $statusBadgeClasses = [
-            'present' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-            'permission' => 'bg-sky-50 text-sky-700 ring-sky-200',
-            'absent' => 'bg-slate-100 text-slate-700 ring-slate-200',
-            'need_verification' => 'bg-amber-50 text-amber-700 ring-amber-200',
-        ];
         $percentageClass = fn ($percentage) => $percentage >= 75
             ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
             : ($percentage >= 50 ? 'bg-amber-50 text-amber-700 ring-amber-200' : 'bg-red-50 text-red-700 ring-red-200');
@@ -36,18 +30,14 @@
     @endphp
 
     <div class="space-y-6">
-        <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                    <h2 class="text-2xl font-bold text-slate-950">Rekap Presensi</h2>
-                    <p class="mt-2 text-sm text-slate-500">Pantau kehadiran anggota berdasarkan periode, bidang, dan kegiatan.</p>
-                </div>
+        <x-ui.page-header title="Rekap Presensi" description="Pantau kehadiran anggota berdasarkan periode, bidang, dan kegiatan.">
+            <x-slot name="action">
                 <div class="rounded-lg bg-emerald-50 px-4 py-3 text-left ring-1 ring-emerald-100 lg:text-right">
                     <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Periode Aktif</p>
                     <p class="mt-1 text-sm font-bold text-emerald-900">{{ $periodLabel }}</p>
                 </div>
-            </div>
-        </section>
+            </x-slot>
+        </x-ui.page-header>
 
         <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div class="mb-4">
@@ -102,7 +92,7 @@
         </section>
 
         @if (! $hasAttendanceData)
-            <section class="rounded-lg border border-amber-200 bg-amber-50 p-5 text-sm font-medium text-amber-800">
+            <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-medium text-amber-800">
                 Belum ada data presensi pada periode terpilih. Sinkronkan peserta presensi atau pilih periode lain untuk melihat rekap.
             </section>
         @endif
@@ -110,11 +100,11 @@
         <section class="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 @foreach ($summaryCards as $card)
-                    <div class="{{ $card['color'] }} rounded-lg border border-slate-200 border-l-4 bg-white p-5 shadow-sm">
+                    <x-ui.card class="{{ $card['color'] }} border-l-4" padding="md">
                         <p class="text-sm font-medium text-slate-500">{{ $card['label'] }}</p>
                         <p class="mt-3 text-2xl font-bold text-slate-950">{{ number_format($card['value']) }}</p>
                         <p class="mt-2 text-xs text-slate-500">{{ $card['note'] }}</p>
-                    </div>
+                    </x-ui.card>
                 @endforeach
             </div>
 
@@ -138,7 +128,7 @@
                 @if ($hasAttendanceData)
                     <div class="mt-5 h-72"><canvas id="statusCompositionChart"></canvas></div>
                 @else
-                    <div class="mt-5 flex h-72 items-center justify-center rounded-lg bg-slate-50 text-center text-sm text-slate-500">Belum ada data untuk grafik komposisi.</div>
+                    <x-ui.empty-state class="mt-5 flex h-72 items-center justify-center rounded-lg bg-slate-50" title="Belum ada data untuk grafik komposisi." />
                 @endif
             </div>
 
@@ -148,7 +138,7 @@
                 @if ($hasActivityTrend)
                     <div class="mt-5 h-72"><canvas id="activityTrendChart"></canvas></div>
                 @else
-                    <div class="mt-5 flex h-72 items-center justify-center rounded-lg bg-slate-50 text-center text-sm text-slate-500">Belum ada data tren kehadiran.</div>
+                    <x-ui.empty-state class="mt-5 flex h-72 items-center justify-center rounded-lg bg-slate-50" title="Belum ada data tren kehadiran." />
                 @endif
             </div>
 
@@ -158,7 +148,7 @@
                 @if ($hasDepartmentData)
                     <div class="mt-5 h-72"><canvas id="departmentAttendanceChart"></canvas></div>
                 @else
-                    <div class="mt-5 flex h-72 items-center justify-center rounded-lg bg-slate-50 text-center text-sm text-slate-500">Belum ada data kehadiran per bidang.</div>
+                    <x-ui.empty-state class="mt-5 flex h-72 items-center justify-center rounded-lg bg-slate-50" title="Belum ada data kehadiran per bidang." />
                 @endif
             </div>
         </section>
@@ -192,15 +182,15 @@
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $row['activity']->activity_date->format('d/m/Y') }}</td>
                                 <td class="px-4 py-4 text-sm font-semibold text-slate-900">{{ $row['activity']->title }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $row['activity']->department?->name ?? '-' }}</td>
-                                <td class="px-4 py-4"><span class="{{ $statusBadgeClasses['present'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['counts']['present']) }}</span></td>
-                                <td class="px-4 py-4"><span class="{{ $statusBadgeClasses['permission'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['counts']['permission']) }}</span></td>
-                                <td class="px-4 py-4"><span class="{{ $statusBadgeClasses['absent'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['counts']['absent']) }}</span></td>
-                                <td class="px-4 py-4"><span class="{{ $statusBadgeClasses['need_verification'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['counts']['need_verification']) }}</span></td>
+                                <td class="px-4 py-4"><x-ui.status-badge status="present" :label="number_format($row['counts']['present'])" /></td>
+                                <td class="px-4 py-4"><x-ui.status-badge status="permission" :label="number_format($row['counts']['permission'])" /></td>
+                                <td class="px-4 py-4"><x-ui.status-badge status="absent" :label="number_format($row['counts']['absent'])" /></td>
+                                <td class="px-4 py-4"><x-ui.status-badge status="need_verification" :label="number_format($row['counts']['need_verification'])" /></td>
                                 <td class="whitespace-nowrap px-4 py-4"><span class="{{ $percentageClass($row['attendance_percentage']) }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['attendance_percentage'], 2) }}%</span></td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right"><x-action-icon :href="route('activities.attendances.index', $row['activity'])" label="Detail" icon="eye" variant="blue" /></td>
+                                <td class="whitespace-nowrap px-4 py-4 text-right"><x-ui.action-icon :href="route('activities.attendances.index', $row['activity'])" label="Detail" variant="detail" /></td>
                             </tr>
                         @empty
-                            <tr><td colspan="9" class="px-4 py-10 text-center text-sm text-slate-500">Belum ada kegiatan pada periode ini.</td></tr>
+                            <tr><td colspan="9"><x-ui.empty-state title="Belum ada kegiatan pada periode ini." description="Ubah filter periode atau pilih kegiatan lain." /></td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -236,14 +226,14 @@
                             <tr>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $row['member']->npa ?: '-' }}</td>
                                 <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">{{ $row['member']->full_name }}</td>
-                                <td class="px-4 py-4"><span class="{{ $statusBadgeClasses['present'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['counts']['present']) }}</span></td>
-                                <td class="px-4 py-4"><span class="{{ $statusBadgeClasses['permission'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['counts']['permission']) }}</span></td>
-                                <td class="px-4 py-4"><span class="{{ $statusBadgeClasses['absent'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['counts']['absent']) }}</span></td>
-                                <td class="px-4 py-4"><span class="{{ $statusBadgeClasses['need_verification'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['counts']['need_verification']) }}</span></td>
+                                <td class="px-4 py-4"><x-ui.status-badge status="present" :label="number_format($row['counts']['present'])" /></td>
+                                <td class="px-4 py-4"><x-ui.status-badge status="permission" :label="number_format($row['counts']['permission'])" /></td>
+                                <td class="px-4 py-4"><x-ui.status-badge status="absent" :label="number_format($row['counts']['absent'])" /></td>
+                                <td class="px-4 py-4"><x-ui.status-badge status="need_verification" :label="number_format($row['counts']['need_verification'])" /></td>
                                 <td class="whitespace-nowrap px-4 py-4"><span class="{{ $percentageClass($row['attendance_percentage']) }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['attendance_percentage'], 2) }}%</span></td>
                             </tr>
                         @empty
-                            <tr><td colspan="7" class="px-4 py-10 text-center text-sm text-slate-500">Belum ada anggota aktif sesuai filter.</td></tr>
+                            <tr><td colspan="7"><x-ui.empty-state title="Belum ada anggota aktif sesuai filter." description="Ubah filter bidang atau periode untuk melihat data lain." /></td></tr>
                         @endforelse
                     </tbody>
                 </table>

@@ -145,7 +145,18 @@
                                         <x-action-icon :href="route('agenda-schedules.show', $agendaSchedule)" label="Detail" icon="eye" variant="blue" />
                                         <x-action-icon :href="route('agenda-schedules.edit', $agendaSchedule)" label="Edit" icon="pencil" variant="amber" />
                                         @if ($agendaSchedule->is_active)
-                                            <x-action-icon :action="route('agenda-schedules.deactivate', $agendaSchedule)" method="PATCH" label="Nonaktifkan" icon="ban" variant="slate" confirm="Nonaktifkan jadwal agenda ini?" />
+                                            <x-action-icon
+                                                :action="route('agenda-schedules.deactivate', $agendaSchedule)"
+                                                method="PATCH"
+                                                label="Nonaktifkan"
+                                                icon="ban"
+                                                variant="slate"
+                                                confirm="Nonaktifkan jadwal agenda ini?"
+                                                confirm-title="Nonaktifkan Jadwal Agenda?"
+                                                confirm-description="Jadwal agenda tidak akan aktif untuk pembuatan kegiatan berikutnya sampai diaktifkan kembali melalui edit data."
+                                                confirm-text="Nonaktifkan"
+                                                confirm-variant="warning"
+                                            />
                                         @endif
                                     </div>
                                 </td>
