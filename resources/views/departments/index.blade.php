@@ -95,33 +95,35 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 bg-white">
                         @forelse ($departments as $department)
-                            <tr class="transition hover:bg-slate-50/70">
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-500">{{ $departments->firstItem() + $loop->index }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">{{ $department->name }}</td>
-                                <td class="max-w-md px-4 py-4 text-sm text-slate-600">{{ str($department->description ?: '-')->limit(90) }}</td>
-                                <td class="whitespace-nowrap px-4 py-4">
+                            <tr class="align-top transition hover:bg-slate-50/70">
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ $departments->firstItem() + $loop->index }}</td>
+                                <td class="max-w-48 px-3 py-4 text-sm font-semibold text-slate-900"><span class="line-clamp-2 break-words">{{ $department->name }}</span></td>
+                                <td class="max-w-sm px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $department->description ?: '-' }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4">
                                     <span class="{{ $department->status === 'active' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">
                                         {{ $department->status === 'active' ? 'Aktif' : 'Nonaktif' }}
                                     </span>
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-700">{{ number_format($department->members_count) }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $department->created_at?->format('d/m/Y') ?? '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold">
+                                <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-slate-700">{{ number_format($department->members_count) }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $department->created_at?->format('d/m/Y') ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
                                         <x-action-icon :href="route('departments.show', $department)" label="Detail" icon="eye" variant="blue" />
-                                        <x-action-icon :href="route('departments.edit', $department)" label="Edit" icon="pencil" variant="amber" />
-                                        <x-action-icon
-                                            :action="route('departments.destroy', $department)"
-                                            method="DELETE"
-                                            label="Hapus"
-                                            icon="trash"
-                                            variant="red"
-                                            confirm="Yakin ingin menghapus data ini?"
-                                            confirm-title="Hapus Data?"
-                                            confirm-description="Data bidang akan dihapus dari sistem. Pastikan bidang ini tidak lagi digunakan."
-                                            confirm-text="Hapus"
-                                            confirm-variant="danger"
-                                        />
+                                        <x-ui.action-dropdown>
+                                            <x-ui.action-dropdown-item :href="route('departments.edit', $department)" label="Edit" icon="pencil" />
+                                            <x-ui.action-dropdown-item
+                                                :action="route('departments.destroy', $department)"
+                                                method="DELETE"
+                                                label="Hapus"
+                                                icon="trash"
+                                                variant="danger"
+                                                confirm="Yakin ingin menghapus data ini?"
+                                                confirm-title="Hapus Data?"
+                                                confirm-description="Data bidang akan dihapus dari sistem. Pastikan bidang ini tidak lagi digunakan."
+                                                confirm-text="Hapus"
+                                                confirm-variant="danger"
+                                            />
+                                        </x-ui.action-dropdown>
                                     </div>
                                 </td>
                             </tr>

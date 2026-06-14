@@ -44,23 +44,43 @@
 @endphp
 
 @if ($href)
-    <a href="{{ $href }}" title="{{ $label }}" aria-label="{{ $label }}" {{ $attributes->merge(['class' => $buttonClass]) }}>
+    <a
+        href="{{ $href }}"
+        title="{{ $label }}"
+        aria-label="{{ $label }}"
+        x-data="{ submitting: false }"
+        x-on:click="submitting = true"
+        x-bind:class="{ 'pointer-events-none opacity-70': submitting }"
+        {{ $attributes->merge(['class' => $buttonClass]) }}
+    >
         <span class="{{ $tooltipClass }}">{{ $label }}</span>
         <span class="sr-only">{{ $label }}</span>
-        @include('components.partials.action-icon-svg', ['icon' => $icon])
+        <svg x-cloak x-show="submitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
+        <span x-show="! submitting">
+            @include('components.partials.action-icon-svg', ['icon' => $icon])
+        </span>
     </a>
 @else
     @if ($confirm)
-        <div x-data="{ open: false }" class="inline-flex" x-on:confirmed="$refs.confirmableAction.submit()">
+        <div x-data="{ open: false, submitting: false }" class="inline-flex" x-on:confirmed="submitting = true; $refs.confirmableAction.submit()">
             <form x-ref="confirmableAction" method="POST" action="{{ $action }}" class="inline-flex" x-on:submit.prevent="open = true">
                 @csrf
                 @if (strtoupper($method) !== 'POST')
                     @method($method)
                 @endif
-                <button type="submit" title="{{ $label }}" aria-label="{{ $label }}" {{ $attributes->merge(['class' => $buttonClass]) }}>
+                <button type="submit" title="{{ $label }}" aria-label="{{ $label }}" x-bind:disabled="submitting" {{ $attributes->merge(['class' => $buttonClass.' disabled:cursor-not-allowed disabled:opacity-60']) }}>
                     <span class="{{ $tooltipClass }}">{{ $label }}</span>
                     <span class="sr-only">{{ $label }}</span>
-                    @include('components.partials.action-icon-svg', ['icon' => $icon])
+                    <svg x-cloak x-show="submitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <span x-show="! submitting">
+                        @include('components.partials.action-icon-svg', ['icon' => $icon])
+                    </span>
                 </button>
             </form>
 
@@ -73,15 +93,21 @@
             />
         </div>
     @else
-        <form method="POST" action="{{ $action }}" class="inline-flex">
+        <form method="POST" action="{{ $action }}" class="inline-flex" x-data="{ submitting: false }" x-on:submit="submitting = true">
             @csrf
             @if (strtoupper($method) !== 'POST')
                 @method($method)
             @endif
-            <button type="submit" title="{{ $label }}" aria-label="{{ $label }}" {{ $attributes->merge(['class' => $buttonClass]) }}>
+            <button type="submit" title="{{ $label }}" aria-label="{{ $label }}" x-bind:disabled="submitting" {{ $attributes->merge(['class' => $buttonClass.' disabled:cursor-not-allowed disabled:opacity-60']) }}>
                 <span class="{{ $tooltipClass }}">{{ $label }}</span>
                 <span class="sr-only">{{ $label }}</span>
-                @include('components.partials.action-icon-svg', ['icon' => $icon])
+                <svg x-cloak x-show="submitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                <span x-show="! submitting">
+                    @include('components.partials.action-icon-svg', ['icon' => $icon])
+                </span>
             </button>
         </form>
     @endif

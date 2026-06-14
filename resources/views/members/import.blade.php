@@ -12,8 +12,10 @@
                 <p class="mt-1 text-sm text-slate-500">Gunakan template Excel agar format kolom data anggota seragam.</p>
             </div>
 
-            <a href="{{ route('members.import.template') }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">
-                Download Template Excel
+            <a href="{{ route('members.import.template') }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" x-data="{ submitting: false }" x-on:click="submitting = true" x-bind:class="{ 'pointer-events-none opacity-80': submitting }">
+                <svg x-cloak x-show="submitting" class="mr-2 h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4"></circle><path class="opacity-90" fill="currentColor" d="M21 12a9 9 0 0 0-9-9v4a5 5 0 0 1 5 5h4Z"></path></svg>
+                <span x-show="! submitting">Download Template Excel</span>
+                <span x-cloak x-show="submitting">Menyiapkan file...</span>
             </a>
         </div>
 
@@ -57,7 +59,7 @@
 
         <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <h3 class="text-base font-bold text-slate-950">Upload File Excel</h3>
-            <form method="POST" action="{{ route('members.import.store') }}" enctype="multipart/form-data" class="mt-4 space-y-4">
+            <form method="POST" action="{{ route('members.import.store') }}" enctype="multipart/form-data" class="mt-4 space-y-4" x-data="{ submitting: false }" x-on:submit="submitting = true">
                 @csrf
 
                 <div>
@@ -66,9 +68,7 @@
                     <p class="mt-2 text-xs text-slate-500">Format file: .xlsx atau .xls. Maksimal 5MB.</p>
                 </div>
 
-                <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">
-                    Import Data Anggota
-                </button>
+                <x-ui.submit-button variant="secondary" size="lg" loading-text="Mengimpor...">Import Data Anggota</x-ui.submit-button>
             </form>
         </section>
 

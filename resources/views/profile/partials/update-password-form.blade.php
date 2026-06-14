@@ -4,7 +4,7 @@
         <p class="mt-1 text-sm text-slate-500">Gunakan password yang kuat dan tidak mudah ditebak.</p>
     </header>
 
-    <form method="post" action="{{ route('password.update') }}" class="mt-5 space-y-5">
+    <form method="post" action="{{ route('password.update') }}" class="mt-5 space-y-5" x-data="{ submitting: false }" x-on:submit="submitting = true">
         @csrf
         @method('put')
 
@@ -27,9 +27,7 @@
         </div>
 
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
-            <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">
-                Simpan Password
-            </button>
+            <x-ui.submit-button size="lg" loading-text="Menyimpan...">Simpan Password</x-ui.submit-button>
 
             @if (session('status') === 'password-updated')
                 <p

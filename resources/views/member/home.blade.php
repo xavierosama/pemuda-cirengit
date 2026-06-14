@@ -184,7 +184,7 @@
                                                         <input type="hidden" name="latitude">
                                                         <input type="hidden" name="longitude">
                                                         <input type="hidden" name="location_accuracy">
-                                                        <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">Saya Hadir</button>
+                                                        <button type="submit" data-default-text="Saya Hadir" class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-500 disabled:opacity-80">Saya Hadir</button>
                                                         <p class="member-check-in-message text-xs text-slate-500">Akses lokasi akan diminta.</p>
                                                     </form>
                                                 @else
@@ -341,20 +341,32 @@
             document.querySelectorAll('.member-check-in-form').forEach((form) => {
                 form.addEventListener('submit', (event) => {
                     const message = form.querySelector('.member-check-in-message');
+                    const button = form.querySelector('button[type="submit"]');
+                    const setButtonLoading = (text) => {
+                        button.disabled = true;
+                        button.textContent = text;
+                    };
+                    const resetButton = () => {
+                        button.disabled = false;
+                        button.textContent = button.dataset.defaultText || 'Saya Hadir';
+                    };
 
                     if (! navigator.geolocation) {
                         event.preventDefault();
                         message.textContent = 'Browser Anda belum mendukung akses lokasi.';
                         message.className = 'member-check-in-message text-xs font-semibold text-red-600';
+                        resetButton();
                         return;
                     }
 
                     if (form.dataset.locationReady === '1') {
+                        setButtonLoading('Memproses presensi...');
                         return;
                     }
 
                     event.preventDefault();
-                    message.textContent = 'Meminta lokasi Anda...';
+                    setButtonLoading('Mengambil lokasi...');
+                    message.textContent = 'Mengambil lokasi Anda...';
                     message.className = 'member-check-in-message text-xs font-semibold text-slate-600';
 
                     navigator.geolocation.getCurrentPosition((position) => {
@@ -362,10 +374,12 @@
                         form.querySelector('[name="longitude"]').value = position.coords.longitude;
                         form.querySelector('[name="location_accuracy"]').value = position.coords.accuracy ?? 0;
                         form.dataset.locationReady = '1';
+                        setButtonLoading('Memproses presensi...');
                         form.requestSubmit();
                     }, () => {
                         message.textContent = 'Lokasi tidak diizinkan. Aktifkan izin lokasi untuk presensi.';
                         message.className = 'member-check-in-message text-xs font-semibold text-red-600';
+                        resetButton();
                     }, {
                         enableHighAccuracy: true,
                         timeout: 10000,

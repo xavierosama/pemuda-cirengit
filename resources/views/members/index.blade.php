@@ -32,8 +32,8 @@
             <x-slot name="action">
                 <x-ui.button :href="route('members.create')">Tambah Anggota</x-ui.button>
                 <x-ui.button :href="route('members.import')" variant="secondary">Import Excel</x-ui.button>
-                <x-ui.button :href="route('members.import.template')" variant="secondary">Download Template</x-ui.button>
-                <x-ui.button :href="route('members.export', request()->only(['search', 'department_id', 'position_id', 'member_status']))" variant="secondary">Export Excel</x-ui.button>
+                <x-ui.button :href="route('members.import.template')" variant="secondary" loading-text="Menyiapkan file..." x-data="{ submitting: false }" x-on:click="submitting = true" x-bind:class="{ 'pointer-events-none opacity-80': submitting }">Download Template</x-ui.button>
+                <x-ui.button :href="route('members.export', request()->only(['search', 'department_id', 'position_id', 'member_status']))" variant="secondary" loading-text="Menyiapkan file..." x-data="{ submitting: false }" x-on:click="submitting = true" x-bind:class="{ 'pointer-events-none opacity-80': submitting }">Export Excel</x-ui.button>
             </x-slot>
         </x-ui.page-header>
 
@@ -126,51 +126,55 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 bg-white">
                         @forelse ($members as $member)
-                            <tr class="transition hover:bg-slate-50/70">
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-500">{{ $members->firstItem() + $loop->index }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-700">{{ $member->npa ?: '-' }}</td>
-                                <td class="px-4 py-4">
-                                    <p class="whitespace-nowrap text-sm font-semibold text-slate-900">{{ $member->full_name }}</p>
+                            <tr class="align-top transition hover:bg-slate-50/70">
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ $members->firstItem() + $loop->index }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-slate-700">{{ $member->npa ?: '-' }}</td>
+                                <td class="max-w-48 px-3 py-4">
+                                    <p class="line-clamp-2 break-words text-sm font-semibold text-slate-900">{{ $member->full_name }}</p>
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $member->position?->name ?? '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $member->phone ?: '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $member->email ?: '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4">
+                                <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $member->position?->name ?? '-' }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $member->phone ?: '-' }}</td>
+                                <td class="max-w-52 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-all">{{ $member->email ?: '-' }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4">
                                     <x-ui.status-badge :status="$member->member_status" :label="$statusLabels[$member->member_status] ?? $member->member_status" />
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-4">
+                                <td class="whitespace-nowrap px-3 py-4">
                                     <x-ui.status-badge :status="$member->user ? 'account_exists' : 'account_missing'" />
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold">
+                                <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
                                         <x-ui.action-icon :href="route('members.show', $member)" label="Detail" variant="detail" />
-                                        <x-ui.action-icon :href="route('members.edit', $member)" label="Edit" variant="edit" />
-                                        @if ($member->user)
-                                            <x-ui.action-icon
-                                                :action="route('members.account.reset-password', $member)"
-                                                method="PATCH"
-                                                label="Reset Password"
-                                                variant="reset"
-                                                confirm="Reset password akun ini menjadi password?"
-                                                confirm-title="Reset Password?"
-                                                confirm-description="Password akun anggota ini akan direset. Informasikan password baru kepada anggota terkait."
-                                                confirm-text="Reset Password"
-                                                confirm-variant="warning"
+                                        <x-ui.action-dropdown>
+                                            <x-ui.action-dropdown-item :href="route('members.edit', $member)" label="Edit" icon="pencil" />
+                                            @if ($member->user)
+                                                <x-ui.action-dropdown-item
+                                                    :action="route('members.account.reset-password', $member)"
+                                                    method="PATCH"
+                                                    label="Reset Password"
+                                                    icon="key"
+                                                    variant="warning"
+                                                    confirm="Reset password akun ini menjadi password?"
+                                                    confirm-title="Reset Password?"
+                                                    confirm-description="Password akun anggota ini akan direset. Informasikan password baru kepada anggota terkait."
+                                                    confirm-text="Reset Password"
+                                                    confirm-variant="warning"
+                                                />
+                                            @else
+                                                <x-ui.action-dropdown-item :action="route('members.account.store', $member)" label="Buat Akun" icon="user-plus" />
+                                            @endif
+                                            <x-ui.action-dropdown-item
+                                                :action="route('members.destroy', $member)"
+                                                method="DELETE"
+                                                label="Hapus"
+                                                icon="trash"
+                                                variant="danger"
+                                                confirm="Yakin ingin menghapus data ini?"
+                                                confirm-title="Hapus Data?"
+                                                confirm-description="Data anggota akan dihapus dari sistem. Pastikan data ini tidak lagi diperlukan."
+                                                confirm-text="Hapus"
+                                                confirm-variant="danger"
                                             />
-                                        @else
-                                            <x-ui.action-icon :action="route('members.account.store', $member)" label="Buat Akun" variant="account" />
-                                        @endif
-                                        <x-ui.action-icon
-                                            :action="route('members.destroy', $member)"
-                                            method="DELETE"
-                                            label="Hapus"
-                                            variant="delete"
-                                            confirm="Yakin ingin menghapus data ini?"
-                                            confirm-title="Hapus Data?"
-                                            confirm-description="Data anggota akan dihapus dari sistem. Pastikan data ini tidak lagi diperlukan."
-                                            confirm-text="Hapus"
-                                            confirm-variant="danger"
-                                        />
+                                        </x-ui.action-dropdown>
                                     </div>
                                 </td>
                             </tr>

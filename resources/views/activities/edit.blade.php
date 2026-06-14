@@ -27,7 +27,7 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('activities.update', $activity) }}">
+        <form method="POST" action="{{ route('activities.update', $activity) }}" x-data="{ submitting: false }" x-on:submit="submitting = true">
             @method('PUT')
             @include('activities._form')
         </form>

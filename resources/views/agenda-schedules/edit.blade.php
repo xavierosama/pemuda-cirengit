@@ -27,7 +27,7 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('agenda-schedules.update', $agendaSchedule) }}">
+        <form method="POST" action="{{ route('agenda-schedules.update', $agendaSchedule) }}" x-data="{ submitting: false }" x-on:submit="submitting = true">
             @method('PUT')
             @include('agenda-schedules._form')
         </form>

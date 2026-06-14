@@ -95,33 +95,35 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100 bg-white">
                         @forelse ($positions as $position)
-                            <tr class="transition hover:bg-slate-50/70">
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-500">{{ $positions->firstItem() + $loop->index }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">{{ $position->name }}</td>
-                                <td class="max-w-md px-4 py-4 text-sm text-slate-600">{{ str($position->description ?: '-')->limit(90) }}</td>
-                                <td class="whitespace-nowrap px-4 py-4">
+                            <tr class="align-top transition hover:bg-slate-50/70">
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ $positions->firstItem() + $loop->index }}</td>
+                                <td class="max-w-48 px-3 py-4 text-sm font-semibold text-slate-900"><span class="line-clamp-2 break-words">{{ $position->name }}</span></td>
+                                <td class="max-w-sm px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $position->description ?: '-' }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4">
                                     <span class="{{ $position->status === 'active' ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">
                                         {{ $position->status === 'active' ? 'Aktif' : 'Nonaktif' }}
                                     </span>
                                 </td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-700">{{ number_format($position->members_count) }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $position->created_at?->format('d/m/Y') ?? '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold">
+                                <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-slate-700">{{ number_format($position->members_count) }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $position->created_at?->format('d/m/Y') ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
                                         <x-action-icon :href="route('positions.show', $position)" label="Detail" icon="eye" variant="blue" />
-                                        <x-action-icon :href="route('positions.edit', $position)" label="Edit" icon="pencil" variant="amber" />
-                                        <x-action-icon
-                                            :action="route('positions.destroy', $position)"
-                                            method="DELETE"
-                                            label="Hapus"
-                                            icon="trash"
-                                            variant="red"
-                                            confirm="Yakin ingin menghapus data ini?"
-                                            confirm-title="Hapus Data?"
-                                            confirm-description="Data jabatan akan dihapus dari sistem. Pastikan jabatan ini tidak lagi digunakan."
-                                            confirm-text="Hapus"
-                                            confirm-variant="danger"
-                                        />
+                                        <x-ui.action-dropdown>
+                                            <x-ui.action-dropdown-item :href="route('positions.edit', $position)" label="Edit" icon="pencil" />
+                                            <x-ui.action-dropdown-item
+                                                :action="route('positions.destroy', $position)"
+                                                method="DELETE"
+                                                label="Hapus"
+                                                icon="trash"
+                                                variant="danger"
+                                                confirm="Yakin ingin menghapus data ini?"
+                                                confirm-title="Hapus Data?"
+                                                confirm-description="Data jabatan akan dihapus dari sistem. Pastikan jabatan ini tidak lagi digunakan."
+                                                confirm-text="Hapus"
+                                                confirm-variant="danger"
+                                            />
+                                        </x-ui.action-dropdown>
                                     </div>
                                 </td>
                             </tr>

@@ -127,36 +127,39 @@
                             @php
                                 $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
                             @endphp
-                            <tr class="transition hover:bg-slate-50/70">
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-500">{{ $activities->firstItem() + $loop->index }}</td>
-                                <td class="px-4 py-4"><p class="whitespace-nowrap text-sm font-semibold text-slate-900">{{ $activity->title }}</p><p class="mt-1 whitespace-nowrap text-xs text-slate-500">{{ $activity->agendaSchedule?->title ?? 'Kegiatan mandiri' }}</p></td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $time !== '' ? $time : '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->department?->name ?? '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->pic?->full_name ?? '-' }}</td>
-                                <td class="max-w-56 px-4 py-4 text-sm text-slate-600">{{ str($activity->location ?: '-')->limit(45) }}</td>
-                                <td class="whitespace-nowrap px-4 py-4"><x-ui.status-badge :status="$activity->status" :label="$statusLabels[$activity->status]" /></td>
-                                <td class="whitespace-nowrap px-4 py-4"><x-ui.status-badge :status="$activity->attendance_enabled ? 'active' : 'inactive'" :label="$activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif'" /></td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $activity->created_at?->format('d/m/Y') ?? '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold">
+                            <tr class="align-top transition hover:bg-slate-50/70">
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ $activities->firstItem() + $loop->index }}</td>
+                                <td class="max-w-56 px-3 py-4"><p class="line-clamp-2 break-words text-sm font-semibold text-slate-900">{{ $activity->title }}</p><p class="mt-1 line-clamp-1 break-words text-xs text-slate-500">{{ $activity->agendaSchedule?->title ?? 'Kegiatan mandiri' }}</p></td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $time !== '' ? $time : '-' }}</td>
+                                <td class="max-w-32 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->department?->name ?? '-' }}</span></td>
+                                <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->pic?->full_name ?? '-' }}</span></td>
+                                <td class="max-w-44 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->location ?: '-' }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$activity->status" :label="$statusLabels[$activity->status]" /></td>
+                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$activity->attendance_enabled ? 'active' : 'inactive'" :label="$activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif'" /></td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $activity->created_at?->format('d/m/Y') ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
                                         <x-ui.action-icon :href="route('activities.show', $activity)" label="Detail" variant="detail" />
-                                        <x-ui.action-icon :href="route('activities.edit', $activity)" label="Edit" variant="edit" />
-                                        <x-ui.action-icon :href="route('activities.attendances.index', $activity)" label="Daftar Hadir" variant="account" icon="check" />
-                                        @if ($activity->attendance_enabled)
-                                            <x-ui.action-icon :href="route('activities.attendance-qr', $activity)" label="QR Presensi" variant="qr" />
-                                        @endif
-                                        <x-ui.action-icon
-                                            :action="route('activities.destroy', $activity)"
-                                            method="DELETE"
-                                            label="Hapus"
-                                            variant="delete"
-                                            confirm="Yakin ingin menghapus data ini?"
-                                            confirm-title="Hapus Data?"
-                                            confirm-description="Kegiatan aktual akan dihapus. Pastikan kegiatan ini tidak lagi dipakai untuk presensi atau rekap."
-                                            confirm-text="Hapus"
-                                            confirm-variant="danger"
-                                        />
+                                        <x-ui.action-dropdown>
+                                            <x-ui.action-dropdown-item :href="route('activities.edit', $activity)" label="Edit" icon="pencil" />
+                                            <x-ui.action-dropdown-item :href="route('activities.attendances.index', $activity)" label="Daftar Hadir" icon="check" />
+                                            @if ($activity->attendance_enabled)
+                                                <x-ui.action-dropdown-item :href="route('activities.attendance-qr', $activity)" label="QR Presensi" icon="qr" />
+                                            @endif
+                                            <x-ui.action-dropdown-item
+                                                :action="route('activities.destroy', $activity)"
+                                                method="DELETE"
+                                                label="Hapus"
+                                                icon="trash"
+                                                variant="danger"
+                                                confirm="Yakin ingin menghapus data ini?"
+                                                confirm-title="Hapus Data?"
+                                                confirm-description="Kegiatan aktual akan dihapus. Pastikan kegiatan ini tidak lagi dipakai untuk presensi atau rekap."
+                                                confirm-text="Hapus"
+                                                confirm-variant="danger"
+                                            />
+                                        </x-ui.action-dropdown>
                                     </div>
                                 </td>
                             </tr>

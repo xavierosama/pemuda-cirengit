@@ -26,7 +26,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6" x-data="{ submitting: false }" x-on:submit="submitting = true">
             @csrf
             @method('put')
 
@@ -128,9 +128,7 @@
             </div>
 
             <div class="mt-6 flex justify-end">
-                <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">
-                    Simpan Pengaturan
-                </button>
+                <x-ui.submit-button class="rounded-xl px-5 py-2.5 font-bold" loading-text="Mengupload...">Simpan Pengaturan</x-ui.submit-button>
             </div>
         </form>
     </div>

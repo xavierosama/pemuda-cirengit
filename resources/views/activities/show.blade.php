@@ -105,10 +105,10 @@
             <div class="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                 <a href="{{ route('activities.edit', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-amber-300 px-4 py-2.5 text-sm font-semibold text-amber-700 hover:bg-amber-50">Edit Kegiatan</a>
                 <a href="{{ route('activities.attendances.index', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Buka Daftar Hadir</a>
-                <div x-data="{ open: false }" x-on:confirmed="$refs.syncParticipantsForm.submit()">
+                <div x-data="{ open: false, submitting: false }" x-on:confirmed="submitting = true; $refs.syncParticipantsForm.submit()">
                     <form x-ref="syncParticipantsForm" method="POST" action="{{ route('activities.attendances.sync-participants', $activity) }}" x-on:submit.prevent="open = true">
                         @csrf
-                        <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-300 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Sinkronkan Peserta</button>
+                        <x-ui.submit-button class="w-full" variant="primary" size="lg" loading-text="Menyinkronkan...">Sinkronkan Peserta</x-ui.submit-button>
                     </form>
 
                     <x-ui.confirm-modal
@@ -158,7 +158,7 @@
             <h3 class="text-base font-bold text-slate-950">Status Perubahan</h3>
             <p class="mt-3 text-sm text-slate-600">Status saat ini: <span class="font-semibold text-slate-800">{{ $statusLabels[$activity->status] }}</span></p>
 
-            <form method="POST" action="{{ route('activities.status.update', $activity) }}" class="mt-6 grid gap-4 border-t border-slate-200 pt-6 sm:grid-cols-[220px_1fr_auto]">
+            <form method="POST" action="{{ route('activities.status.update', $activity) }}" class="mt-6 grid gap-4 border-t border-slate-200 pt-6 sm:grid-cols-[220px_1fr_auto]" x-data="{ submitting: false }" x-on:submit="submitting = true">
                 @csrf @method('PATCH')
                 <select name="status" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600" required>
                     @foreach ($statusLabels as $value => $label)
@@ -166,7 +166,7 @@
                     @endforeach
                 </select>
                 <input name="change_reason" type="text" value="{{ $activity->change_reason }}" placeholder="Alasan perubahan status" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                <button type="submit" class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Perbarui Status</button>
+                <x-ui.submit-button variant="secondary" loading-text="Menyimpan...">Perbarui Status</x-ui.submit-button>
             </form>
         </section>
     </div>

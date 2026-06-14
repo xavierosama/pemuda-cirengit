@@ -135,35 +135,37 @@
                                 };
                                 $time = trim(($agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '').($agendaSchedule->end_time ? ' - '.substr($agendaSchedule->end_time, 0, 5) : ''));
                             @endphp
-                            <tr class="transition hover:bg-slate-50/70">
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-500">{{ $agendaSchedules->firstItem() + $loop->index }}</td>
-                                <td class="px-4 py-4"><p class="whitespace-nowrap text-sm font-semibold text-slate-900">{{ $agendaSchedule->title }}</p></td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $agendaSchedule->department?->name ?? '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $agendaSchedule->pic?->full_name ?? '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4"><span class="{{ $typeClasses[$agendaSchedule->schedule_type] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $typeLabels[$agendaSchedule->schedule_type] }}</span></td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $pattern }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $time !== '' ? $time : '-' }}</td>
-                                <td class="max-w-56 px-4 py-4 text-sm text-slate-600">{{ str($agendaSchedule->default_location ?: '-')->limit(45) }}</td>
-                                <td class="whitespace-nowrap px-4 py-4"><span class="{{ $agendaSchedule->is_active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $agendaSchedule->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $agendaSchedule->created_at?->format('d/m/Y') ?? '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right text-sm font-semibold">
+                            <tr class="align-top transition hover:bg-slate-50/70">
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ $agendaSchedules->firstItem() + $loop->index }}</td>
+                                <td class="max-w-56 px-3 py-4"><p class="line-clamp-2 break-words text-sm font-semibold text-slate-900">{{ $agendaSchedule->title }}</p></td>
+                                <td class="max-w-32 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $agendaSchedule->department?->name ?? '-' }}</span></td>
+                                <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $agendaSchedule->pic?->full_name ?? '-' }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4"><span class="{{ $typeClasses[$agendaSchedule->schedule_type] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $typeLabels[$agendaSchedule->schedule_type] }}</span></td>
+                                <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $pattern }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $time !== '' ? $time : '-' }}</td>
+                                <td class="max-w-44 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $agendaSchedule->default_location ?: '-' }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4"><span class="{{ $agendaSchedule->is_active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $agendaSchedule->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $agendaSchedule->created_at?->format('d/m/Y') ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
                                         <x-action-icon :href="route('agenda-schedules.show', $agendaSchedule)" label="Detail" icon="eye" variant="blue" />
-                                        <x-action-icon :href="route('agenda-schedules.edit', $agendaSchedule)" label="Edit" icon="pencil" variant="amber" />
-                                        @if ($agendaSchedule->is_active)
-                                            <x-action-icon
-                                                :action="route('agenda-schedules.deactivate', $agendaSchedule)"
-                                                method="PATCH"
-                                                label="Nonaktifkan"
-                                                icon="ban"
-                                                variant="slate"
-                                                confirm="Nonaktifkan jadwal agenda ini?"
-                                                confirm-title="Nonaktifkan Jadwal Agenda?"
-                                                confirm-description="Jadwal agenda tidak akan aktif untuk pembuatan kegiatan berikutnya sampai diaktifkan kembali melalui edit data."
-                                                confirm-text="Nonaktifkan"
-                                                confirm-variant="warning"
-                                            />
-                                        @endif
+                                        <x-ui.action-dropdown>
+                                            <x-ui.action-dropdown-item :href="route('agenda-schedules.edit', $agendaSchedule)" label="Edit" icon="pencil" />
+                                            @if ($agendaSchedule->is_active)
+                                                <x-ui.action-dropdown-item
+                                                    :action="route('agenda-schedules.deactivate', $agendaSchedule)"
+                                                    method="PATCH"
+                                                    label="Nonaktifkan"
+                                                    icon="ban"
+                                                    variant="warning"
+                                                    confirm="Nonaktifkan jadwal agenda ini?"
+                                                    confirm-title="Nonaktifkan Jadwal Agenda?"
+                                                    confirm-description="Jadwal agenda tidak akan aktif untuk pembuatan kegiatan berikutnya sampai diaktifkan kembali melalui edit data."
+                                                    confirm-text="Nonaktifkan"
+                                                    confirm-variant="warning"
+                                                />
+                                            @endif
+                                        </x-ui.action-dropdown>
                                     </div>
                                 </td>
                             </tr>

@@ -17,7 +17,7 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('positions.store') }}">
+        <form method="POST" action="{{ route('positions.store') }}" x-data="{ submitting: false }" x-on:submit="submitting = true">
             @include('positions._form')
         </form>
     </div>

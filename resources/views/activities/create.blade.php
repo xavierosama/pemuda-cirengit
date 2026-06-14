@@ -24,7 +24,7 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('activities.store') }}">
+        <form method="POST" action="{{ route('activities.store') }}" x-data="{ submitting: false }" x-on:submit="submitting = true">
             @include('activities._form')
         </form>
     </div>

@@ -27,7 +27,7 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('members.update', $member) }}">
+        <form method="POST" action="{{ route('members.update', $member) }}" x-data="{ submitting: false }" x-on:submit="submitting = true">
             @method('PUT')
             @include('members._form')
         </form>

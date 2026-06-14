@@ -3,6 +3,7 @@
     'type' => 'button',
     'variant' => 'primary',
     'size' => 'md',
+    'loadingText' => 'Memproses...',
 ])
 
 @php
@@ -24,16 +25,26 @@
 
 @if ($href)
     <a href="{{ $href }}" {{ $attributes->merge(['class' => $class]) }}>
+        <svg x-cloak x-show="typeof submitting !== 'undefined' && submitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-90" fill="currentColor" d="M21 12a9 9 0 0 0-9-9v4a5 5 0 0 1 5 5h4Z"></path>
+        </svg>
         @isset($icon)
             {{ $icon }}
         @endisset
-        {{ $slot }}
+        <span x-show="!(typeof submitting !== 'undefined' && submitting)">{{ $slot }}</span>
+        <span x-cloak x-show="typeof submitting !== 'undefined' && submitting">{{ $loadingText }}</span>
     </a>
 @else
-    <button type="{{ $type }}" {{ $attributes->merge(['class' => $class]) }}>
+    <button type="{{ $type }}" x-bind:disabled="typeof submitting !== 'undefined' && submitting" {{ $attributes->merge(['class' => $class.' disabled:cursor-not-allowed disabled:opacity-80']) }}>
+        <svg x-cloak x-show="typeof submitting !== 'undefined' && submitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-90" fill="currentColor" d="M21 12a9 9 0 0 0-9-9v4a5 5 0 0 1 5 5h4Z"></path>
+        </svg>
         @isset($icon)
             {{ $icon }}
         @endisset
-        {{ $slot }}
+        <span x-show="!(typeof submitting !== 'undefined' && submitting)">{{ $slot }}</span>
+        <span x-cloak x-show="typeof submitting !== 'undefined' && submitting">{{ $loadingText }}</span>
     </button>
 @endif

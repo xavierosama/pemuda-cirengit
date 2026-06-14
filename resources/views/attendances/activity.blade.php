@@ -70,10 +70,10 @@
         <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                 <a href="{{ route('activities.show', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Kembali ke Detail Kegiatan</a>
-                <div x-data="{ open: false }" x-on:confirmed="$refs.syncParticipantsForm.submit()">
+                <div x-data="{ open: false, submitting: false }" x-on:confirmed="submitting = true; $refs.syncParticipantsForm.submit()">
                     <form x-ref="syncParticipantsForm" method="POST" action="{{ route('activities.attendances.sync-participants', $activity) }}" x-on:submit.prevent="open = true">
                         @csrf
-                        <button type="submit" class="inline-flex w-full items-center justify-center rounded-lg border border-emerald-300 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Sinkronkan Peserta Presensi</button>
+                        <x-ui.submit-button class="w-full" variant="primary" loading-text="Menyinkronkan...">Sinkronkan Peserta Presensi</x-ui.submit-button>
                     </form>
 
                     <x-ui.confirm-modal
@@ -93,7 +93,20 @@
                 @else
                     <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-400">Link Belum Tersedia</button>
                 @endif
-                <a href="{{ route('activities.attendances.export', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Export Excel</a>
+                <a
+                    href="{{ route('activities.attendances.export', $activity) }}"
+                    x-data="{ submitting: false }"
+                    x-on:click="submitting = true"
+                    x-bind:class="{ 'pointer-events-none opacity-80': submitting }"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-600 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                >
+                    <svg x-cloak x-show="submitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                    <span x-show="! submitting">Export Excel</span>
+                    <span x-cloak x-show="submitting">Menyiapkan file...</span>
+                </a>
                 <a href="{{ route('activities.attendances.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Input Satu Anggota</a>
                 <a href="{{ route('activities.attendances.bulk.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Input Massal</a>
             </div>
@@ -148,23 +161,25 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($attendances as $attendance)
-                            <tr>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendances->firstItem() + $loop->index }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->member->npa ?: '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">{{ $attendance->member->full_name }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->member->position?->name ?? '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4"><span class="{{ $statusClasses[$attendance->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$attendance->status] }}</span></td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm capitalize text-slate-600">{{ $attendance->attendance_method }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' m' : '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4"><span class="{{ $verificationClasses[$attendance->verification_status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $verificationLabels[$attendance->verification_status] }}</span></td>
-                                <td class="max-w-64 px-4 py-4 text-sm text-slate-600">{{ str($attendance->notes ?: '-')->limit(60) }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right"><div class="flex justify-end gap-2">
-                                    @if ($attendance->verification_status === 'need_verification')
-                                        <x-action-icon :action="route('attendances.verify', $attendance)" method="PATCH" label="Verifikasi" icon="check" variant="emerald" />
-                                        <x-action-icon :action="route('attendances.reject', $attendance)" method="PATCH" label="Tolak" icon="x" variant="red" />
-                                    @endif
+                            <tr class="align-top">
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $attendances->firstItem() + $loop->index }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $attendance->member->npa ?: '-' }}</td>
+                                <td class="max-w-48 px-3 py-4 text-sm font-semibold text-slate-900"><span class="line-clamp-2 break-words">{{ $attendance->member->full_name }}</span></td>
+                                <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $attendance->member->position?->name ?? '-' }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4"><span class="{{ $statusClasses[$attendance->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$attendance->status] }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm capitalize text-slate-600">{{ $attendance->attendance_method }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' m' : '-' }}</td>
+                                <td class="whitespace-nowrap px-3 py-4"><span class="{{ $verificationClasses[$attendance->verification_status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $verificationLabels[$attendance->verification_status] }}</span></td>
+                                <td class="max-w-48 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $attendance->notes ?: '-' }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4 text-right"><div class="flex justify-end gap-1.5">
                                     <x-action-icon :href="route('attendances.edit', $attendance)" label="Ubah Status" icon="pencil" variant="amber" />
+                                    @if ($attendance->verification_status === 'need_verification')
+                                        <x-ui.action-dropdown>
+                                            <x-ui.action-dropdown-item :action="route('attendances.verify', $attendance)" method="PATCH" label="Verifikasi" icon="check" />
+                                            <x-ui.action-dropdown-item :action="route('attendances.reject', $attendance)" method="PATCH" label="Tolak" icon="x" variant="danger" />
+                                        </x-ui.action-dropdown>
+                                    @endif
                                 </div></td>
                             </tr>
                         @empty

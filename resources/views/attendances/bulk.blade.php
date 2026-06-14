@@ -21,7 +21,7 @@
             </a>
         </div>
 
-        <form method="POST" action="{{ route('activities.attendances.bulk.store', $activity) }}">
+        <form method="POST" action="{{ route('activities.attendances.bulk.store', $activity) }}" x-data="{ submitting: false }" x-on:submit="submitting = true">
             @csrf
             @method('PUT')
             <input type="hidden" name="activity_id" value="{{ $activity->id }}">
@@ -81,7 +81,7 @@
 
             <div class="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                 <a href="{{ route('activities.attendances.index', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Batal</a>
-                <button type="submit" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-60" @disabled($members->isEmpty())>Simpan Semua Kehadiran</button>
+                <x-ui.submit-button size="lg" loading-text="Menyimpan..." :disabled="$members->isEmpty()">Simpan Semua Kehadiran</x-ui.submit-button>
             </div>
         </form>
     </div>

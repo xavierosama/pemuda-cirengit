@@ -20,7 +20,7 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('positions.update', $position) }}">
+        <form method="POST" action="{{ route('positions.update', $position) }}" x-data="{ submitting: false }" x-on:submit="submitting = true">
             @method('PUT')
             @include('positions._form', ['position' => $position])
         </form>

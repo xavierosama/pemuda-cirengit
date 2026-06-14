@@ -184,16 +184,16 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($activityRows as $row)
-                            <tr>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $row['activity']->activity_date->format('d/m/Y') }}</td>
-                                <td class="px-4 py-4 text-sm font-semibold text-slate-900">{{ $row['activity']->title }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $row['activity']->department?->name ?? '-' }}</td>
+                            <tr class="align-top">
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $row['activity']->activity_date->format('d/m/Y') }}</td>
+                                <td class="max-w-sm px-3 py-4 text-sm font-semibold text-slate-900"><span class="line-clamp-2 break-words">{{ $row['activity']->title }}</span></td>
+                                <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $row['activity']->department?->name ?? '-' }}</span></td>
                                 <td class="px-4 py-4"><x-ui.status-badge status="present" :label="number_format($row['counts']['present'])" /></td>
                                 <td class="px-4 py-4"><x-ui.status-badge status="permission" :label="number_format($row['counts']['permission'])" /></td>
                                 <td class="px-4 py-4"><x-ui.status-badge status="absent" :label="number_format($row['counts']['absent'])" /></td>
                                 <td class="px-4 py-4"><x-ui.status-badge status="need_verification" :label="number_format($row['counts']['need_verification'])" /></td>
-                                <td class="whitespace-nowrap px-4 py-4"><span class="{{ $percentageClass($row['attendance_percentage']) }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['attendance_percentage'], 2) }}%</span></td>
-                                <td class="whitespace-nowrap px-4 py-4 text-right"><x-ui.action-icon :href="route('activities.attendances.index', $row['activity'])" label="Detail" variant="detail" /></td>
+                                <td class="whitespace-nowrap px-3 py-4"><span class="{{ $percentageClass($row['attendance_percentage']) }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['attendance_percentage'], 2) }}%</span></td>
+                                <td class="whitespace-nowrap px-3 py-4 text-right"><x-ui.action-icon :href="route('activities.attendances.index', $row['activity'])" label="Detail" variant="detail" /></td>
                             </tr>
                         @empty
                             <tr><td colspan="9"><x-ui.empty-state title="Belum ada kegiatan pada periode ini." description="Ubah filter periode atau pilih kegiatan lain." /></td></tr>
@@ -229,14 +229,14 @@
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($memberRows as $row)
-                            <tr>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm text-slate-600">{{ $row['member']->npa ?: '-' }}</td>
-                                <td class="whitespace-nowrap px-4 py-4 text-sm font-semibold text-slate-900">{{ $row['member']->full_name }}</td>
+                            <tr class="align-top">
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $row['member']->npa ?: '-' }}</td>
+                                <td class="max-w-sm px-3 py-4 text-sm font-semibold text-slate-900"><span class="line-clamp-2 break-words">{{ $row['member']->full_name }}</span></td>
                                 <td class="px-4 py-4"><x-ui.status-badge status="present" :label="number_format($row['counts']['present'])" /></td>
                                 <td class="px-4 py-4"><x-ui.status-badge status="permission" :label="number_format($row['counts']['permission'])" /></td>
                                 <td class="px-4 py-4"><x-ui.status-badge status="absent" :label="number_format($row['counts']['absent'])" /></td>
                                 <td class="px-4 py-4"><x-ui.status-badge status="need_verification" :label="number_format($row['counts']['need_verification'])" /></td>
-                                <td class="whitespace-nowrap px-4 py-4"><span class="{{ $percentageClass($row['attendance_percentage']) }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['attendance_percentage'], 2) }}%</span></td>
+                                <td class="whitespace-nowrap px-3 py-4"><span class="{{ $percentageClass($row['attendance_percentage']) }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['attendance_percentage'], 2) }}%</span></td>
                             </tr>
                         @empty
                             <tr><td colspan="7"><x-ui.empty-state title="Belum ada anggota aktif sesuai filter." description="Ubah filter bidang atau periode untuk melihat data lain." /></td></tr>

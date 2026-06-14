@@ -263,7 +263,11 @@
                                 @endif
                             </div>
 
-                            <button type="submit" :disabled="locating || processing || !@js($canSubmit)" class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-700 px-5 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                            <button type="submit" :disabled="locating || processing || !@js($canSubmit)" class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-700 px-5 py-3.5 text-base font-bold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
+                                <svg x-cloak x-show="locating || processing" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                </svg>
                                 <span x-text="locating ? 'Mengambil lokasi...' : (processing ? 'Memproses presensi...' : 'Saya Hadir')"></span>
                             </button>
                         </form>

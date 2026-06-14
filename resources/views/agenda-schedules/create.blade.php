@@ -24,7 +24,7 @@
             </div>
         </div>
 
-        <form method="POST" action="{{ route('agenda-schedules.store') }}">
+        <form method="POST" action="{{ route('agenda-schedules.store') }}" x-data="{ submitting: false }" x-on:submit="submitting = true">
             @include('agenda-schedules._form')
         </form>
     </div>
