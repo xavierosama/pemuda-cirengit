@@ -3,6 +3,12 @@
 @section('title', 'Jadwal Agenda - Pemuda Cirengit')
 @section('section', 'Agenda')
 @section('page-title', 'Jadwal Agenda')
+@section('breadcrumb')
+    <x-ui.breadcrumb :items="[
+        ['label' => 'Dashboard', 'url' => route('dashboard')],
+        ['label' => 'Jadwal Agenda'],
+    ]" />
+@endsection
 
 @section('content')
     @php

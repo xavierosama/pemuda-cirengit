@@ -3,6 +3,13 @@
 @section('title', 'Tambah Kegiatan Aktual - Pemuda Cirengit')
 @section('section', 'Kegiatan')
 @section('page-title', 'Tambah Kegiatan Aktual')
+@section('breadcrumb')
+    <x-ui.breadcrumb :items="[
+        ['label' => 'Dashboard', 'url' => route('dashboard')],
+        ['label' => 'Kegiatan Aktual', 'url' => route('activities.index')],
+        ['label' => 'Tambah Kegiatan Aktual'],
+    ]" />
+@endsection
 
 @section('content')
     <div class="mx-auto max-w-5xl space-y-6">

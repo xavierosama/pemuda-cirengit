@@ -3,6 +3,13 @@
 @section('title', 'Edit Jadwal Agenda - Pemuda Cirengit')
 @section('section', 'Agenda')
 @section('page-title', 'Edit Jadwal Agenda')
+@section('breadcrumb')
+    <x-ui.breadcrumb :items="[
+        ['label' => 'Dashboard', 'url' => route('dashboard')],
+        ['label' => 'Jadwal Agenda', 'url' => route('agenda-schedules.index')],
+        ['label' => 'Edit Jadwal Agenda'],
+    ]" />
+@endsection
 
 @section('content')
     <div class="mx-auto max-w-5xl space-y-6">

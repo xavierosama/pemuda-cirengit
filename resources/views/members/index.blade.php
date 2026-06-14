@@ -3,6 +3,12 @@
 @section('title', 'Data Anggota - Pemuda Cirengit')
 @section('section', 'Master Data')
 @section('page-title', 'Data Anggota')
+@section('breadcrumb')
+    <x-ui.breadcrumb :items="[
+        ['label' => 'Dashboard', 'url' => route('dashboard')],
+        ['label' => 'Data Anggota'],
+    ]" />
+@endsection
 
 @section('content')
     @php

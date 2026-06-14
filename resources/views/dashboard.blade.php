@@ -3,6 +3,11 @@
 @section('title', 'Dashboard - Pemuda Cirengit')
 @section('section', 'Ringkasan')
 @section('page-title', 'Dashboard')
+@section('breadcrumb')
+    <x-ui.breadcrumb :items="[
+        ['label' => 'Dashboard'],
+    ]" />
+@endsection
 
 @section('content')
     @php

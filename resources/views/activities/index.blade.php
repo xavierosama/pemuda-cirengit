@@ -3,6 +3,12 @@
 @section('title', 'Kegiatan Aktual - Pemuda Cirengit')
 @section('section', 'Kegiatan')
 @section('page-title', 'Kegiatan Aktual')
+@section('breadcrumb')
+    <x-ui.breadcrumb :items="[
+        ['label' => 'Dashboard', 'url' => route('dashboard')],
+        ['label' => 'Kegiatan Aktual'],
+    ]" />
+@endsection
 
 @section('content')
     @php

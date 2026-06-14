@@ -13,6 +13,12 @@
     @section('title', 'Edit Profil - '.$appName)
     @section('section', 'Pengaturan')
     @section('page-title', 'Edit Profil')
+    @section('breadcrumb')
+        <x-ui.breadcrumb :items="[
+            ['label' => 'Dashboard', 'url' => route('dashboard')],
+            ['label' => 'Edit Profil'],
+        ]" />
+    @endsection
 
     @section('content')
         @include('profile.partials.profile-page-content', ['backRoute' => route('dashboard'), 'backLabel' => 'Kembali ke Dashboard Admin'])
@@ -63,7 +69,13 @@
             </header>
 
             <main class="px-4 py-6 sm:px-6 lg:px-8">
-                @include('profile.partials.profile-page-content', ['backRoute' => route('member.home'), 'backLabel' => 'Kembali ke Dashboard Anggota'])
+                <div class="mx-auto max-w-5xl space-y-4">
+                    <x-ui.breadcrumb :items="[
+                        ['label' => 'Dashboard Anggota', 'url' => route('member.home')],
+                        ['label' => 'Edit Profil'],
+                    ]" />
+                    @include('profile.partials.profile-page-content', ['backRoute' => route('member.home'), 'backLabel' => 'Kembali ke Dashboard Anggota'])
+                </div>
             </main>
         </body>
     </html>

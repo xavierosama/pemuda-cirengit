@@ -3,6 +3,14 @@
 @section('title', 'Daftar Hadir Kegiatan - Pemuda Cirengit')
 @section('section', 'Presensi')
 @section('page-title', 'Daftar Hadir Kegiatan')
+@section('breadcrumb')
+    <x-ui.breadcrumb :items="[
+        ['label' => 'Dashboard', 'url' => route('dashboard')],
+        ['label' => 'Kegiatan Aktual', 'url' => route('activities.index')],
+        ['label' => 'Daftar Hadir', 'url' => route('attendances.index')],
+        ['label' => 'Daftar Hadir per Kegiatan'],
+    ]" />
+@endsection
 
 @section('content')
     @php

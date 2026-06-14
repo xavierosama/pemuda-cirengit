@@ -3,6 +3,12 @@
 @section('title', 'Pengaturan Sistem - '.app(\App\Support\SystemSettings::class)->get('app_name'))
 @section('section', 'Pengaturan')
 @section('page-title', 'Pengaturan Sistem')
+@section('breadcrumb')
+    <x-ui.breadcrumb :items="[
+        ['label' => 'Dashboard', 'url' => route('dashboard')],
+        ['label' => 'Pengaturan Sistem'],
+    ]" />
+@endsection
 
 @section('content')
     <div class="mx-auto max-w-5xl space-y-6">

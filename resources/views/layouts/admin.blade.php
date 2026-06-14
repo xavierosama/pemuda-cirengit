@@ -251,7 +251,15 @@
                 </header>
 
                 <main class="px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
-                    <div class="mx-auto w-full max-w-7xl">
+                    <div class="mx-auto w-full max-w-7xl space-y-4">
+                        @hasSection('breadcrumb')
+                            @yield('breadcrumb')
+                        @else
+                            <x-ui.breadcrumb :items="[
+                                ['label' => 'Dashboard', 'url' => route('dashboard')],
+                                ['label' => trim($__env->yieldContent('page-title', 'Dashboard'))],
+                            ]" />
+                        @endif
                         @yield('content')
                     </div>
                 </main>
