@@ -35,7 +35,9 @@ class AttendanceReportTest extends TestCase
             ->assertSee('01/06/2026 - 30/06/2026')
             ->assertSee('10/06/2026')
             ->assertSee('Rapat Dakwah')
+            ->assertSee('Bahasan dakwah pekanan')
             ->assertSee('Kajian Pendidikan')
+            ->assertSee('Rekap H/TH/I/V')
             ->assertSee('NPA-001')
             ->assertSee('cdn.jsdelivr.net/npm/chart.js', false)
             ->assertViewHas('summary', fn (array $summary) => $summary === [
@@ -144,8 +146,10 @@ class AttendanceReportTest extends TestCase
         $dakwahActivity = Activity::create([
             'department_id' => $dakwah->id,
             'title' => 'Rapat Dakwah',
+            'topic' => 'Bahasan dakwah pekanan',
             'activity_date' => '2026-06-10',
             'start_time' => '20:00',
+            'end_time' => '21:30',
             'attendance_radius' => 100,
             'status' => 'scheduled',
             'created_by' => $user->id,
@@ -153,8 +157,10 @@ class AttendanceReportTest extends TestCase
         $educationActivity = Activity::create([
             'department_id' => $pendidikan->id,
             'title' => 'Kajian Pendidikan',
+            'description' => 'Kajian lanjutan anggota.',
             'activity_date' => '2026-06-20',
             'start_time' => '08:00',
+            'end_time' => '10:00',
             'attendance_radius' => 100,
             'status' => 'scheduled',
             'created_by' => $user->id,

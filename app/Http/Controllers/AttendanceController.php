@@ -54,7 +54,7 @@ class AttendanceController extends Controller
             )
             ->when($startDate, fn ($query) => $query->whereDate('activity_date', '>=', $startDate))
             ->when($endDate, fn ($query) => $query->whereDate('activity_date', '<=', $endDate))
-            ->tap(fn ($query) => TableControls::applySort($query, $currentSort, $currentDirection, $allowedSorts, fn ($query) => $query->orderByDesc('activity_date')->orderByDesc('start_time')))
+            ->tap(fn ($query) => TableControls::applySort($query, $currentSort, $currentDirection, $allowedSorts, fn ($query) => $this->applyDefaultAttendanceSort($query)))
             ->paginate($perPage)
             ->withQueryString();
 
@@ -322,5 +322,23 @@ class AttendanceController extends Controller
     private function statuses(): array
     {
         return ['present', 'permission', 'absent', 'need_verification'];
+    }
+
+    private function applyDefaultAttendanceSort($query): void
+    {
+        $now = now();
+        $today = $now->toDateString();
+
+        $query
+            ->orderByRaw(
+                "CASE WHEN status IN ('scheduled', 'relocated') AND attendance_open_at <= ? AND attendance_close_at >= ? THEN 0 ELSE 1 END ASC",
+                [$now, $now]
+            )
+            ->orderByRaw('CASE WHEN activity_date >= ? THEN 0 ELSE 1 END ASC', [$today])
+            ->orderByRaw('CASE WHEN activity_date >= ? THEN activity_date END ASC', [$today])
+            ->orderByRaw('CASE WHEN activity_date >= ? THEN start_time END ASC', [$today])
+            ->orderByRaw('CASE WHEN activity_date < ? THEN activity_date END DESC', [$today])
+            ->orderByRaw('CASE WHEN activity_date < ? THEN start_time END DESC', [$today])
+            ->orderBy('id');
     }
 }

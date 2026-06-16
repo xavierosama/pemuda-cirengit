@@ -92,6 +92,21 @@
 
             <main class="px-4 py-4 sm:px-6 sm:py-5 lg:px-8">
                 <div class="mx-auto max-w-5xl space-y-4">
+                    @if (session('success') || session('warning') || session('info'))
+                        <section class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm">
+                            <p class="text-sm font-semibold text-emerald-900">{{ session('success') ?? session('warning') ?? session('info') }}</p>
+                            <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                                <a href="{{ route('member.home') }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-800">Kembali ke Dashboard</a>
+                                <a href="#kegiatan-mendatang" class="inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-50">Lihat Agenda Berikutnya</a>
+                                <a href="#riwayat-presensi" class="inline-flex items-center justify-center rounded-lg border border-emerald-300 bg-white px-4 py-2 text-sm font-bold text-emerald-700 hover:bg-emerald-50">Lihat Riwayat Presensi</a>
+                            </div>
+                        </section>
+                    @endif
+
+                    @if ($errors->has('reason'))
+                        <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{{ $errors->first('reason') }}</div>
+                    @endif
+
                     <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
                         <h2 class="sr-only">Profil Anggota</h2>
                         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -160,8 +175,10 @@
                                         $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
                                         $canCheckIn = ! $attendance || $attendance->status === 'absent';
                                         $attendanceAvailability = $activity->attendanceAvailability();
+                                        $attendanceOpenAt = $activity->effectiveAttendanceOpenAt();
+                                        $attendanceCloseAt = $activity->effectiveAttendanceCloseAt();
                                     @endphp
-                                    <article class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 dark:border-emerald-900/60 dark:bg-emerald-500/5 sm:p-4">
+                                    <article class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 dark:border-emerald-900/60 dark:bg-emerald-500/5 sm:p-4" x-data="{ permissionOpen: false, submittingPermission: false }" @keydown.escape.window="permissionOpen = false">
                                         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                             <div class="min-w-0">
                                                 <div class="flex flex-wrap items-center gap-2">
@@ -175,7 +192,7 @@
                                                     <p class="sm:col-span-2"><span class="font-semibold text-slate-900">Lokasi:</span> {{ $activity->location ?: '-' }}</p>
                                                     <p><span class="font-semibold text-slate-900">Bidang:</span> {{ $activity->department?->name ?? '-' }}</p>
                                                     <p><span class="font-semibold text-slate-900">PIC:</span> {{ $activity->pic?->full_name ?? '-' }}</p>
-                                                    <p class="sm:col-span-2"><span class="font-semibold text-slate-900">Presensi:</span> {{ $activity->attendance_open_at?->format('d/m/Y H:i') }} - {{ $activity->attendance_close_at?->format('d/m/Y H:i') }}</p>
+                                                    <p class="sm:col-span-2"><span class="font-semibold text-slate-900">Presensi:</span> {{ $attendanceOpenAt?->format('d/m/Y H:i') ?? '-' }} - {{ $attendanceCloseAt?->format('d/m/Y H:i') ?? '-' }}</p>
                                                 </div>
                                             </div>
 
@@ -189,6 +206,36 @@
                                                         <button type="submit" data-default-text="Saya Hadir" class="inline-flex w-full items-center justify-center rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:bg-emerald-500 disabled:opacity-80">Saya Hadir</button>
                                                         <p class="member-check-in-message text-xs text-slate-500">Akses lokasi akan diminta.</p>
                                                     </form>
+                                                    <button type="button" @click="permissionOpen = true" class="mt-2 inline-flex w-full items-center justify-center rounded-xl border border-sky-300 bg-white px-4 py-2.5 text-sm font-bold text-sky-700 shadow-sm transition hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2">Ajukan Izin</button>
+
+                                                    <div x-cloak x-show="permissionOpen" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" @click.self="permissionOpen = false">
+                                                        <div x-show="permissionOpen" x-transition class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-xl">
+                                                            <div class="flex items-start justify-between gap-3">
+                                                                <div>
+                                                                    <h3 class="text-lg font-bold text-slate-950">Ajukan Izin</h3>
+                                                                    <p class="mt-1 text-sm text-slate-500">Tuliskan alasan izin untuk kegiatan {{ $activity->title }}.</p>
+                                                                </div>
+                                                                <button type="button" @click="permissionOpen = false" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Tutup modal">
+                                                                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 0 1 1.414 0L10 8.586l4.293-4.293a1 1 0 1 1 1.414 1.414L11.414 10l4.293 4.293a1 1 0 0 1-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L8.586 10 4.293 5.707a1 1 0 0 1 0-1.414Z" clip-rule="evenodd" /></svg>
+                                                                </button>
+                                                            </div>
+                                                            <form method="POST" action="{{ route('member.activities.permission', $activity) }}" class="mt-5 space-y-4" @submit="submittingPermission = true">
+                                                                @csrf
+                                                                <div>
+                                                                    <label for="permission_reason_{{ $activity->id }}" class="block text-sm font-semibold text-slate-700">Alasan izin</label>
+                                                                    <textarea id="permission_reason_{{ $activity->id }}" name="reason" rows="4" maxlength="500" required class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500" placeholder="Contoh: sedang sakit atau ada keperluan keluarga.">{{ old('reason') }}</textarea>
+                                                                    <p class="mt-1 text-xs text-slate-500">Wajib diisi, maksimal 500 karakter.</p>
+                                                                </div>
+                                                                <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                                                    <button type="button" @click="permissionOpen = false" class="inline-flex justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
+                                                                    <button type="submit" :disabled="submittingPermission" class="inline-flex justify-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-70">
+                                                                        <span x-show="! submittingPermission">Kirim Izin</span>
+                                                                        <span x-cloak x-show="submittingPermission">Mengirim...</span>
+                                                                    </button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
                                                 @else
                                                     <div class="rounded-xl border border-slate-200 bg-white p-3">
                                                         <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Presensi Anda</p>
@@ -198,6 +245,10 @@
                                                         </div>
                                                         <p class="mt-2 text-xs text-slate-500">Waktu presensi</p>
                                                         <p class="text-sm font-semibold text-slate-800">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</p>
+                                                        @if ($attendance->status === 'permission' && $attendance->notes)
+                                                            <p class="mt-2 text-xs text-slate-500">Alasan izin</p>
+                                                            <p class="line-clamp-3 text-sm text-slate-700">{{ $attendance->notes }}</p>
+                                                        @endif
                                                     </div>
                                                 @endif
                                             </div>
@@ -211,7 +262,7 @@
                     </section>
 
                     <div class="grid gap-4 lg:grid-cols-[1.35fr_0.65fr]">
-                        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+                        <section id="kegiatan-mendatang" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
                             <div class="border-b border-slate-100 pb-3 dark:border-slate-800">
                                 <h2 class="text-base font-bold text-slate-950">Kegiatan Mendatang</h2>
                                 <p class="mt-1 text-sm text-slate-500">Maksimal 5 agenda terdekat untuk anggota.</p>
@@ -231,6 +282,7 @@
                                             }
                                             $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
                                             $attendanceAvailability = $activity->attendanceAvailability();
+                                            $subInfo = $activity->topic ?: ($activity->description ?: $activity->location);
                                         @endphp
                                         <article class="flex gap-3 py-2.5 first:pt-0 last:pb-0">
                                             <div class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500 ring-4 ring-emerald-50"></div>
@@ -243,6 +295,9 @@
                                                         <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">{{ $dateLabel }}</span>
                                                     @endif
                                                 </div>
+                                                @if ($subInfo)
+                                                    <p class="mt-1 line-clamp-1 text-xs font-medium text-slate-500">{{ $subInfo }}</p>
+                                                @endif
                                                 <p class="mt-1 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }} &middot; {{ $time !== '' ? $time : '-' }}</p>
                                                 <p class="mt-1 truncate text-xs text-slate-500">{{ $activity->location ?: '-' }} &middot; {{ $activity->department?->name ?? '-' }}</p>
                                                 @if ($activity->pic)
@@ -288,7 +343,7 @@
                             </button>
                             <div x-cloak x-show="open" x-transition class="border-t border-slate-100 px-4 pb-4 dark:border-slate-800">
                                 <ol class="mt-3 space-y-2.5">
-                                    @foreach (['Scan QR atau buka link kegiatan', 'Login dengan akun anggota', 'Izinkan akses lokasi', 'Klik Saya Hadir', 'Pastikan berada dalam radius lokasi kegiatan'] as $step)
+                                    @foreach (['Scan QR atau buka link kegiatan', 'Login dengan akun anggota', 'Izinkan akses lokasi untuk hadir', 'Klik Saya Hadir atau Ajukan Izin', 'Pastikan berada dalam radius lokasi kegiatan saat hadir'] as $step)
                                         <li class="flex gap-3 text-sm text-slate-700">
                                             <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-xs font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">{{ $loop->iteration }}</span>
                                             <span>{{ $step }}</span>
@@ -299,7 +354,7 @@
                         </section>
                     </div>
 
-                    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <section id="riwayat-presensi" class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
                         <div class="border-b border-slate-200 px-4 py-3 dark:border-slate-800 sm:px-5">
                             <h2 class="text-base font-bold text-slate-950">Riwayat Presensi Pribadi</h2>
                             <p class="mt-1 text-sm text-slate-500">Maksimal 10 presensi terbaru yang tercatat.</p>
@@ -316,7 +371,12 @@
                                 <tbody class="divide-y divide-slate-100 bg-white">
                                     @forelse ($attendanceHistory as $attendance)
                                         <tr class="transition hover:bg-slate-50/70">
-                                            <td class="px-4 py-2.5"><p class="whitespace-nowrap text-sm font-semibold text-slate-900">{{ $attendance->activity?->title ?? '-' }}</p></td>
+                                            <td class="px-4 py-2.5">
+                                                <p class="whitespace-nowrap text-sm font-semibold text-slate-900">{{ $attendance->activity?->title ?? '-' }}</p>
+                                                @if ($attendance->status === 'permission' && $attendance->notes)
+                                                    <p class="mt-1 line-clamp-1 text-xs text-slate-500">Alasan: {{ $attendance->notes }}</p>
+                                                @endif
+                                            </td>
                                             <td class="whitespace-nowrap px-4 py-2.5 text-sm text-slate-600">{{ $attendance->activity?->activity_date?->format('d/m/Y') ?? '-' }}</td>
                                             <td class="whitespace-nowrap px-4 py-2.5 text-sm text-slate-600">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</td>
                                             <td class="whitespace-nowrap px-4 py-2.5">

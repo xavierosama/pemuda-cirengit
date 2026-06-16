@@ -24,7 +24,7 @@ class DashboardController extends Controller
         ];
 
         $upcomingActivities = Activity::query()
-            ->with('department')
+            ->with(['agendaSchedule', 'department', 'pic'])
             ->whereDate('activity_date', '>=', today())
             ->orderBy('activity_date')
             ->orderByRaw('start_time is null')

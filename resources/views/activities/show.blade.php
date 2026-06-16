@@ -17,6 +17,8 @@
         $statusClasses = ['scheduled' => 'bg-sky-50 text-sky-700 ring-sky-200', 'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'holiday' => 'bg-slate-100 text-slate-600 ring-slate-200', 'postponed' => 'bg-amber-50 text-amber-700 ring-amber-200', 'relocated' => 'bg-cyan-50 text-cyan-700 ring-cyan-200', 'cancelled' => 'bg-red-50 text-red-700 ring-red-200'];
         $attendanceUrl = $activity->attendance_token ? route('attendance.check-in.show', $activity->attendance_token, true) : null;
         $attendanceAvailability = $activity->attendanceAvailability();
+        $attendanceOpenAt = $activity->effectiveAttendanceOpenAt();
+        $attendanceCloseAt = $activity->effectiveAttendanceCloseAt();
         $activityTime = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
         $summaryCards = [
             ['label' => 'Total Hadir', 'value' => $attendanceSummary['present'], 'class' => 'border-l-emerald-500'],
@@ -86,8 +88,8 @@
 
                 <dl class="mt-6 grid gap-4 sm:grid-cols-2">
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Status Presensi Dinamis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendanceAvailabilityLabel() }}</dd></div>
-                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Buka Otomatis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendance_open_at?->format('d/m/Y H:i') ?? '-' }}</dd></div>
-                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Tutup Otomatis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendance_close_at?->format('d/m/Y H:i') ?? '-' }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Buka Otomatis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $attendanceOpenAt?->format('d/m/Y H:i') ?? '-' }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Tutup Otomatis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $attendanceCloseAt?->format('d/m/Y H:i') ?? '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Radius Presensi</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendance_radius }} meter</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Latitude</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->latitude ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Longitude</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->longitude ?: '-' }}</dd></div>

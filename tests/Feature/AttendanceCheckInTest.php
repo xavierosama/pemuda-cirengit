@@ -58,6 +58,7 @@ class AttendanceCheckInTest extends TestCase
         $disabled = $this->createOpenActivity([
             'attendance_token' => 'disabled-token',
             'attendance_enabled' => false,
+            'status' => 'cancelled',
         ]);
 
         $this->actingAs($user)->get(route('attendance.check-in.show', $notOpen->attendance_token))->assertSee('Presensi belum dibuka.');
@@ -83,6 +84,61 @@ class AttendanceCheckInTest extends TestCase
         $this->assertSame('valid', $attendance->verification_status);
         $this->assertLessThanOrEqual(100, (float) $attendance->distance_from_activity);
         $this->assertSame('8.50', $attendance->location_accuracy);
+    }
+
+    public function test_member_can_submit_permission_from_check_in_page_without_location(): void
+    {
+        Carbon::setTestNow('2026-06-25 10:00:00');
+        [$user, $member] = $this->createMemberUser();
+        $user->update(['role' => 'member']);
+        $activity = $this->createOpenActivity();
+
+        $this->actingAs($user)
+            ->get(route('attendance.check-in.show', $activity->attendance_token))
+            ->assertOk()
+            ->assertSee('Ajukan Izin');
+
+        $this->actingAs($user)
+            ->post(route('attendance.check-in.permission', $activity->attendance_token), [
+                'reason' => 'Sedang sakit dan perlu istirahat.',
+            ])
+            ->assertRedirect(route('member.home'))
+            ->assertSessionHas('success', 'Pengajuan izin berhasil dikirim.');
+
+        $this->assertDatabaseHas('attendances', [
+            'activity_id' => $activity->id,
+            'member_id' => $member->id,
+            'status' => 'permission',
+            'attendance_method' => 'link',
+            'checked_in_at' => null,
+            'verification_status' => 'valid',
+            'notes' => 'Sedang sakit dan perlu istirahat.',
+        ]);
+    }
+
+    public function test_member_cannot_change_present_attendance_to_permission(): void
+    {
+        Carbon::setTestNow('2026-06-25 10:00:00');
+        [$user, $member] = $this->createMemberUser();
+        $user->update(['role' => 'member']);
+        $activity = $this->createOpenActivity();
+        Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $member->id,
+            'status' => 'present',
+            'attendance_method' => 'link',
+            'checked_in_at' => '2026-06-25 10:00:00',
+            'verification_status' => 'valid',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('attendance.check-in.permission', $activity->attendance_token), [
+                'reason' => 'Ingin mengubah menjadi izin.',
+            ])
+            ->assertSessionHas('info', 'Presensi Anda untuk kegiatan ini sudah tercatat.');
+
+        $this->assertSame('present', Attendance::firstOrFail()->status);
+        $this->assertNull(Attendance::firstOrFail()->notes);
     }
 
     public function test_member_check_in_can_update_synced_absent_attendance_to_present(): void
@@ -211,6 +267,35 @@ class AttendanceCheckInTest extends TestCase
         $this->assertSame('valid', $attendance->verification_status);
         $this->assertLessThanOrEqual(100, (float) $attendance->distance_from_activity);
         $this->assertSame('8.50', $attendance->location_accuracy);
+    }
+
+    public function test_member_dashboard_can_submit_permission_from_absent_record(): void
+    {
+        Carbon::setTestNow('2026-06-25 10:00:00');
+        [$user, $member] = $this->createMemberUser();
+        $user->update(['role' => 'member']);
+        $activity = $this->createOpenActivity();
+        Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $member->id,
+            'status' => 'absent',
+            'attendance_method' => 'manual',
+            'verification_status' => 'valid',
+        ]);
+
+        $this->actingAs($user)
+            ->post(route('member.activities.permission', $activity), [
+                'reason' => 'Ada keperluan keluarga.',
+            ])
+            ->assertRedirect(route('member.home'))
+            ->assertSessionHas('success', 'Pengajuan izin berhasil dikirim.');
+
+        $attendance = Attendance::firstOrFail();
+        $this->assertSame('permission', $attendance->status);
+        $this->assertSame('link', $attendance->attendance_method);
+        $this->assertSame('valid', $attendance->verification_status);
+        $this->assertSame('Ada keperluan keluarga.', $attendance->notes);
+        $this->assertNull($attendance->checked_in_at);
     }
 
     public function test_member_dashboard_check_in_outside_radius_requires_verification_and_does_not_duplicate(): void

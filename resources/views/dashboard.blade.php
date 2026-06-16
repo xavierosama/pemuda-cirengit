@@ -25,6 +25,7 @@
             ['label' => 'Total Tidak Hadir', 'value' => $monthlyAttendanceSummary['absent'], 'color' => 'text-slate-700'],
             ['label' => 'Total Perlu Verifikasi', 'value' => $monthlyAttendanceSummary['need_verification'], 'color' => 'text-amber-700'],
         ];
+        $dayLabels = [0 => 'Minggu', 1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'];
     @endphp
 
     <div class="space-y-6">
@@ -54,30 +55,39 @@
                     <x-ui.button :href="route('activities.index')" variant="secondary" size="sm">Lihat semua kegiatan</x-ui.button>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-slate-200">
-                        <thead class="bg-slate-50">
-                            <tr>
-                                @foreach (['Nama Kegiatan', 'Tanggal', 'Waktu', 'Lokasi', 'Status', 'Aksi'] as $heading)
-                                    <th class="{{ $heading === 'Aksi' ? 'text-right' : 'text-left' }} px-5 py-3 text-xs font-bold uppercase tracking-wide text-slate-500">{{ $heading }}</th>
-                                @endforeach
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            @forelse ($upcomingActivities as $activity)
-                                <tr>
-                                    <td class="px-5 py-4 text-sm font-semibold text-slate-900">{{ $activity->title }}</td>
-                                    <td class="whitespace-nowrap px-5 py-4 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }}</td>
-                                    <td class="whitespace-nowrap px-5 py-4 text-sm text-slate-600">{{ $activity->start_time ? substr($activity->start_time, 0, 5) : '-' }}{{ $activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : '' }}</td>
-                                    <td class="max-w-64 px-5 py-4 text-sm text-slate-600">{{ str($activity->location ?: '-')->limit(55) }}</td>
-                                    <td class="whitespace-nowrap px-5 py-4"><x-ui.status-badge :status="$activity->status" :label="$statusLabels[$activity->status]" /></td>
-                                    <td class="whitespace-nowrap px-5 py-4 text-right"><x-ui.action-icon :href="route('activities.show', $activity)" label="Detail" variant="detail" /></td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="6"><x-ui.empty-state title="Belum ada kegiatan terdekat." description="Kegiatan terdekat akan muncul setelah dibuat." /></td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                <div class="divide-y divide-slate-100">
+                    @forelse ($upcomingActivities as $activity)
+                        @php
+                            $subInfo = $activity->topic
+                                ? 'Topik: '.$activity->topic
+                                : ($activity->description ?: ($activity->location ?: $activity->agendaSchedule?->default_location));
+                            $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
+                            $dateLabel = ($dayLabels[$activity->activity_date->dayOfWeek] ?? '').', '.$activity->activity_date->format('d/m/Y');
+                        @endphp
+                        <article class="grid gap-4 px-5 py-4 transition hover:bg-slate-50 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start">
+                            <div class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-sm font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                                {{ $loop->iteration }}
+                            </div>
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <h3 class="line-clamp-1 break-words text-sm font-bold text-slate-950">{{ $activity->title }}</h3>
+                                    <x-ui.status-badge :status="$activity->status" :label="$statusLabels[$activity->status]" />
+                                    <x-ui.status-badge :status="$activity->attendanceAvailability()" :label="$activity->attendanceAvailabilityLabel()" />
+                                </div>
+                                @if ($subInfo)
+                                    <p class="mt-2 line-clamp-2 break-words text-sm text-slate-600">{{ $subInfo }}</p>
+                                @endif
+                                <p class="mt-2 text-sm font-medium text-slate-700">{{ $dateLabel }} <span class="text-slate-400">&bull;</span> {{ $time !== '' ? $time : '-' }}</p>
+                                <p class="mt-1 line-clamp-1 text-xs text-slate-500">{{ $activity->location ?: '-' }}{{ $activity->department?->name ? ' • '.$activity->department->name : '' }}</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2 sm:justify-end">
+                                <x-ui.button :href="route('activities.show', $activity)" variant="secondary" size="sm">Detail</x-ui.button>
+                                <x-ui.button :href="route('activities.attendances.index', $activity)" size="sm">Daftar Hadir</x-ui.button>
+                            </div>
+                        </article>
+                    @empty
+                        <x-ui.empty-state title="Belum ada kegiatan terdekat." description="Kegiatan terdekat akan muncul setelah dibuat." />
+                    @endforelse
                 </div>
             </x-ui.card>
 

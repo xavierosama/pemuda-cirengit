@@ -143,7 +143,7 @@ class EndToEndFlowTest extends TestCase
 
         $this->actingAs($memberUser)
             ->post(route('attendance.check-in.store', $activity->attendance_token), $this->nearbyLocation())
-            ->assertRedirect(route('attendance.check-in.show', $activity->attendance_token))
+            ->assertRedirect(route('member.home'))
             ->assertSessionHas('success');
         $this->assertSame(1, Attendance::where('activity_id', $activity->id)->where('member_id', $member->id)->count());
         $this->assertDatabaseHas('attendances', [

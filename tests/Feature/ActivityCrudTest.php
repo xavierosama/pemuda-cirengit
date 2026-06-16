@@ -11,6 +11,7 @@ use App\Models\Position;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class ActivityCrudTest extends TestCase
@@ -291,6 +292,63 @@ class ActivityCrudTest extends TestCase
         $this->assertSame(120, $activity->attendance_radius);
         $this->assertSame('2026-06-20 18:00:00', $activity->attendance_open_at->format('Y-m-d H:i:s'));
         $this->assertSame('2026-06-20 21:00:00', $activity->attendance_close_at->format('Y-m-d H:i:s'));
+    }
+
+    public function test_attendance_status_uses_automatic_schedule_for_legacy_activity(): void
+    {
+        Carbon::setTestNow('2026-06-16 20:30:00');
+        Setting::create([
+            'key' => 'default_attendance_open_minutes_before',
+            'value' => '30',
+            'type' => 'integer',
+        ]);
+
+        $activity = Activity::create([
+            'title' => 'Kajian Legacy Presensi',
+            'activity_date' => '2026-06-16',
+            'start_time' => '20:00',
+            'end_time' => '22:00',
+            'attendance_radius' => 100,
+            'status' => 'scheduled',
+            'attendance_enabled' => false,
+            'attendance_open_at' => null,
+            'attendance_close_at' => null,
+        ]);
+
+        $this->assertSame('open', $activity->attendanceAvailability());
+        $this->assertSame('Dibuka', $activity->attendanceAvailabilityLabel());
+        $this->assertSame('2026-06-16 19:30:00', $activity->effectiveAttendanceOpenAt()->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-06-16 22:00:00', $activity->effectiveAttendanceCloseAt()->format('Y-m-d H:i:s'));
+
+        Carbon::setTestNow();
+    }
+
+    public function test_backfill_attendance_schedule_command_fills_legacy_activity(): void
+    {
+        Setting::create([
+            'key' => 'default_attendance_open_minutes_before',
+            'value' => '30',
+            'type' => 'integer',
+        ]);
+        $activity = Activity::create([
+            'title' => 'Kajian Backfill Presensi',
+            'activity_date' => '2026-06-16',
+            'start_time' => '20:00',
+            'end_time' => '22:00',
+            'attendance_radius' => 100,
+            'status' => 'scheduled',
+            'attendance_enabled' => false,
+        ]);
+
+        $this->artisan('activities:backfill-attendance-schedule')
+            ->expectsOutput('Backfill jadwal presensi selesai. 1 kegiatan diperbarui, 0 kegiatan dilewati.')
+            ->assertExitCode(0);
+
+        $activity->refresh();
+
+        $this->assertTrue($activity->attendance_enabled);
+        $this->assertSame('2026-06-16 19:30:00', $activity->attendance_open_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-06-16 22:00:00', $activity->attendance_close_at->format('Y-m-d H:i:s'));
     }
 
     public function test_activity_detail_page_shows_control_center_sections(): void

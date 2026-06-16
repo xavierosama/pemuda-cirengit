@@ -9,12 +9,19 @@ use App\Models\Member;
 use App\Models\Position;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use ZipArchive;
 use Tests\TestCase;
 
 class AttendanceCrudTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
 
     public function test_manual_attendance_updates_existing_record_without_duplicate(): void
     {
@@ -155,6 +162,44 @@ class AttendanceCrudTest extends TestCase
             ->assertRedirect(route('activities.attendances.index', $activity));
 
         $this->assertDatabaseMissing('attendances', ['id' => $attendance->id]);
+    }
+
+    public function test_attendance_index_default_sort_prioritizes_open_and_upcoming_activities(): void
+    {
+        Carbon::setTestNow('2026-06-16 20:30:00');
+        $user = User::factory()->create();
+        $this->createActivity($user, [
+            'title' => 'Kegiatan Lewat',
+            'activity_date' => '2026-06-15',
+            'start_time' => '20:00',
+            'end_time' => '22:00',
+            'attendance_open_at' => '2026-06-15 19:30:00',
+            'attendance_close_at' => '2026-06-15 22:00:00',
+        ]);
+        $this->createActivity($user, [
+            'title' => 'Kegiatan Besok',
+            'activity_date' => '2026-06-17',
+            'start_time' => '20:00',
+            'end_time' => '22:00',
+            'attendance_open_at' => '2026-06-17 19:30:00',
+            'attendance_close_at' => '2026-06-17 22:00:00',
+        ]);
+        $this->createActivity($user, [
+            'title' => 'Kajian Dibuka',
+            'topic' => 'Istifta dan keputusan hisbah',
+            'activity_date' => '2026-06-16',
+            'start_time' => '20:00',
+            'end_time' => '22:00',
+            'attendance_open_at' => '2026-06-16 19:30:00',
+            'attendance_close_at' => '2026-06-16 22:00:00',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('attendances.index'))
+            ->assertOk()
+            ->assertSee('Rekap H/TH/I/V')
+            ->assertSee('Istifta dan keputusan hisbah')
+            ->assertSeeInOrder(['Kajian Dibuka', 'Kegiatan Besok', 'Kegiatan Lewat']);
     }
 
     public function test_manual_attendance_validation_requires_unique_activity_member_context(): void

@@ -62,6 +62,7 @@
             ];
             $hasRecordedAttendance = $attendance && $attendance->status !== 'absent';
             $canSubmit = $member && $availability === 'open' && ! $hasRecordedAttendance && $activity->latitude !== null && $activity->longitude !== null;
+            $canRequestPermission = $member && $availability === 'open' && ! $hasRecordedAttendance;
             $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
         @endphp
 
@@ -93,6 +94,10 @@
                         <div class="{{ $classes }} rounded-xl border px-4 py-3 text-sm font-medium">{{ session($flash) }}</div>
                     @endif
                 @endforeach
+
+                @if ($errors->has('reason'))
+                    <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{{ $errors->first('reason') }}</div>
+                @endif
 
                 <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                     <div class="border-b border-slate-100 p-5">
@@ -167,7 +172,17 @@
                                 <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Jarak dari Lokasi</dt>
                                 <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' meter' : '-' }}</dd>
                             </div>
+                            @if ($attendance->status === 'permission' && $attendance->notes)
+                                <div class="sm:col-span-2">
+                                    <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Alasan Izin</dt>
+                                    <dd class="mt-1 whitespace-pre-line text-sm text-slate-700">{{ $attendance->notes }}</dd>
+                                </div>
+                            @endif
                         </dl>
+                        <div class="mt-5 flex flex-col gap-2 sm:flex-row">
+                            <a href="{{ route('member.home') }}" class="inline-flex flex-1 items-center justify-center rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800">Kembali ke Dashboard</a>
+                            <a href="{{ route('member.home') }}#kegiatan-mendatang" class="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Lihat Agenda Berikutnya</a>
+                        </div>
                     </section>
                 @else
                     @if ($availability !== 'open')
@@ -189,6 +204,8 @@
                             accuracy: '',
                             locating: false,
                             processing: false,
+                            permissionOpen: false,
+                            submittingPermission: false,
                             message: 'Tekan tombol Saya Hadir untuk mengambil lokasi dan mengirim presensi.',
                             submitAttendance(form) {
                                 if (!@js($canSubmit)) {
@@ -268,6 +285,37 @@
                                 <span x-text="locating ? 'Mengambil lokasi...' : (processing ? 'Memproses presensi...' : 'Saya Hadir')"></span>
                             </button>
                         </form>
+
+                        <button type="button" @click="permissionOpen = true" :disabled="!@js($canRequestPermission)" class="mt-3 inline-flex w-full items-center justify-center rounded-xl border border-sky-300 bg-white px-5 py-3 text-base font-bold text-sky-700 shadow-sm transition hover:bg-sky-50 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">Ajukan Izin</button>
+
+                        <div x-cloak x-show="permissionOpen" x-transition.opacity class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" @click.self="permissionOpen = false">
+                            <div x-show="permissionOpen" x-transition class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 text-left shadow-xl">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div>
+                                        <h3 class="text-lg font-bold text-slate-950">Ajukan Izin</h3>
+                                        <p class="mt-1 text-sm text-slate-500">Tuliskan alasan izin untuk kegiatan {{ $activity->title }}.</p>
+                                    </div>
+                                    <button type="button" @click="permissionOpen = false" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600" aria-label="Tutup modal">
+                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 0 1 1.414 0L10 8.586l4.293-4.293a1 1 0 1 1 1.414 1.414L11.414 10l4.293 4.293a1 1 0 0 1-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L8.586 10 4.293 5.707a1 1 0 0 1 0-1.414Z" clip-rule="evenodd" /></svg>
+                                    </button>
+                                </div>
+                                <form method="POST" action="{{ route('attendance.check-in.permission', $activity->attendance_token) }}" class="mt-5 space-y-4" @submit="submittingPermission = true">
+                                    @csrf
+                                    <div>
+                                        <label for="permission_reason" class="block text-sm font-semibold text-slate-700">Alasan izin</label>
+                                        <textarea id="permission_reason" name="reason" rows="4" maxlength="500" required class="mt-2 block w-full rounded-xl border-slate-300 text-sm shadow-sm focus:border-sky-500 focus:ring-sky-500" placeholder="Contoh: sedang sakit atau ada keperluan keluarga.">{{ old('reason') }}</textarea>
+                                        <p class="mt-1 text-xs text-slate-500">Wajib diisi, maksimal 500 karakter.</p>
+                                    </div>
+                                    <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                        <button type="button" @click="permissionOpen = false" class="inline-flex justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Batal</button>
+                                        <button type="submit" :disabled="submittingPermission" class="inline-flex justify-center rounded-lg bg-sky-600 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-700 disabled:cursor-not-allowed disabled:opacity-70">
+                                            <span x-show="! submittingPermission">Kirim Izin</span>
+                                            <span x-cloak x-show="submittingPermission">Mengirim...</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </section>
                 @endif
 

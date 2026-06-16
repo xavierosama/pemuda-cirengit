@@ -77,6 +77,56 @@ class MemberDashboardAttendanceController extends Controller
             );
     }
 
+    public function permission(Request $request, Activity $activity): RedirectResponse
+    {
+        $member = $request->user()->member;
+
+        if (! $member) {
+            return back()->with('error', 'Akun Anda belum terhubung dengan data anggota.');
+        }
+
+        if (! $activity->attendanceIsOpen()) {
+            return back()->with('error', 'Pengajuan izin hanya tersedia saat presensi kegiatan sedang dibuka.');
+        }
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $attendance = Attendance::where('activity_id', $activity->id)
+            ->where('member_id', $member->id)
+            ->first();
+
+        if ($attendance && $attendance->status !== 'absent') {
+            return back()->with('info', 'Presensi Anda untuk kegiatan ini sudah tercatat.');
+        }
+
+        $attendance ??= new Attendance([
+            'activity_id' => $activity->id,
+            'member_id' => $member->id,
+            'created_by' => $request->user()->id,
+        ]);
+
+        $attendance->fill([
+            'status' => 'permission',
+            'attendance_method' => 'link',
+            'checked_in_at' => null,
+            'latitude' => null,
+            'longitude' => null,
+            'distance_from_activity' => null,
+            'location_accuracy' => null,
+            'verification_status' => 'valid',
+            'verified_by' => null,
+            'verified_at' => null,
+            'notes' => $validated['reason'],
+        ]);
+        $attendance->save();
+
+        return redirect()
+            ->route('member.home')
+            ->with('success', 'Pengajuan izin berhasil dikirim.');
+    }
+
     private function haversineDistance(float $latitude, float $longitude, float $targetLatitude, float $targetLongitude): float
     {
         $earthRadius = 6371000;

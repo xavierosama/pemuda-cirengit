@@ -88,14 +88,71 @@ class AttendanceCheckInController extends Controller
         ]);
         $attendance->save();
 
-        return redirect()
-            ->route('attendance.check-in.show', $token)
-            ->with(
+        $redirect = $request->user()->role === 'member'
+            ? redirect()->route('member.home')
+            : redirect()->route('attendance.check-in.show', $token);
+
+        return $redirect->with(
                 $insideRadius ? 'success' : 'warning',
                 $insideRadius
                     ? 'Presensi berhasil. Lokasi Anda berada dalam radius kegiatan.'
                     : 'Presensi tersimpan dan perlu verifikasi admin karena lokasi berada di luar radius.'
             );
+    }
+
+    public function permission(Request $request, string $token): RedirectResponse
+    {
+        $activity = $this->findActivity($token);
+        $member = $request->user()->member;
+
+        if (! $member) {
+            return back()->with('error', 'Akun Anda belum terhubung dengan data anggota.');
+        }
+
+        $availability = $activity->attendanceAvailability();
+
+        if ($availability !== 'open') {
+            return back()->with('error', 'Pengajuan izin hanya tersedia saat presensi kegiatan sedang dibuka.');
+        }
+
+        $validated = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        $attendance = Attendance::where('activity_id', $activity->id)
+            ->where('member_id', $member->id)
+            ->first();
+
+        if ($attendance && $attendance->status !== 'absent') {
+            return back()->with('info', 'Presensi Anda untuk kegiatan ini sudah tercatat.');
+        }
+
+        $attendance ??= new Attendance([
+            'activity_id' => $activity->id,
+            'member_id' => $member->id,
+            'created_by' => $request->user()->id,
+        ]);
+
+        $attendance->fill([
+            'status' => 'permission',
+            'attendance_method' => 'link',
+            'checked_in_at' => null,
+            'latitude' => null,
+            'longitude' => null,
+            'distance_from_activity' => null,
+            'location_accuracy' => null,
+            'verification_status' => 'valid',
+            'verified_by' => null,
+            'verified_at' => null,
+            'notes' => $validated['reason'],
+        ]);
+        $attendance->save();
+
+        $redirect = $request->user()->role === 'member'
+            ? redirect()->route('member.home')
+            : redirect()->route('attendance.check-in.show', $token);
+
+        return $redirect->with('success', 'Pengajuan izin berhasil dikirim.');
     }
 
     private function findActivity(string $token): Activity

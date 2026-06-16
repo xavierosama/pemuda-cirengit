@@ -108,7 +108,7 @@
             <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h3 class="text-base font-bold text-slate-950">Tabel Daftar Hadir</h3>
-                    <p class="mt-1 text-sm text-slate-500">Ringkasan presensi per kegiatan. Gunakan scroll horizontal pada layar kecil.</p>
+                    <p class="mt-1 text-sm text-slate-500">Ringkasan presensi per kegiatan dalam tampilan compact.</p>
                 </div>
                 <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" />
             </div>
@@ -116,19 +116,12 @@
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">No</th>
-                            <x-sortable-th field="title" label="Nama Kegiatan" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
-                            <x-sortable-th field="activity_date" label="Tanggal" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
-                            <x-sortable-th field="start_time" label="Waktu" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
-                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Bidang</th>
-                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Lokasi</th>
-                            <x-sortable-th field="status" label="Status Kegiatan" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <th class="w-14 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">No</th>
+                            <x-sortable-th field="title" label="Kegiatan" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <x-sortable-th field="activity_date" label="Tanggal/Jam" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
                             <x-sortable-th field="attendance_enabled" label="Status Presensi" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
-                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Total Hadir</th>
-                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Total Izin</th>
-                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Total Tidak Hadir</th>
-                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Perlu Verifikasi</th>
-                            <th class="whitespace-nowrap px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Rekap H/TH/I/V</th>
+                            <th class="w-24 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 bg-white">
@@ -136,21 +129,38 @@
                             @php
                                 $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
                                 $attendanceAvailability = $activity->attendanceAvailability();
+                                $subInfo = $activity->topic ?: ($activity->description ?: $activity->location);
+                                $summaryBadges = [
+                                    ['short' => 'H', 'label' => 'Hadir', 'value' => $activity->present_count, 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-200'],
+                                    ['short' => 'TH', 'label' => 'Tidak Hadir', 'value' => $activity->absent_count, 'class' => 'bg-slate-100 text-slate-700 ring-slate-200'],
+                                    ['short' => 'I', 'label' => 'Izin', 'value' => $activity->permission_count, 'class' => 'bg-sky-50 text-sky-700 ring-sky-200'],
+                                    ['short' => 'V', 'label' => 'Perlu Verifikasi', 'value' => $activity->need_verification_count, 'class' => 'bg-amber-50 text-amber-700 ring-amber-200'],
+                                ];
                             @endphp
                             <tr class="align-top transition hover:bg-slate-50/70">
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ $activities->firstItem() + $loop->index }}</td>
-                                <td class="max-w-56 px-3 py-4"><p class="line-clamp-2 break-words text-sm font-semibold text-slate-900">{{ $activity->title }}</p><p class="mt-1 line-clamp-1 break-words text-xs text-slate-500">{{ $activity->pic?->full_name ? 'PIC: '.$activity->pic->full_name : 'Tanpa PIC' }}</p></td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $time !== '' ? $time : '-' }}</td>
-                                <td class="max-w-32 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->department?->name ?? '-' }}</span></td>
-                                <td class="max-w-44 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->location ?: '-' }}</span></td>
-                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$activity->status" :label="$statusLabels[$activity->status]" /></td>
-                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" /></td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-emerald-700">{{ number_format($activity->present_count) }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-sky-700">{{ number_format($activity->permission_count) }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-slate-700">{{ number_format($activity->absent_count) }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-amber-700">{{ number_format($activity->need_verification_count) }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
+                                <td class="px-3 py-4 text-sm text-slate-500">{{ $activities->firstItem() + $loop->index }}</td>
+                                <td class="max-w-md px-3 py-4">
+                                    <p class="line-clamp-2 break-words text-sm font-semibold text-slate-900">{{ $activity->title }}</p>
+                                    @if ($subInfo)
+                                        <p class="mt-1 line-clamp-1 break-words text-xs text-slate-500">{{ $subInfo }}</p>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-4 text-sm text-slate-600">
+                                    <span class="block font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</span>
+                                    <span class="mt-1 block text-xs text-slate-500">{{ $time !== '' ? $time : '-' }}</span>
+                                </td>
+                                <td class="px-3 py-4"><x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" /></td>
+                                <td class="px-3 py-4">
+                                    <div class="flex flex-wrap gap-1.5">
+                                        @foreach ($summaryBadges as $badge)
+                                            <span title="{{ $badge['label'] }}" class="{{ $badge['class'] }} inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ring-1 ring-inset">
+                                                <span>{{ $badge['short'] }}</span>
+                                                <span>{{ number_format($badge['value']) }}</span>
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                </td>
+                                <td class="px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
                                         <x-ui.action-icon :href="route('activities.show', $activity)" label="Detail Kegiatan" variant="detail" />
                                         <x-ui.action-dropdown>
@@ -176,7 +186,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="13">
+                                <td colspan="6">
                                     <x-ui.empty-state title="Belum ada kegiatan presensi." description="Tambahkan kegiatan aktual atau ubah filter pencarian." />
                                 </td>
                             </tr>

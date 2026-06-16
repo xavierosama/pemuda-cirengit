@@ -22,8 +22,9 @@ class SystemSettingTest extends TestCase
             ->assertOk()
             ->assertSee('Pengaturan Sistem')
             ->assertSee('Nama Aplikasi')
-            ->assertSee('Theme Mode')
-            ->assertSee('Pengaturan Presensi')
+            ->assertSee('Mode Tema')
+            ->assertSee('Logo Halaman Login')
+            ->assertSee('Default Presensi')
             ->assertSee('Default Radius Presensi');
     }
 

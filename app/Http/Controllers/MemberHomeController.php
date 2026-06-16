@@ -28,17 +28,15 @@ class MemberHomeController extends Controller
             $currentActivities = Activity::query()
                 ->with(['department', 'pic'])
                 ->with(['attendances' => fn ($query) => $query->where('member_id', $user->member->id)])
-                ->where('attendance_enabled', true)
                 ->whereIn('status', ['scheduled', 'relocated'])
-                ->whereNotNull('attendance_open_at')
-                ->whereNotNull('attendance_close_at')
-                ->where('attendance_open_at', '<=', now())
-                ->where('attendance_close_at', '>=', now())
+                ->whereDate('activity_date', now()->toDateString())
                 ->orderBy('activity_date')
                 ->orderByRaw('start_time is null')
                 ->orderBy('start_time')
-                ->limit(3)
-                ->get();
+                ->get()
+                ->filter(fn (Activity $activity) => $activity->isAttendanceOpen())
+                ->take(3)
+                ->values();
         }
 
         $upcomingActivities = Activity::query()

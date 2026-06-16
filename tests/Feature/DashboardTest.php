@@ -63,11 +63,16 @@ class DashboardTest extends TestCase
             $activity = Activity::create([
                 'department_id' => $department->id,
                 'title' => 'Kegiatan Mendatang '.$index,
+                'topic' => $index === 1 ? 'Istifta & Keputusan Dewan Hisbah' : null,
+                'description' => $index === 2 ? 'Kajian lanjutan untuk anggota.' : null,
                 'activity_date' => '2026-06-'.str_pad((string) (10 + $index), 2, '0', STR_PAD_LEFT),
                 'start_time' => '20:00',
                 'end_time' => '21:00',
                 'location' => 'Masjid Cirengit',
                 'status' => $index === 1 ? 'holiday' : 'scheduled',
+                'attendance_enabled' => $index !== 1,
+                'attendance_open_at' => '2026-06-'.str_pad((string) (10 + $index), 2, '0', STR_PAD_LEFT).' 19:30:00',
+                'attendance_close_at' => '2026-06-'.str_pad((string) (10 + $index), 2, '0', STR_PAD_LEFT).' 21:00:00',
                 'created_by' => $user->id,
             ]);
 
@@ -121,8 +126,14 @@ class DashboardTest extends TestCase
             ->assertViewHas('needVerificationAttendances', fn ($attendances) => $attendances->count() === 3)
             ->assertSee('Ringkasan Utama')
             ->assertSee('Anggota Belum Punya Akun')
+            ->assertSee('1')
             ->assertSee('Kegiatan Mendatang 1')
+            ->assertSee('Topik: Istifta &amp; Keputusan Dewan Hisbah', false)
+            ->assertSee('Kajian lanjutan untuk anggota.')
+            ->assertSee('Kamis, 11/06/2026')
             ->assertSee('20:00 - 21:00')
+            ->assertSee('Presensi')
+            ->assertSee('Daftar Hadir')
             ->assertSee('Rekap Presensi Bulan Ini')
             ->assertSee('16.67%')
             ->assertSee('Presensi Perlu Verifikasi')

@@ -171,32 +171,54 @@
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
-                            <x-sortable-th field="activity_date" label="Tanggal" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
-                            <x-sortable-th field="title" label="Nama Kegiatan" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
-                            <x-sortable-th field="department" label="Bidang" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
-                            <x-sortable-th field="present" label="Hadir" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
-                            <x-sortable-th field="permission" label="Izin" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
-                            <x-sortable-th field="absent" label="Tidak Hadir" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
-                            <x-sortable-th field="need_verification" label="Perlu Verifikasi" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
-                            <x-sortable-th field="attendance_percentage" label="Persentase Kehadiran" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
-                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
+                            <th class="w-14 px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">No</th>
+                            <x-sortable-th field="title" label="Kegiatan" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
+                            <x-sortable-th field="activity_date" label="Tanggal/Jam" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Rekap H/TH/I/V</th>
+                            <x-sortable-th field="attendance_percentage" label="Kehadiran" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
+                            <th class="w-20 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
                         @forelse ($activityRows as $row)
+                            @php
+                                $activity = $row['activity'];
+                                $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
+                                $subInfo = $activity->topic ?: ($activity->description ?: $activity->location);
+                                $summaryBadges = [
+                                    ['short' => 'H', 'label' => 'Hadir', 'value' => $row['counts']['present'], 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-200'],
+                                    ['short' => 'TH', 'label' => 'Tidak Hadir', 'value' => $row['counts']['absent'], 'class' => 'bg-slate-100 text-slate-700 ring-slate-200'],
+                                    ['short' => 'I', 'label' => 'Izin', 'value' => $row['counts']['permission'], 'class' => 'bg-sky-50 text-sky-700 ring-sky-200'],
+                                    ['short' => 'V', 'label' => 'Perlu Verifikasi', 'value' => $row['counts']['need_verification'], 'class' => 'bg-amber-50 text-amber-700 ring-amber-200'],
+                                ];
+                            @endphp
                             <tr class="align-top">
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $row['activity']->activity_date->format('d/m/Y') }}</td>
-                                <td class="max-w-sm px-3 py-4 text-sm font-semibold text-slate-900"><span class="line-clamp-2 break-words">{{ $row['activity']->title }}</span></td>
-                                <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $row['activity']->department?->name ?? '-' }}</span></td>
-                                <td class="px-4 py-4"><x-ui.status-badge status="present" :label="number_format($row['counts']['present'])" /></td>
-                                <td class="px-4 py-4"><x-ui.status-badge status="permission" :label="number_format($row['counts']['permission'])" /></td>
-                                <td class="px-4 py-4"><x-ui.status-badge status="absent" :label="number_format($row['counts']['absent'])" /></td>
-                                <td class="px-4 py-4"><x-ui.status-badge status="need_verification" :label="number_format($row['counts']['need_verification'])" /></td>
-                                <td class="whitespace-nowrap px-3 py-4"><span class="{{ $percentageClass($row['attendance_percentage']) }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['attendance_percentage'], 2) }}%</span></td>
-                                <td class="whitespace-nowrap px-3 py-4 text-right"><x-ui.action-icon :href="route('activities.attendances.index', $row['activity'])" label="Detail" variant="detail" /></td>
+                                <td class="px-3 py-4 text-sm text-slate-500">{{ $activityRows->firstItem() + $loop->index }}</td>
+                                <td class="max-w-md px-3 py-4">
+                                    <p class="line-clamp-2 break-words text-sm font-semibold text-slate-900">{{ $activity->title }}</p>
+                                    @if ($subInfo)
+                                        <p class="mt-1 line-clamp-1 break-words text-xs text-slate-500">{{ $subInfo }}</p>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-4 text-sm text-slate-600">
+                                    <span class="block font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</span>
+                                    <span class="mt-1 block text-xs text-slate-500">{{ $time !== '' ? $time : '-' }}</span>
+                                </td>
+                                <td class="px-3 py-4">
+                                    <div class="flex flex-wrap gap-1.5">
+                                        @foreach ($summaryBadges as $badge)
+                                            <span title="{{ $badge['label'] }}" class="{{ $badge['class'] }} inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ring-1 ring-inset">
+                                                <span>{{ $badge['short'] }}</span>
+                                                <span>{{ number_format($badge['value']) }}</span>
+                                            </span>
+                                        @endforeach
+                                    </div>
+                                </td>
+                                <td class="px-3 py-4"><span class="{{ $percentageClass($row['attendance_percentage']) }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['attendance_percentage'], 2) }}%</span></td>
+                                <td class="px-3 py-4 text-right"><x-ui.action-icon :href="route('activities.attendances.index', $activity)" label="Detail" variant="detail" /></td>
                             </tr>
                         @empty
-                            <tr><td colspan="9"><x-ui.empty-state title="Belum ada kegiatan pada periode ini." description="Ubah filter periode atau pilih kegiatan lain." /></td></tr>
+                            <tr><td colspan="6"><x-ui.empty-state title="Belum ada kegiatan pada periode ini." description="Ubah filter periode atau pilih kegiatan lain." /></td></tr>
                         @endforelse
                     </tbody>
                 </table>

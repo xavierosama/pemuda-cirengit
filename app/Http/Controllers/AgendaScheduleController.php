@@ -6,6 +6,7 @@ use App\Models\AgendaSchedule;
 use App\Models\Activity;
 use App\Models\Department;
 use App\Models\Member;
+use App\Services\ActivityAttendanceScheduleService;
 use App\Services\AttendanceSyncService;
 use App\Support\SystemSettings;
 use App\Support\TableControls;
@@ -134,6 +135,7 @@ class AgendaScheduleController extends Controller
         $endOfMonth = $startOfMonth->copy()->endOfMonth();
         $picId = $agendaSchedule->pic_id ?: $this->departmentChairPicId($agendaSchedule->department_id);
         $attendanceDefaults = app(SystemSettings::class)->attendanceDefaults();
+        $attendanceSchedule = app(ActivityAttendanceScheduleService::class);
         $created = 0;
         $skippedInactive = 0;
         $skippedDuplicate = 0;
@@ -165,11 +167,10 @@ class AgendaScheduleController extends Controller
                 continue;
             }
 
-            $attendanceTimes = $this->defaultAttendanceTimes(
+            $attendanceTimes = $attendanceSchedule->times(
                 $date->toDateString(),
                 $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : null,
-                $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : null,
-                $attendanceDefaults
+                $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : null
             );
 
             $activity = Activity::create([
@@ -286,23 +287,6 @@ class AgendaScheduleController extends Controller
     private function scheduleTypes(): array
     {
         return ['incidental', 'weekly', 'monthly', 'yearly'];
-    }
-
-    private function defaultAttendanceTimes(string $activityDate, ?string $startTime, ?string $endTime, array $attendanceDefaults): array
-    {
-        $times = [];
-        $date = Carbon::parse($activityDate)->format('Y-m-d');
-
-        if ($startTime) {
-            $times['open_at'] = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$startTime}")
-                ->subMinutes($attendanceDefaults['open_minutes_before']);
-        }
-
-        if ($endTime) {
-            $times['close_at'] = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$endTime}");
-        }
-
-        return $times;
     }
 
     private function monthlyOccurrences(AgendaSchedule $agendaSchedule, Carbon $startOfMonth, Carbon $endOfMonth): array

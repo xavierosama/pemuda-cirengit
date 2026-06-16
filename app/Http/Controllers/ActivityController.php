@@ -6,10 +6,10 @@ use App\Models\Activity;
 use App\Models\AgendaSchedule;
 use App\Models\Department;
 use App\Models\Member;
+use App\Services\ActivityAttendanceScheduleService;
 use App\Services\AttendanceSyncService;
 use App\Support\SystemSettings;
 use App\Support\TableControls;
-use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -255,33 +255,7 @@ class ActivityController extends Controller
 
     private function applyAutomaticAttendanceSchedule(array &$data): void
     {
-        $attendanceTimes = $this->defaultAttendanceTimes(
-            $data['activity_date'],
-            $data['start_time'] ?? null,
-            $data['end_time'] ?? null,
-            app(SystemSettings::class)->attendanceDefaults()
-        );
-
-        $data['attendance_enabled'] = in_array($data['status'] ?? null, ['scheduled', 'relocated', 'completed'], true);
-        $data['attendance_open_at'] = $attendanceTimes['open_at'] ?? null;
-        $data['attendance_close_at'] = $attendanceTimes['close_at'] ?? null;
-    }
-
-    private function defaultAttendanceTimes(string $activityDate, ?string $startTime, ?string $endTime, array $attendanceDefaults): array
-    {
-        $times = [];
-        $date = Carbon::parse($activityDate)->format('Y-m-d');
-
-        if ($startTime) {
-            $times['open_at'] = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$startTime}")
-                ->subMinutes($attendanceDefaults['open_minutes_before']);
-        }
-
-        if ($endTime) {
-            $times['close_at'] = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$endTime}");
-        }
-
-        return $times;
+        app(ActivityAttendanceScheduleService::class)->applyToData($data);
     }
 
     private function formOptions(): array

@@ -9,6 +9,8 @@
         $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
         $shortUrl = $attendanceUrl ? preg_replace('#^https?://#', '', $attendanceUrl) : null;
         $attendanceAvailability = $activity->attendanceAvailability();
+        $attendanceOpenAt = $activity->effectiveAttendanceOpenAt();
+        $attendanceCloseAt = $activity->effectiveAttendanceCloseAt();
     @endphp
 
     <div class="mx-auto max-w-5xl space-y-5" x-data="{ copied: false }">
@@ -97,11 +99,11 @@
                     </div>
                     <div class="rounded-xl bg-slate-50 p-4">
                         <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu Buka Presensi Otomatis</dt>
-                        <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $activity->attendance_open_at?->format('d/m/Y H:i') ?? '-' }}</dd>
+                        <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $attendanceOpenAt?->format('d/m/Y H:i') ?? '-' }}</dd>
                     </div>
                     <div class="rounded-xl bg-slate-50 p-4">
                         <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu Tutup Presensi Otomatis</dt>
-                        <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $activity->attendance_close_at?->format('d/m/Y H:i') ?? '-' }}</dd>
+                        <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $attendanceCloseAt?->format('d/m/Y H:i') ?? '-' }}</dd>
                     </div>
                 </dl>
             </section>
