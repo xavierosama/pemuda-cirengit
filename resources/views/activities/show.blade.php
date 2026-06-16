@@ -16,6 +16,7 @@
         $statusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Pindah Lokasi', 'cancelled' => 'Dibatalkan'];
         $statusClasses = ['scheduled' => 'bg-sky-50 text-sky-700 ring-sky-200', 'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'holiday' => 'bg-slate-100 text-slate-600 ring-slate-200', 'postponed' => 'bg-amber-50 text-amber-700 ring-amber-200', 'relocated' => 'bg-cyan-50 text-cyan-700 ring-cyan-200', 'cancelled' => 'bg-red-50 text-red-700 ring-red-200'];
         $attendanceUrl = $activity->attendance_token ? route('attendance.check-in.show', $activity->attendance_token, true) : null;
+        $attendanceAvailability = $activity->attendanceAvailability();
         $activityTime = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
         $summaryCards = [
             ['label' => 'Total Hadir', 'value' => $attendanceSummary['present'], 'class' => 'border-l-emerald-500'],
@@ -70,26 +71,28 @@
             <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Pengaturan Presensi</p>
-                        <h3 class="mt-2 text-lg font-bold text-slate-950">Link, radius, dan koordinat</h3>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Presensi Otomatis</p>
+                        <h3 class="mt-2 text-lg font-bold text-slate-950">Jadwal, radius, dan koordinat</h3>
                     </div>
-                    <span class="{{ $activity->attendance_enabled ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex shrink-0 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset">{{ $activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif' }}</span>
+                    <x-ui.status-badge class="shrink-0" :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" />
                 </div>
 
-                @if (! $activity->attendance_enabled)
-                    <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">Presensi belum diaktifkan untuk kegiatan ini.</div>
+                @if ($attendanceAvailability === 'not_available')
+                    <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">Presensi tidak tersedia untuk status kegiatan ini.</div>
                 @elseif (! $attendanceUrl)
                     <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">Token presensi belum tersedia. Buka halaman QR untuk membuat token otomatis.</div>
                 @endif
 
                 <dl class="mt-6 grid gap-4 sm:grid-cols-2">
-                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Buka</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendance_open_at?->format('d/m/Y H:i') ?? '-' }}</dd></div>
-                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Tutup</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendance_close_at?->format('d/m/Y H:i') ?? '-' }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Status Presensi Dinamis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendanceAvailabilityLabel() }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Buka Otomatis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendance_open_at?->format('d/m/Y H:i') ?? '-' }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Tutup Otomatis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendance_close_at?->format('d/m/Y H:i') ?? '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Radius Presensi</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendance_radius }} meter</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Latitude</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->latitude ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Longitude</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->longitude ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Attendance Token</dt><dd class="mt-1 break-all font-mono text-xs text-slate-700">{{ $activity->attendance_token ? str($activity->attendance_token)->limit(18, '...') : '-' }}</dd></div>
                 </dl>
+                <p class="mt-5 rounded-lg bg-slate-50 px-4 py-3 text-xs font-medium text-slate-600">Waktu presensi dihitung otomatis dari jadwal kegiatan.</p>
             </section>
         </div>
 
@@ -118,10 +121,10 @@
                         variant="warning"
                     />
                 </div>
-                @if ($activity->attendance_enabled)
+                @if ($attendanceAvailability !== 'not_available')
                     <a href="{{ route('activities.attendance-qr', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800">Lihat QR Presensi</a>
                 @else
-                    <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-lg bg-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-500">QR Belum Aktif</button>
+                    <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-lg bg-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-500">QR Tidak Tersedia</button>
                 @endif
                 @if ($attendanceUrl)
                     <button type="button" @click="navigator.clipboard.writeText(@js($attendanceUrl)).then(() => { copied = true; setTimeout(() => copied = false, 2000) })" class="inline-flex items-center justify-center rounded-lg border border-cyan-300 px-4 py-2.5 text-sm font-semibold text-cyan-700 hover:bg-cyan-50">Salin Link Presensi</button>

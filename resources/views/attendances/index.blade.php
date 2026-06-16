@@ -21,7 +21,7 @@
             'cancelled' => 'Dibatalkan',
         ];
         $summaryCards = [
-            ['label' => 'Total Kegiatan dengan Presensi Aktif', 'value' => $attendanceStats['active_activities'], 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-100'],
+            ['label' => 'Total Kegiatan dengan Presensi Terjadwal', 'value' => $attendanceStats['active_activities'], 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-100'],
             ['label' => 'Total Presensi Bulan Ini', 'value' => $attendanceStats['monthly_total'], 'class' => 'bg-slate-50 text-slate-700 ring-slate-200'],
             ['label' => 'Total Hadir Bulan Ini', 'value' => $attendanceStats['monthly_present'], 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-100'],
             ['label' => 'Total Izin Bulan Ini', 'value' => $attendanceStats['monthly_permission'], 'class' => 'bg-sky-50 text-sky-700 ring-sky-100'],
@@ -53,7 +53,7 @@
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="mb-4">
                 <h3 class="text-base font-bold text-slate-950">Filter Daftar Hadir</h3>
-                <p class="mt-1 text-sm text-slate-500">Saring kegiatan berdasarkan nama, bidang, status kegiatan, status presensi, dan periode.</p>
+                <p class="mt-1 text-sm text-slate-500">Saring kegiatan berdasarkan nama, bidang, status kegiatan, ketersediaan presensi, dan periode.</p>
             </div>
             <form method="GET" action="{{ route('attendances.index') }}" class="grid gap-4 lg:grid-cols-12">
                 <input type="hidden" name="sort" value="{{ $currentSort }}">
@@ -85,8 +85,8 @@
                     <label for="attendance_enabled" class="text-sm font-semibold text-slate-700">Status presensi</label>
                     <select id="attendance_enabled" name="attendance_enabled" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
                         <option value="">Semua</option>
-                        <option value="1" @selected($attendanceStatus === '1')>Aktif</option>
-                        <option value="0" @selected($attendanceStatus === '0')>Tidak Aktif</option>
+                        <option value="1" @selected($attendanceStatus === '1')>Terjadwal</option>
+                        <option value="0" @selected($attendanceStatus === '0')>Tidak tersedia</option>
                     </select>
                 </div>
                 <div class="lg:col-span-1">
@@ -135,6 +135,7 @@
                         @forelse ($activities as $activity)
                             @php
                                 $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
+                                $attendanceAvailability = $activity->attendanceAvailability();
                             @endphp
                             <tr class="align-top transition hover:bg-slate-50/70">
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ $activities->firstItem() + $loop->index }}</td>
@@ -144,7 +145,7 @@
                                 <td class="max-w-32 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->department?->name ?? '-' }}</span></td>
                                 <td class="max-w-44 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->location ?: '-' }}</span></td>
                                 <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$activity->status" :label="$statusLabels[$activity->status]" /></td>
-                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$activity->attendance_enabled ? 'active' : 'inactive'" :label="$activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif'" /></td>
+                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" /></td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-emerald-700">{{ number_format($activity->present_count) }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-sky-700">{{ number_format($activity->permission_count) }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-slate-700">{{ number_format($activity->absent_count) }}</td>
@@ -154,7 +155,7 @@
                                         <x-ui.action-icon :href="route('activities.show', $activity)" label="Detail Kegiatan" variant="detail" />
                                         <x-ui.action-dropdown>
                                             <x-ui.action-dropdown-item :href="route('activities.attendances.index', $activity)" label="Buka Daftar Hadir" icon="check" />
-                                            @if ($activity->attendance_enabled)
+                                            @if ($attendanceAvailability !== 'not_available')
                                                 <x-ui.action-dropdown-item :href="route('activities.attendance-qr', $activity)" label="QR Presensi" icon="qr" />
                                             @endif
                                             <x-ui.action-dropdown-item

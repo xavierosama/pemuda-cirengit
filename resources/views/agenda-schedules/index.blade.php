@@ -12,12 +12,12 @@
 
 @section('content')
     @php
-        $typeLabels = ['once' => 'Sekali', 'daily' => 'Harian', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan'];
+        $typeLabels = ['incidental' => 'Insidental', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan', 'yearly' => 'Tahunan'];
         $typeClasses = [
-            'once' => 'bg-slate-100 text-slate-700 ring-slate-200',
-            'daily' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+            'incidental' => 'bg-slate-100 text-slate-700 ring-slate-200',
             'weekly' => 'bg-sky-50 text-sky-700 ring-sky-200',
             'monthly' => 'bg-violet-50 text-violet-700 ring-violet-200',
+            'yearly' => 'bg-amber-50 text-amber-700 ring-amber-200',
         ];
         $dayLabels = [0 => 'Minggu', 1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'];
         $summaryCards = [
@@ -128,10 +128,11 @@
                         @forelse ($agendaSchedules as $agendaSchedule)
                             @php
                                 $pattern = match ($agendaSchedule->schedule_type) {
-                                    'once' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
-                                    'daily' => 'Setiap hari',
+                                    'incidental' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
                                     'weekly' => isset($dayLabels[$agendaSchedule->day_of_week]) ? 'Setiap '.$dayLabels[$agendaSchedule->day_of_week] : '-',
                                     'monthly' => $agendaSchedule->day_of_month ? 'Setiap tanggal '.$agendaSchedule->day_of_month : '-',
+                                    'yearly' => $agendaSchedule->specific_date ? 'Tahunan, '.$agendaSchedule->specific_date->format('d/m') : 'Tahunan',
+                                    default => '-',
                                 };
                                 $time = trim(($agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '').($agendaSchedule->end_time ? ' - '.substr($agendaSchedule->end_time, 0, 5) : ''));
                             @endphp
@@ -151,6 +152,9 @@
                                         <x-action-icon :href="route('agenda-schedules.show', $agendaSchedule)" label="Detail" icon="eye" variant="blue" />
                                         <x-ui.action-dropdown>
                                             <x-ui.action-dropdown-item :href="route('agenda-schedules.edit', $agendaSchedule)" label="Edit" icon="pencil" />
+                                            @if ($agendaSchedule->schedule_type === 'weekly')
+                                                <x-ui.action-dropdown-item :href="route('agenda-schedules.generate-monthly.create', $agendaSchedule)" label="Generate Kegiatan Bulanan" icon="calendar" />
+                                            @endif
                                             @if ($agendaSchedule->is_active)
                                                 <x-ui.action-dropdown-item
                                                     :action="route('agenda-schedules.deactivate', $agendaSchedule)"

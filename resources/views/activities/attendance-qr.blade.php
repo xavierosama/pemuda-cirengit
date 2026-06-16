@@ -8,6 +8,7 @@
     @php
         $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
         $shortUrl = $attendanceUrl ? preg_replace('#^https?://#', '', $attendanceUrl) : null;
+        $attendanceAvailability = $activity->attendanceAvailability();
     @endphp
 
     <div class="mx-auto max-w-5xl space-y-5" x-data="{ copied: false }">
@@ -29,14 +30,14 @@
             </div>
         </div>
 
-        @if (! $activity->attendance_enabled)
+        @if ($attendanceAvailability === 'not_available')
             <div class="rounded-2xl border border-amber-200 bg-amber-50 p-5 shadow-sm">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                        <h3 class="text-base font-bold text-amber-900">Presensi kegiatan belum aktif.</h3>
-                        <p class="mt-1 text-sm leading-6 text-amber-800">Aktifkan presensi melalui halaman edit kegiatan sebelum menampilkan QR.</p>
+                        <h3 class="text-base font-bold text-amber-900">Presensi tidak tersedia.</h3>
+                        <p class="mt-1 text-sm leading-6 text-amber-800">Status kegiatan saat ini tidak membuka akses presensi untuk anggota.</p>
                     </div>
-                    <span class="inline-flex w-fit rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-800 ring-1 ring-inset ring-amber-200">Tidak Aktif</span>
+                    <x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" />
                 </div>
             </div>
         @endif
@@ -48,11 +49,7 @@
                         <h3 class="text-base font-bold text-slate-950">Informasi Kegiatan</h3>
                         <p class="mt-1 text-sm text-slate-500">Detail kegiatan yang terhubung dengan QR presensi.</p>
                     </div>
-                    <span @class([
-                        'inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset',
-                        'bg-emerald-50 text-emerald-700 ring-emerald-200' => $activity->attendance_enabled,
-                        'bg-slate-100 text-slate-600 ring-slate-200' => ! $activity->attendance_enabled,
-                    ])>{{ $activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif' }}</span>
+                    <x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" />
                 </div>
 
                 <dl class="mt-5 grid gap-4 sm:grid-cols-2">
@@ -95,19 +92,15 @@
                     <div class="flex items-start justify-between gap-4 rounded-xl bg-slate-50 p-4">
                         <dt class="text-sm font-semibold text-slate-700">Status</dt>
                         <dd>
-                            <span @class([
-                                'inline-flex rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset',
-                                'bg-emerald-50 text-emerald-700 ring-emerald-200' => $activity->attendance_enabled,
-                                'bg-slate-100 text-slate-600 ring-slate-200' => ! $activity->attendance_enabled,
-                            ])>{{ $activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif' }}</span>
+                            <x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" />
                         </dd>
                     </div>
                     <div class="rounded-xl bg-slate-50 p-4">
-                        <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu Buka Presensi</dt>
+                        <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu Buka Presensi Otomatis</dt>
                         <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $activity->attendance_open_at?->format('d/m/Y H:i') ?? '-' }}</dd>
                     </div>
                     <div class="rounded-xl bg-slate-50 p-4">
-                        <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu Tutup Presensi</dt>
+                        <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu Tutup Presensi Otomatis</dt>
                         <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $activity->attendance_close_at?->format('d/m/Y H:i') ?? '-' }}</dd>
                     </div>
                 </dl>
@@ -139,7 +132,7 @@
             @else
                 <div class="mx-auto max-w-xl rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-5 py-10">
                     <p class="text-base font-bold text-slate-900">QR belum tersedia.</p>
-                    <p class="mt-2 text-sm leading-6 text-slate-600">Presensi kegiatan belum aktif, sehingga QR tidak ditampilkan oleh logic existing.</p>
+                    <p class="mt-2 text-sm leading-6 text-slate-600">Presensi tidak tersedia untuk status kegiatan saat ini, sehingga QR tidak ditampilkan.</p>
                 </div>
             @endif
         </section>

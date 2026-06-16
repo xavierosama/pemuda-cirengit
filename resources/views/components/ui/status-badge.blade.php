@@ -23,6 +23,10 @@
         'alumni' => 'Alumni',
         'account_exists' => 'Sudah Ada',
         'account_missing' => 'Belum Ada',
+        'not_available' => 'Tidak Tersedia',
+        'not_open' => 'Belum Dibuka',
+        'open' => 'Dibuka',
+        'closed' => 'Ditutup',
     ];
 
     $classes = [
@@ -44,6 +48,10 @@
         'alumni' => 'bg-sky-50 text-sky-700 ring-sky-200',
         'account_exists' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
         'account_missing' => 'bg-amber-50 text-amber-700 ring-amber-200',
+        'not_available' => 'bg-slate-100 text-slate-600 ring-slate-200',
+        'not_open' => 'bg-amber-50 text-amber-700 ring-amber-200',
+        'open' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+        'closed' => 'bg-red-50 text-red-700 ring-red-200',
     ];
 @endphp
 

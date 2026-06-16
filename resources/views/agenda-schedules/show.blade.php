@@ -6,13 +6,14 @@
 
 @section('content')
     @php
-        $typeLabels = ['once' => 'Satu Kali', 'daily' => 'Harian', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan'];
+        $typeLabels = ['incidental' => 'Insidental', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan', 'yearly' => 'Tahunan'];
         $dayLabels = [0 => 'Minggu', 1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'];
         $pattern = match ($agendaSchedule->schedule_type) {
-            'once' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
-            'daily' => 'Setiap hari',
+            'incidental' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
             'weekly' => isset($dayLabels[$agendaSchedule->day_of_week]) ? 'Setiap '.$dayLabels[$agendaSchedule->day_of_week] : '-',
             'monthly' => 'Setiap tanggal '.$agendaSchedule->day_of_month,
+            'yearly' => $agendaSchedule->specific_date ? 'Tahunan, '.$agendaSchedule->specific_date->format('d/m') : 'Tahunan',
+            default => '-',
         };
     @endphp
 
@@ -25,13 +26,16 @@
             <a href="{{ route('agenda-schedules.index') }}" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Kembali ke Jadwal Agenda</a>
             <div class="flex flex-col gap-2 sm:flex-row">
                 <a href="{{ route('agenda-schedules.activities.create', $agendaSchedule) }}" class="inline-flex items-center justify-center rounded-lg border border-emerald-700 px-4 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Buat Kegiatan dari Jadwal</a>
+                @if ($agendaSchedule->schedule_type === 'weekly')
+                    <a href="{{ route('agenda-schedules.generate-monthly.create', $agendaSchedule) }}" class="inline-flex items-center justify-center rounded-lg border border-sky-600 px-4 py-2 text-sm font-semibold text-sky-700 hover:bg-sky-50">Generate Kegiatan Bulanan</a>
+                @endif
                 <a href="{{ route('agenda-schedules.edit', $agendaSchedule) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Edit Jadwal</a>
             </div>
         </div>
 
         <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div><p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">{{ $typeLabels[$agendaSchedule->schedule_type] }}</p><h2 class="mt-2 text-2xl font-bold text-slate-950">{{ $agendaSchedule->title }}</h2><p class="mt-3 max-w-3xl whitespace-pre-line text-sm leading-6 text-slate-600">{{ $agendaSchedule->description ?: 'Tidak ada deskripsi.' }}</p></div>
+                <div><p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">{{ $typeLabels[$agendaSchedule->schedule_type] ?? $agendaSchedule->schedule_type }}</p><h2 class="mt-2 text-2xl font-bold text-slate-950">{{ $agendaSchedule->title }}</h2><p class="mt-3 max-w-3xl whitespace-pre-line text-sm leading-6 text-slate-600">{{ $agendaSchedule->description ?: 'Tidak ada deskripsi.' }}</p></div>
                 <span class="{{ $agendaSchedule->is_active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset">{{ $agendaSchedule->is_active ? 'Aktif' : 'Nonaktif' }}</span>
             </div>
         </section>

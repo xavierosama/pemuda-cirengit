@@ -29,7 +29,7 @@ class MemberHomeController extends Controller
                 ->with(['department', 'pic'])
                 ->with(['attendances' => fn ($query) => $query->where('member_id', $user->member->id)])
                 ->where('attendance_enabled', true)
-                ->whereNotIn('status', ['cancelled', 'holiday'])
+                ->whereIn('status', ['scheduled', 'relocated'])
                 ->whereNotNull('attendance_open_at')
                 ->whereNotNull('attendance_close_at')
                 ->where('attendance_open_at', '<=', now())

@@ -17,7 +17,7 @@ class MemberDashboardAttendanceController extends Controller
             return back()->with('error', 'Akun Anda belum terhubung dengan data anggota.');
         }
 
-        if ($this->availability($activity) !== 'open') {
+        if (! $activity->attendanceIsOpen()) {
             return back()->with('error', 'Presensi kegiatan ini tidak sedang dibuka.');
         }
 
@@ -75,31 +75,6 @@ class MemberDashboardAttendanceController extends Controller
                     ? 'Presensi berhasil. Lokasi Anda berada dalam radius kegiatan.'
                     : 'Presensi tersimpan dan perlu verifikasi admin karena lokasi berada di luar radius.'
             );
-    }
-
-    private function availability(Activity $activity): string
-    {
-        if (! $activity->attendance_enabled) {
-            return 'disabled';
-        }
-
-        if ($activity->status === 'cancelled' || $activity->status === 'holiday') {
-            return 'disabled';
-        }
-
-        if (! $activity->attendance_open_at || ! $activity->attendance_close_at) {
-            return 'not_configured';
-        }
-
-        if (now()->lt($activity->attendance_open_at)) {
-            return 'not_open';
-        }
-
-        if (now()->gt($activity->attendance_close_at)) {
-            return 'closed';
-        }
-
-        return 'open';
     }
 
     private function haversineDistance(float $latitude, float $longitude, float $targetLatitude, float $targetLongitude): float

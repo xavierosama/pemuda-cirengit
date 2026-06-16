@@ -7,6 +7,7 @@ use App\Models\AgendaSchedule;
 use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Member;
+use App\Models\Position;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,9 +35,6 @@ class ActivityCrudTest extends TestCase
             'longitude' => '107.1234567',
             'attendance_radius' => 100,
             'status' => 'scheduled',
-            'attendance_enabled' => 1,
-            'attendance_open_at' => '2026-06-20 19:00',
-            'attendance_close_at' => '2026-06-20 21:00',
         ])->assertRedirect();
 
         $activity = Activity::where('title', 'Kajian Aktual')->firstOrFail();
@@ -48,7 +46,7 @@ class ActivityCrudTest extends TestCase
             ->assertOk()
             ->assertSee('Kelola kegiatan berjalan, perubahan jadwal, dan pengaturan presensi.')
             ->assertSee('Kegiatan Bulan Ini')
-            ->assertSee('Presensi Aktif')
+            ->assertSee('Presensi Terjadwal')
             ->assertSee('Filter Kegiatan Aktual')
             ->assertSee('Tabel Kegiatan Aktual')
             ->assertSee('Kajian Aktual');
@@ -69,10 +67,13 @@ class ActivityCrudTest extends TestCase
             ->assertOk()
             ->assertSee('Informasi Kegiatan')
             ->assertSee('Tanggal, Waktu, dan Lokasi')
-            ->assertSee('Pengaturan Presensi')
+            ->assertSee('Jadwal Presensi Otomatis')
             ->assertSee('placeholder="Contoh: 20:00"', false)
             ->assertSee('Dalam meter, contoh: 100.')
-            ->assertSee('Aktifkan jika kegiatan menggunakan QR/link presensi.');
+            ->assertSee('Presensi dihitung otomatis dari tanggal, waktu mulai, dan waktu selesai kegiatan.')
+            ->assertDontSee('Presensi aktif / tidak aktif')
+            ->assertDontSee('Waktu buka presensi')
+            ->assertDontSee('Waktu tutup presensi');
 
         $this->actingAs($user)
             ->get(route('activities.edit', $activity))
@@ -134,18 +135,68 @@ class ActivityCrudTest extends TestCase
             'pic_id' => $pic->id,
             'title' => 'Kajian Pendidikan',
             'location' => 'Sekretariat',
-            'attendance_radius' => 175,
-            'attendance_enabled' => false,
+            'attendance_radius' => 125,
+            'attendance_enabled' => true,
             'created_by' => $user->id,
         ]);
 
         $generatedActivity = Activity::where('agenda_schedule_id', $agendaSchedule->id)->firstOrFail();
         $this->assertSame('2026-06-22', $generatedActivity->activity_date->format('Y-m-d'));
-        $this->assertNull($generatedActivity->attendance_open_at);
-        $this->assertNull($generatedActivity->attendance_close_at);
+        $this->assertSame('2026-06-22 07:30:00', $generatedActivity->attendance_open_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-06-22 10:00:00', $generatedActivity->attendance_close_at->format('Y-m-d H:i:s'));
+        $this->assertNotNull($generatedActivity->attendance_token);
     }
 
-    public function test_new_activity_uses_attendance_defaults_when_enabled(): void
+    public function test_activity_generated_from_schedule_uses_department_chair_when_schedule_has_no_pic(): void
+    {
+        $user = User::factory()->create();
+        $department = Department::create(['name' => 'Kaderisasi', 'status' => 'active']);
+        $chairPosition = Position::create(['name' => 'Ketua Bidang', 'status' => 'active']);
+        $memberPosition = Position::create(['name' => 'Anggota', 'status' => 'active']);
+        $chair = Member::create([
+            'department_id' => $department->id,
+            'position_id' => $chairPosition->id,
+            'full_name' => 'Ketua Kaderisasi',
+            'member_status' => 'active',
+        ]);
+        Member::create([
+            'department_id' => $department->id,
+            'position_id' => $memberPosition->id,
+            'full_name' => 'Anggota Kaderisasi',
+            'member_status' => 'active',
+        ]);
+        $agendaSchedule = AgendaSchedule::create([
+            'department_id' => $department->id,
+            'pic_id' => null,
+            'title' => 'Latihan Kader',
+            'schedule_type' => 'weekly',
+            'day_of_week' => 5,
+            'start_time' => '19:00',
+            'end_time' => '21:00',
+            'default_location' => 'Aula Cirengit',
+            'default_latitude' => '-6.2100000',
+            'default_longitude' => '107.2100000',
+            'default_radius' => 140,
+            'is_active' => true,
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)->post(route('agenda-schedules.activities.store', $agendaSchedule), [
+            'activity_date' => '2026-06-26',
+        ])->assertRedirect();
+
+        $this->assertDatabaseHas('activities', [
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'department_id' => $department->id,
+            'pic_id' => $chair->id,
+            'start_time' => '19:00',
+            'end_time' => '21:00',
+            'location' => 'Aula Cirengit',
+            'attendance_radius' => 140,
+        ]);
+    }
+
+    public function test_new_activity_uses_automatic_attendance_schedule(): void
     {
         $user = User::factory()->create();
         Setting::insert([
@@ -161,17 +212,16 @@ class ActivityCrudTest extends TestCase
             'end_time' => '21:00',
             'attendance_radius' => 180,
             'status' => 'scheduled',
-            'attendance_enabled' => 1,
         ])->assertRedirect();
 
         $activity = Activity::where('title', 'Kajian Default Presensi')->firstOrFail();
 
         $this->assertSame(180, $activity->attendance_radius);
         $this->assertSame('2026-06-20 18:45:00', $activity->attendance_open_at->format('Y-m-d H:i:s'));
-        $this->assertSame('2026-06-20 21:20:00', $activity->attendance_close_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-06-20 21:00:00', $activity->attendance_close_at->format('Y-m-d H:i:s'));
     }
 
-    public function test_edit_activity_keeps_existing_attendance_values(): void
+    public function test_edit_activity_recalculates_automatic_attendance_schedule(): void
     {
         $user = User::factory()->create();
         Setting::insert([
@@ -199,16 +249,13 @@ class ActivityCrudTest extends TestCase
             'end_time' => '21:00',
             'attendance_radius' => 120,
             'status' => 'scheduled',
-            'attendance_enabled' => 1,
-            'attendance_open_at' => '2026-06-20 19:00',
-            'attendance_close_at' => '2026-06-20 21:30',
         ])->assertRedirect(route('activities.show', $activity));
 
         $activity->refresh();
 
         $this->assertSame(120, $activity->attendance_radius);
-        $this->assertSame('2026-06-20 19:00:00', $activity->attendance_open_at->format('Y-m-d H:i:s'));
-        $this->assertSame('2026-06-20 21:30:00', $activity->attendance_close_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-06-20 18:00:00', $activity->attendance_open_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-06-20 21:00:00', $activity->attendance_close_at->format('Y-m-d H:i:s'));
     }
 
     public function test_activity_detail_page_shows_control_center_sections(): void
@@ -244,7 +291,7 @@ class ActivityCrudTest extends TestCase
             ->get(route('activities.show', $activity))
             ->assertOk()
             ->assertSee('Informasi Kegiatan')
-            ->assertSee('Pengaturan Presensi')
+            ->assertSee('Presensi Otomatis')
             ->assertSee('Aksi Cepat')
             ->assertSee('Ringkasan Presensi')
             ->assertSee('10/06/2026')
@@ -257,7 +304,7 @@ class ActivityCrudTest extends TestCase
             ->assertSee('50.00%');
     }
 
-    public function test_activity_validation_rejects_invalid_attendance_period(): void
+    public function test_activity_validation_rejects_invalid_required_fields(): void
     {
         $user = User::factory()->create();
 
@@ -266,10 +313,7 @@ class ActivityCrudTest extends TestCase
             'activity_date' => 'invalid-date',
             'attendance_radius' => 0,
             'status' => 'unknown',
-            'attendance_enabled' => 1,
-            'attendance_open_at' => '2026-06-20 20:00',
-            'attendance_close_at' => '2026-06-20 19:00',
-        ])->assertSessionHasErrors(['title', 'activity_date', 'attendance_radius', 'status', 'attendance_close_at']);
+        ])->assertSessionHasErrors(['title', 'activity_date', 'attendance_radius', 'status']);
     }
 
     public function test_attendance_close_time_is_allowed_without_open_time(): void

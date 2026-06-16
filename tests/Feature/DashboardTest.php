@@ -49,7 +49,8 @@ class DashboardTest extends TestCase
             AgendaSchedule::create([
                 'department_id' => $department->id,
                 'title' => 'Agenda Aktif '.$index,
-                'schedule_type' => 'daily',
+                'schedule_type' => 'weekly',
+                'day_of_week' => 1,
                 'start_time' => '08:00',
                 'end_time' => '10:00',
                 'default_location' => 'Sekretariat',

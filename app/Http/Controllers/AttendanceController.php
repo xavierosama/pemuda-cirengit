@@ -103,6 +103,7 @@ class AttendanceController extends Controller
 
         $allAttendances = $activity->attendances()
             ->with(['member.department', 'member.position'])
+            ->whereHas('member')
             ->get()
             ->sortBy('member.full_name', SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
@@ -248,14 +249,17 @@ class AttendanceController extends Controller
     {
         $members = Member::query()
             ->where('member_status', 'active')
-            ->when($activity->department_id, fn ($query) => $query->where('department_id', $activity->department_id))
             ->get(['id']);
+        $totalFound = $members->count();
+        $skipped = 0;
 
         $existingMemberIds = $activity->attendances()
             ->whereIn('member_id', $members->pluck('id'))
             ->pluck('member_id');
+        $existingCount = $existingMemberIds->count();
 
         $newMemberIds = $members->pluck('id')->diff($existingMemberIds);
+        $addedCount = $newMemberIds->count();
 
         DB::transaction(function () use ($activity, $newMemberIds, $request) {
             foreach ($newMemberIds as $memberId) {
@@ -265,6 +269,7 @@ class AttendanceController extends Controller
                     'status' => 'absent',
                     'attendance_method' => 'manual',
                     'verification_status' => 'valid',
+                    'checked_in_at' => null,
                     'created_by' => $request->user()->id,
                 ]);
             }
@@ -273,9 +278,11 @@ class AttendanceController extends Controller
         return redirect()
             ->route('activities.attendances.index', $activity)
             ->with('success', sprintf(
-                'Sinkronisasi peserta selesai. %d anggota baru ditambahkan ke daftar hadir, %d anggota sudah ada sebelumnya.',
-                $newMemberIds->count(),
-                $existingMemberIds->count()
+                'Sinkronisasi peserta selesai. %d anggota aktif ditemukan, %d attendance baru ditambahkan, %d anggota sudah ada di daftar hadir, %d anggota dilewati.',
+                $totalFound,
+                $addedCount,
+                $existingCount,
+                $skipped
             ));
     }
 

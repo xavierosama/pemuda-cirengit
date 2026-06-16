@@ -125,7 +125,7 @@ class AttendanceCrudTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('Kelola daftar hadir kegiatan, status presensi, dan verifikasi kehadiran anggota.')
-            ->assertSee('Total Kegiatan dengan Presensi Aktif')
+            ->assertSee('Total Kegiatan dengan Presensi Terjadwal')
             ->assertSee('Filter Daftar Hadir')
             ->assertSee('Tabel Daftar Hadir')
             ->assertSee('Kajian Pendidikan')
@@ -187,7 +187,7 @@ class AttendanceCrudTest extends TestCase
             'full_name' => 'Anggota Belum Ada',
             'member_status' => 'active',
         ]);
-        Member::create([
+        $otherDepartmentMember = Member::create([
             'department_id' => $otherDepartment->id,
             'full_name' => 'Anggota Bidang Lain',
             'member_status' => 'active',
@@ -209,9 +209,9 @@ class AttendanceCrudTest extends TestCase
         $this->actingAs($user)
             ->post(route('activities.attendances.sync-participants', $activity))
             ->assertRedirect(route('activities.attendances.index', $activity))
-            ->assertSessionHas('success', 'Sinkronisasi peserta selesai. 1 anggota baru ditambahkan ke daftar hadir, 1 anggota sudah ada sebelumnya.');
+            ->assertSessionHas('success', 'Sinkronisasi peserta selesai. 3 anggota aktif ditemukan, 2 attendance baru ditambahkan, 1 anggota sudah ada di daftar hadir, 0 anggota dilewati.');
 
-        $this->assertSame(2, Attendance::where('activity_id', $activity->id)->count());
+        $this->assertSame(3, Attendance::where('activity_id', $activity->id)->count());
         $this->assertDatabaseHas('attendances', [
             'activity_id' => $activity->id,
             'member_id' => $presentMember->id,
@@ -226,10 +226,18 @@ class AttendanceCrudTest extends TestCase
             'verification_status' => 'valid',
             'created_by' => $user->id,
         ]);
+        $this->assertDatabaseHas('attendances', [
+            'activity_id' => $activity->id,
+            'member_id' => $otherDepartmentMember->id,
+            'status' => 'absent',
+            'attendance_method' => 'manual',
+            'verification_status' => 'valid',
+            'created_by' => $user->id,
+        ]);
 
         $this->actingAs($user)
             ->post(route('activities.attendances.sync-participants', $activity))
-            ->assertSessionHas('success', 'Sinkronisasi peserta selesai. 0 anggota baru ditambahkan ke daftar hadir, 2 anggota sudah ada sebelumnya.');
+            ->assertSessionHas('success', 'Sinkronisasi peserta selesai. 3 anggota aktif ditemukan, 0 attendance baru ditambahkan, 3 anggota sudah ada di daftar hadir, 0 anggota dilewati.');
 
         $attendance = Attendance::where('activity_id', $activity->id)->where('member_id', $newMember->id)->firstOrFail();
 
@@ -247,6 +255,51 @@ class AttendanceCrudTest extends TestCase
         ]);
     }
 
+    public function test_sync_participants_uses_active_members_without_requiring_user_accounts(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        $activity = $this->createActivity($user, ['department_id' => null]);
+        $firstMember = Member::create([
+            'full_name' => 'Anggota Tanpa Akun Satu',
+            'member_status' => 'active',
+        ]);
+        $secondMember = Member::create([
+            'full_name' => 'Anggota Tanpa Akun Dua',
+            'member_status' => 'active',
+        ]);
+        Member::create([
+            'full_name' => 'Anggota Nonaktif',
+            'member_status' => 'inactive',
+        ]);
+
+        $this->assertFalse($firstMember->user()->exists());
+        $this->assertFalse($secondMember->user()->exists());
+
+        $this->actingAs($user)
+            ->post(route('activities.attendances.sync-participants', $activity))
+            ->assertRedirect(route('activities.attendances.index', $activity))
+            ->assertSessionHas('success', 'Sinkronisasi peserta selesai. 2 anggota aktif ditemukan, 2 attendance baru ditambahkan, 0 anggota sudah ada di daftar hadir, 0 anggota dilewati.');
+
+        foreach ([$firstMember, $secondMember] as $member) {
+            $this->assertDatabaseHas('attendances', [
+                'activity_id' => $activity->id,
+                'member_id' => $member->id,
+                'status' => 'absent',
+                'attendance_method' => 'manual',
+                'verification_status' => 'valid',
+                'checked_in_at' => null,
+                'created_by' => $user->id,
+            ]);
+        }
+
+        $this->actingAs($user)
+            ->get(route('activities.attendances.index', $activity))
+            ->assertOk()
+            ->assertSee('Anggota Tanpa Akun Satu')
+            ->assertSee('Anggota Tanpa Akun Dua')
+            ->assertSee('Sinkronisasi mengambil semua anggota aktif. Bidang kegiatan adalah penanggung jawab, bukan filter peserta. Anggota tanpa akun login tetap masuk daftar hadir.');
+    }
+
     public function test_sync_button_is_visible_on_activity_attendance_page(): void
     {
         $user = User::factory()->create(['role' => 'admin']);
@@ -258,6 +311,7 @@ class AttendanceCrudTest extends TestCase
             ->assertSee('Persentase Kehadiran')
             ->assertSee('Cari nama anggota atau NPA')
             ->assertSee('Sinkronkan Peserta Presensi')
+            ->assertSee('Belum ada peserta presensi. Klik Sinkronkan Peserta Presensi untuk membuat daftar hadir dari anggota aktif.')
             ->assertSee('Lihat QR Presensi')
             ->assertSee('Salin Link Presensi')
             ->assertSee('Export Excel');
@@ -421,9 +475,13 @@ class AttendanceCrudTest extends TestCase
         return Activity::create(array_merge([
             'title' => 'Kajian Kehadiran',
             'activity_date' => '2026-06-25',
+            'start_time' => '20:00',
+            'end_time' => '21:00',
             'attendance_radius' => 100,
             'status' => 'scheduled',
             'attendance_enabled' => true,
+            'attendance_open_at' => '2026-06-25 19:30:00',
+            'attendance_close_at' => '2026-06-25 21:00:00',
             'created_by' => $user->id,
         ], $overrides));
     }

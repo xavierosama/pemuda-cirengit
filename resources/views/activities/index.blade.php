@@ -18,7 +18,7 @@
             ['label' => 'Kegiatan Terjadwal', 'value' => $activityStats['scheduled'], 'class' => 'bg-slate-50 text-slate-700 ring-slate-200'],
             ['label' => 'Kegiatan Selesai', 'value' => $activityStats['completed'], 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-100'],
             ['label' => 'Kegiatan Ditunda/Dibatalkan', 'value' => $activityStats['postponed_cancelled'], 'class' => 'bg-amber-50 text-amber-700 ring-amber-100'],
-            ['label' => 'Presensi Aktif', 'value' => $activityStats['attendance_enabled'], 'class' => 'bg-cyan-50 text-cyan-700 ring-cyan-100'],
+            ['label' => 'Presensi Terjadwal', 'value' => $activityStats['attendance_enabled'], 'class' => 'bg-cyan-50 text-cyan-700 ring-cyan-100'],
         ];
     @endphp
 
@@ -46,7 +46,7 @@
         <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <div class="mb-4">
                 <h3 class="text-base font-bold text-slate-950">Filter Kegiatan Aktual</h3>
-                <p class="mt-1 text-sm text-slate-500">Saring kegiatan berdasarkan nama, bidang, status, periode, dan status presensi.</p>
+                <p class="mt-1 text-sm text-slate-500">Saring kegiatan berdasarkan nama, bidang, status, periode, dan ketersediaan presensi.</p>
             </div>
             <form method="GET" action="{{ route('activities.index') }}" class="grid gap-4 lg:grid-cols-12">
                 <input type="hidden" name="sort" value="{{ $currentSort }}">
@@ -86,8 +86,8 @@
                     <label for="attendance_enabled" class="text-sm font-semibold text-slate-700">Presensi</label>
                     <select id="attendance_enabled" name="attendance_enabled" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
                         <option value="">Semua</option>
-                        <option value="1" @selected($attendanceStatus === '1')>Aktif</option>
-                        <option value="0" @selected($attendanceStatus === '0')>Tidak Aktif</option>
+                        <option value="1" @selected($attendanceStatus === '1')>Terjadwal</option>
+                        <option value="0" @selected($attendanceStatus === '0')>Tidak tersedia</option>
                     </select>
                 </div>
                 <div class="flex gap-2 lg:col-span-12 lg:justify-end">
@@ -126,6 +126,7 @@
                         @forelse ($activities as $activity)
                             @php
                                 $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
+                                $attendanceAvailability = $activity->attendanceAvailability();
                             @endphp
                             <tr class="align-top transition hover:bg-slate-50/70">
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ $activities->firstItem() + $loop->index }}</td>
@@ -136,7 +137,7 @@
                                 <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->pic?->full_name ?? '-' }}</span></td>
                                 <td class="max-w-44 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->location ?: '-' }}</span></td>
                                 <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$activity->status" :label="$statusLabels[$activity->status]" /></td>
-                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$activity->attendance_enabled ? 'active' : 'inactive'" :label="$activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif'" /></td>
+                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" /></td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $activity->created_at?->format('d/m/Y') ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
@@ -144,7 +145,7 @@
                                         <x-ui.action-dropdown>
                                             <x-ui.action-dropdown-item :href="route('activities.edit', $activity)" label="Edit" icon="pencil" />
                                             <x-ui.action-dropdown-item :href="route('activities.attendances.index', $activity)" label="Daftar Hadir" icon="check" />
-                                            @if ($activity->attendance_enabled)
+                                            @if ($attendanceAvailability !== 'not_available')
                                                 <x-ui.action-dropdown-item :href="route('activities.attendance-qr', $activity)" label="QR Presensi" icon="qr" />
                                             @endif
                                             <x-ui.action-dropdown-item

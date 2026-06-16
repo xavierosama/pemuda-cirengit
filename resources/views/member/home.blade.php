@@ -44,7 +44,7 @@
             $attendanceLabels = ['present' => 'Hadir', 'permission' => 'Izin', 'absent' => 'Tidak Hadir', 'need_verification' => 'Perlu Verifikasi'];
             $verificationLabels = ['valid' => 'Valid', 'need_verification' => 'Perlu Verifikasi', 'rejected' => 'Ditolak'];
             $activityStatusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Dipindah', 'cancelled' => 'Dibatalkan'];
-            $scheduleTypeLabels = ['once' => 'Sekali', 'daily' => 'Harian', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan'];
+            $scheduleTypeLabels = ['incidental' => 'Insidental', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan', 'yearly' => 'Tahunan'];
         @endphp
 
         <div class="min-h-screen">
@@ -159,6 +159,7 @@
                                         $attendance = $activity->attendances->first();
                                         $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
                                         $canCheckIn = ! $attendance || $attendance->status === 'absent';
+                                        $attendanceAvailability = $activity->attendanceAvailability();
                                     @endphp
                                     <article class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 dark:border-emerald-900/60 dark:bg-emerald-500/5 sm:p-4">
                                         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -166,6 +167,7 @@
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <h3 class="text-base font-bold text-slate-950">{{ $activity->title }}</h3>
                                                     <x-ui.status-badge :status="$activity->status" :label="$activityStatusLabels[$activity->status] ?? $activity->status" />
+                                                    <x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" />
                                                 </div>
                                                 <div class="mt-3 grid gap-x-4 gap-y-1.5 text-sm text-slate-700 dark:text-slate-300 sm:grid-cols-2 lg:grid-cols-4">
                                                     <p><span class="font-semibold text-slate-900">Tanggal:</span> {{ $activity->activity_date->format('d/m/Y') }}</p>
@@ -228,6 +230,7 @@
                                                 $dateLabel = 'Minggu ini';
                                             }
                                             $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
+                                            $attendanceAvailability = $activity->attendanceAvailability();
                                         @endphp
                                         <article class="flex gap-3 py-2.5 first:pt-0 last:pb-0">
                                             <div class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500 ring-4 ring-emerald-50"></div>
@@ -235,6 +238,7 @@
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <h3 class="truncate text-sm font-bold text-slate-950">{{ $activity->title }}</h3>
                                                     <x-ui.status-badge class="px-2 py-0.5 text-[11px]" :status="$activity->status" :label="$activityStatusLabels[$activity->status] ?? $activity->status" />
+                                                    <x-ui.status-badge class="px-2 py-0.5 text-[11px]" :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" />
                                                     @if ($dateLabel)
                                                         <span class="inline-flex rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700 ring-1 ring-inset ring-emerald-200">{{ $dateLabel }}</span>
                                                     @endif

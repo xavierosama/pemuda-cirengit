@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('department_id')->nullable()->constrained()->nullOnDelete();
             $table->foreignId('pic_id')->nullable()->constrained('members')->nullOnDelete();
             $table->string('title');
+            $table->text('description')->nullable();
             $table->date('activity_date');
             $table->time('start_time')->nullable();
             $table->time('end_time')->nullable();

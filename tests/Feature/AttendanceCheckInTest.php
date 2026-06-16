@@ -62,7 +62,7 @@ class AttendanceCheckInTest extends TestCase
 
         $this->actingAs($user)->get(route('attendance.check-in.show', $notOpen->attendance_token))->assertSee('Presensi belum dibuka.');
         $this->actingAs($user)->get(route('attendance.check-in.show', $closed->attendance_token))->assertSee('Presensi sudah ditutup.');
-        $this->actingAs($user)->get(route('attendance.check-in.show', $disabled->attendance_token))->assertSee('Presensi belum diaktifkan');
+        $this->actingAs($user)->get(route('attendance.check-in.show', $disabled->attendance_token))->assertSee('Presensi tidak tersedia');
     }
 
     public function test_member_inside_radius_is_recorded_as_valid_present(): void

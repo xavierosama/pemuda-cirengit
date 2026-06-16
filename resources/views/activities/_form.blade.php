@@ -9,17 +9,15 @@
         'relocated' => 'Pindah Lokasi',
         'cancelled' => 'Dibatalkan',
     ];
-    $isCreateForm = ! isset($activity);
     $attendanceDefaults = $attendanceDefaults ?? [
         'radius' => 100,
         'open_minutes_before' => 30,
         'close_minutes_after' => 30,
         'location_accuracy_tolerance' => 50,
     ];
-    $attendanceEnabled = (string) old('attendance_enabled', isset($activity) ? (int) $activity->attendance_enabled : 0);
     $attendanceRadiusValue = old('attendance_radius', $activity->attendance_radius ?? $attendanceDefaults['radius']);
-    $attendanceOpenAtValue = old('attendance_open_at', isset($activity) && $activity->attendance_open_at ? $activity->attendance_open_at->format('Y-m-d\TH:i') : '');
-    $attendanceCloseAtValue = old('attendance_close_at', isset($activity) && $activity->attendance_close_at ? $activity->attendance_close_at->format('Y-m-d\TH:i') : '');
+    $agendaScheduleDefaults = $agendaScheduleDefaults ?? [];
+    $departmentChairPics = $departmentChairPics ?? [];
     $inputClass = 'mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600';
     $labelClass = 'block text-sm font-semibold text-slate-700';
     $helperClass = 'mt-1 text-xs text-slate-500';
@@ -28,41 +26,58 @@
 
 <div
     x-data="{
-        attendanceEnabled: @js($attendanceEnabled),
-        isCreateForm: @js($isCreateForm),
         defaults: @js($attendanceDefaults),
+        agendaSchedules: @js($agendaScheduleDefaults),
+        departmentChairPics: @js($departmentChairPics),
+        selectedAgendaScheduleId: @js((string) old('agenda_schedule_id', $activity->agenda_schedule_id ?? '')),
+        departmentId: @js((string) old('department_id', $activity->department_id ?? '')),
+        picId: @js((string) old('pic_id', $activity->pic_id ?? '')),
+        description: @js(old('description', $activity->description ?? '')),
         activityDate: @js(old('activity_date', isset($activity) && $activity->activity_date ? $activity->activity_date->format('Y-m-d') : '')),
         startTime: @js(old('start_time', isset($activity) && $activity->start_time ? substr($activity->start_time, 0, 5) : '')),
         endTime: @js(old('end_time', isset($activity) && $activity->end_time ? substr($activity->end_time, 0, 5) : '')),
+        location: @js(old('location', $activity->location ?? '')),
+        latitude: @js((string) old('latitude', $activity->latitude ?? '')),
+        longitude: @js((string) old('longitude', $activity->longitude ?? '')),
         attendanceRadius: @js((string) $attendanceRadiusValue),
-        attendanceOpenAt: @js($attendanceOpenAtValue),
-        attendanceCloseAt: @js($attendanceCloseAtValue),
-        generatedOpenAt: '',
-        generatedCloseAt: '',
-        toDatetimeLocal(date, time, minutes) {
-            if (! date || ! time) return '';
-            const value = new Date(`${date}T${time}`);
-            if (Number.isNaN(value.getTime())) return '';
-            value.setMinutes(value.getMinutes() + minutes);
-            const offset = value.getTimezoneOffset();
-            return new Date(value.getTime() - offset * 60000).toISOString().slice(0, 16);
+        picHelper: '',
+        applyingAgenda: false,
+        setDepartmentChairPic(departmentId) {
+            const chairPic = this.departmentChairPics[String(departmentId)] || '';
+            if (chairPic) {
+                this.picId = String(chairPic);
+                this.picHelper = '';
+                return;
+            }
+
+            this.picId = '';
+            this.picHelper = departmentId ? 'Ketua bidang belum tersedia untuk bidang ini.' : '';
         },
-        applyDefaults() {
-            if (! this.isCreateForm || this.attendanceEnabled !== '1') return;
-            if (! this.attendanceRadius) this.attendanceRadius = String(this.defaults.radius);
-            const nextOpenAt = this.toDatetimeLocal(this.activityDate, this.startTime, -Number(this.defaults.open_minutes_before));
-            const nextCloseAt = this.toDatetimeLocal(this.activityDate, this.endTime, Number(this.defaults.close_minutes_after));
-            if (nextOpenAt && (! this.attendanceOpenAt || this.attendanceOpenAt === this.generatedOpenAt)) {
-                this.attendanceOpenAt = nextOpenAt;
-                this.generatedOpenAt = nextOpenAt;
+        applyAgendaDefaults(agendaScheduleId) {
+            const agenda = this.agendaSchedules[String(agendaScheduleId)];
+            if (! agenda) return;
+
+            this.applyingAgenda = true;
+            this.departmentId = agenda.department_id || '';
+            this.description = agenda.description || '';
+            this.startTime = agenda.start_time || '';
+            this.endTime = agenda.end_time || '';
+            this.location = agenda.default_location || '';
+            this.latitude = agenda.default_latitude || '';
+            this.longitude = agenda.default_longitude || '';
+            this.attendanceRadius = agenda.default_radius || String(this.defaults.radius);
+
+            if (agenda.pic_id) {
+                this.picId = String(agenda.pic_id);
+                this.picHelper = '';
+            } else {
+                this.setDepartmentChairPic(this.departmentId);
             }
-            if (nextCloseAt && (! this.attendanceCloseAt || this.attendanceCloseAt === this.generatedCloseAt)) {
-                this.attendanceCloseAt = nextCloseAt;
-                this.generatedCloseAt = nextCloseAt;
-            }
+
+            this.applyingAgenda = false;
         },
     }"
-    x-init="$watch('attendanceEnabled', () => applyDefaults()); $watch('activityDate', () => applyDefaults()); $watch('startTime', () => applyDefaults()); $watch('endTime', () => applyDefaults()); applyDefaults();"
+    x-init="$watch('selectedAgendaScheduleId', value => applyAgendaDefaults(value)); $watch('departmentId', value => { if (! applyingAgenda) setDepartmentChairPic(value) }); if (! attendanceRadius) attendanceRadius = String(defaults.radius);"
     class="space-y-5"
 >
     @if (session('success'))
@@ -78,13 +93,18 @@
             <div class="md:col-span-2">
                 <label for="title" class="{{ $labelClass }}">Nama/Judul Kegiatan</label>
                 <input id="title" name="title" type="text" value="{{ old('title', $activity->title ?? '') }}" class="{{ $inputClass }}" required autofocus>
-                <p class="{{ $helperClass }}">Kolom deskripsi kegiatan belum tersedia di database saat ini.</p>
                 @error('title') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="md:col-span-2">
+                <label for="description" class="{{ $labelClass }}">Deskripsi</label>
+                <textarea id="description" name="description" rows="3" x-model="description" class="{{ $inputClass }}"></textarea>
+                @error('description') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div>
                 <label for="agenda_schedule_id" class="{{ $labelClass }}">Jadwal Agenda asal</label>
-                <select id="agenda_schedule_id" name="agenda_schedule_id" class="{{ $inputClass }}">
+                <select id="agenda_schedule_id" name="agenda_schedule_id" x-model="selectedAgendaScheduleId" class="{{ $inputClass }}">
                     <option value="">Tanpa jadwal agenda</option>
                     @foreach ($agendaSchedules as $agendaSchedule)
                         <option value="{{ $agendaSchedule->id }}" @selected((string) old('agenda_schedule_id', $activity->agenda_schedule_id ?? '') === (string) $agendaSchedule->id)>{{ $agendaSchedule->title }}</option>
@@ -95,7 +115,7 @@
 
             <div>
                 <label for="department_id" class="{{ $labelClass }}">Bidang</label>
-                <select id="department_id" name="department_id" class="{{ $inputClass }}">
+                <select id="department_id" name="department_id" x-model="departmentId" class="{{ $inputClass }}">
                     <option value="">Tanpa bidang</option>
                     @foreach ($departments as $department)
                         <option value="{{ $department->id }}" @selected((string) old('department_id', $activity->department_id ?? '') === (string) $department->id)>{{ $department->name }}</option>
@@ -106,12 +126,13 @@
 
             <div>
                 <label for="pic_id" class="{{ $labelClass }}">PIC</label>
-                <select id="pic_id" name="pic_id" class="{{ $inputClass }}">
+                <select id="pic_id" name="pic_id" x-model="picId" class="{{ $inputClass }}">
                     <option value="">Tanpa PIC</option>
                     @foreach ($members as $member)
                         <option value="{{ $member->id }}" @selected((string) old('pic_id', $activity->pic_id ?? '') === (string) $member->id)>{{ $member->full_name }}</option>
                     @endforeach
                 </select>
+                <p x-show="picHelper" x-cloak x-text="picHelper" class="{{ $helperClass }}"></p>
                 @error('pic_id') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
@@ -170,20 +191,20 @@
 
             <div class="md:col-span-2">
                 <label for="location" class="{{ $labelClass }}">Lokasi</label>
-                <input id="location" name="location" type="text" value="{{ old('location', $activity->location ?? '') }}" class="{{ $inputClass }}">
+                <input id="location" name="location" type="text" x-model="location" class="{{ $inputClass }}">
                 @error('location') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div>
                 <label for="latitude" class="{{ $labelClass }}">Latitude</label>
-                <input id="latitude" name="latitude" type="number" step="0.0000001" value="{{ old('latitude', $activity->latitude ?? '') }}" class="{{ $inputClass }}">
+                <input id="latitude" name="latitude" type="number" step="0.0000001" x-model="latitude" class="{{ $inputClass }}">
                 <p class="{{ $helperClass }}">Isi sesuai titik lokasi kegiatan.</p>
                 @error('latitude') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div>
                 <label for="longitude" class="{{ $labelClass }}">Longitude</label>
-                <input id="longitude" name="longitude" type="number" step="0.0000001" value="{{ old('longitude', $activity->longitude ?? '') }}" class="{{ $inputClass }}">
+                <input id="longitude" name="longitude" type="number" step="0.0000001" x-model="longitude" class="{{ $inputClass }}">
                 <p class="{{ $helperClass }}">Isi sesuai titik lokasi kegiatan.</p>
                 @error('longitude') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
@@ -192,20 +213,14 @@
 
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="mb-5 border-b border-slate-100 pb-4">
-            <h3 class="text-base font-bold text-slate-950">Pengaturan Presensi</h3>
-            <p class="mt-1 text-sm text-slate-500">Atur apakah kegiatan memakai QR/link presensi dan kapan presensi dapat digunakan.</p>
+            <h3 class="text-base font-bold text-slate-950">Jadwal Presensi Otomatis</h3>
+            <p class="mt-1 text-sm text-slate-500">Presensi dihitung otomatis dari tanggal, waktu mulai, dan waktu selesai kegiatan.</p>
         </div>
         <div class="grid gap-5 md:grid-cols-2">
-            <div>
-                <label for="attendance_enabled" class="{{ $labelClass }}">Presensi aktif / tidak aktif</label>
-                <select id="attendance_enabled" name="attendance_enabled" x-model="attendanceEnabled" class="{{ $inputClass }}" required>
-                    <option value="0">Tidak aktif</option>
-                    <option value="1">Aktif</option>
-                </select>
-                <p class="{{ $helperClass }}">Aktifkan jika kegiatan menggunakan QR/link presensi.</p>
-                @error('attendance_enabled') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
+            <div class="rounded-xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-emerald-800 md:col-span-2">
+                <p class="font-semibold">Presensi tersedia otomatis untuk kegiatan berstatus Terjadwal atau Pindah Lokasi.</p>
+                <p class="mt-1">Waktu buka memakai default {{ $attendanceDefaults['open_minutes_before'] }} menit sebelum kegiatan, dan waktu tutup mengikuti jam selesai kegiatan.</p>
             </div>
-
             @if (isset($activity) && $activity->attendance_token)
                 <div>
                     <label for="attendance_token_display" class="{{ $labelClass }}">Attendance token</label>
@@ -213,20 +228,6 @@
                     <p class="{{ $helperClass }}">Token otomatis untuk link/QR presensi.</p>
                 </div>
             @endif
-
-            <div x-show="attendanceEnabled === '1'" x-cloak>
-                <label for="attendance_open_at" class="{{ $labelClass }}">Waktu buka presensi</label>
-                <input id="attendance_open_at" name="attendance_open_at" type="datetime-local" x-model="attendanceOpenAt" class="{{ $inputClass }}">
-                <p class="{{ $helperClass }}">Gunakan format waktu 24 jam. Nilai default presensi dapat diubah di Pengaturan Sistem.</p>
-                @error('attendance_open_at') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
-            </div>
-
-            <div x-show="attendanceEnabled === '1'" x-cloak>
-                <label for="attendance_close_at" class="{{ $labelClass }}">Waktu tutup presensi</label>
-                <input id="attendance_close_at" name="attendance_close_at" type="datetime-local" x-model="attendanceCloseAt" class="{{ $inputClass }}">
-                <p class="{{ $helperClass }}">Gunakan format waktu 24 jam. Nilai default presensi dapat diubah di Pengaturan Sistem.</p>
-                @error('attendance_close_at') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
-            </div>
         </div>
     </section>
 

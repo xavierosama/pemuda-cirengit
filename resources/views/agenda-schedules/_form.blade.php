@@ -1,7 +1,7 @@
 @csrf
 
 @php
-    $selectedType = old('schedule_type', $agendaSchedule->schedule_type ?? 'once');
+    $selectedType = old('schedule_type', $agendaSchedule->schedule_type ?? 'incidental');
     $inputClass = 'mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600';
     $labelClass = 'block text-sm font-semibold text-slate-700';
     $helperClass = 'mt-1 text-xs text-slate-500';
@@ -69,15 +69,15 @@
             <div>
                 <label for="schedule_type" class="{{ $labelClass }}">Tipe jadwal</label>
                 <select id="schedule_type" name="schedule_type" x-model="scheduleType" class="{{ $inputClass }}" required>
-                    <option value="once">Sekali</option>
-                    <option value="daily">Harian</option>
+                    <option value="incidental">Insidental</option>
                     <option value="weekly">Mingguan</option>
                     <option value="monthly">Bulanan</option>
+                    <option value="yearly">Tahunan</option>
                 </select>
                 @error('schedule_type') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
-            <div x-show="scheduleType === 'once'" x-cloak>
+            <div x-show="scheduleType === 'incidental'" x-cloak>
                 <label for="specific_date" class="{{ $labelClass }}">Tanggal spesifik</label>
                 <input id="specific_date" name="specific_date" type="date" value="{{ old('specific_date', isset($agendaSchedule) && $agendaSchedule->specific_date ? $agendaSchedule->specific_date->format('Y-m-d') : '') }}" class="{{ $inputClass }}">
                 @error('specific_date') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror

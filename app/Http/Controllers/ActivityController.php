@@ -84,7 +84,7 @@ class ActivityController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $data = $this->validatedData($request);
-        $this->applyAttendanceDefaults($data);
+        $this->applyAutomaticAttendanceSchedule($data);
         $data['created_by'] = $request->user()->id;
         $this->ensureAttendanceToken($data);
 
@@ -124,6 +124,7 @@ class ActivityController extends Controller
     public function update(Request $request, Activity $activity): RedirectResponse
     {
         $data = $this->validatedData($request);
+        $this->applyAutomaticAttendanceSchedule($data);
         $this->ensureAttendanceToken($data, $activity);
         $activity->update($data);
 
@@ -148,7 +149,15 @@ class ActivityController extends Controller
             'change_reason' => ['nullable', 'string'],
         ]);
 
-        $activity->update($validated);
+        $data = array_merge([
+            'activity_date' => $activity->activity_date?->format('Y-m-d'),
+            'start_time' => $activity->start_time ? substr($activity->start_time, 0, 5) : null,
+            'end_time' => $activity->end_time ? substr($activity->end_time, 0, 5) : null,
+        ], $validated);
+        $this->applyAutomaticAttendanceSchedule($data);
+        $this->ensureAttendanceToken($data, $activity);
+
+        $activity->update($data);
 
         return redirect()
             ->route('activities.show', $activity)
@@ -168,34 +177,27 @@ class ActivityController extends Controller
             'activity_date' => ['required', 'date'],
         ]);
         $attendanceDefaults = app(SystemSettings::class)->attendanceDefaults();
-        $attendanceEnabled = false;
-        $attendanceTimes = $attendanceEnabled
-            ? $this->defaultAttendanceTimes(
-                $validated['activity_date'],
-                $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : null,
-                $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : null,
-                $attendanceDefaults
-            )
-            : [];
-
-        $activity = Activity::create([
+        $picId = $agendaSchedule->pic_id ?: $this->departmentChairPicId($agendaSchedule->department_id);
+        $data = [
             'agenda_schedule_id' => $agendaSchedule->id,
             'department_id' => $agendaSchedule->department_id,
-            'pic_id' => $agendaSchedule->pic_id,
+            'pic_id' => $picId,
             'title' => $agendaSchedule->title,
+            'description' => $agendaSchedule->description,
             'activity_date' => $validated['activity_date'],
             'start_time' => $agendaSchedule->start_time,
             'end_time' => $agendaSchedule->end_time,
             'location' => $agendaSchedule->default_location,
             'latitude' => $agendaSchedule->default_latitude,
             'longitude' => $agendaSchedule->default_longitude,
-            'attendance_radius' => $attendanceDefaults['radius'],
+            'attendance_radius' => $agendaSchedule->default_radius ?: $attendanceDefaults['radius'],
             'status' => 'scheduled',
-            'attendance_enabled' => $attendanceEnabled,
-            'attendance_open_at' => $attendanceTimes['open_at'] ?? null,
-            'attendance_close_at' => $attendanceTimes['close_at'] ?? null,
             'created_by' => $request->user()->id,
-        ]);
+        ];
+        $this->applyAutomaticAttendanceSchedule($data);
+        $this->ensureAttendanceToken($data);
+
+        $activity = Activity::create($data);
 
         return redirect()
             ->route('activities.edit', $activity)
@@ -204,17 +206,12 @@ class ActivityController extends Controller
 
     private function validatedData(Request $request): array
     {
-        $attendanceCloseRules = ['nullable', 'date'];
-
-        if ($request->filled('attendance_open_at') && $request->filled('attendance_close_at')) {
-            $attendanceCloseRules[] = 'after:attendance_open_at';
-        }
-
         return $request->validate([
             'agenda_schedule_id' => ['nullable', 'exists:agenda_schedules,id'],
             'department_id' => ['nullable', 'exists:departments,id'],
             'pic_id' => ['nullable', 'exists:members,id'],
             'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
             'activity_date' => ['required', 'date'],
             'start_time' => ['nullable', 'date_format:H:i'],
             'end_time' => ['nullable', 'date_format:H:i'],
@@ -224,9 +221,6 @@ class ActivityController extends Controller
             'attendance_radius' => ['required', 'numeric', 'min:1'],
             'status' => ['required', Rule::in($this->statuses())],
             'change_reason' => ['nullable', 'string'],
-            'attendance_enabled' => ['required', 'boolean'],
-            'attendance_open_at' => ['nullable', 'date'],
-            'attendance_close_at' => $attendanceCloseRules,
         ]);
     }
 
@@ -243,12 +237,8 @@ class ActivityController extends Controller
         $data['attendance_token'] = $token;
     }
 
-    private function applyAttendanceDefaults(array &$data): void
+    private function applyAutomaticAttendanceSchedule(array &$data): void
     {
-        if (! $data['attendance_enabled']) {
-            return;
-        }
-
         $attendanceTimes = $this->defaultAttendanceTimes(
             $data['activity_date'],
             $data['start_time'] ?? null,
@@ -256,8 +246,9 @@ class ActivityController extends Controller
             app(SystemSettings::class)->attendanceDefaults()
         );
 
-        $data['attendance_open_at'] = ($data['attendance_open_at'] ?? null) ?: ($attendanceTimes['open_at'] ?? null);
-        $data['attendance_close_at'] = ($data['attendance_close_at'] ?? null) ?: ($attendanceTimes['close_at'] ?? null);
+        $data['attendance_enabled'] = in_array($data['status'] ?? null, ['scheduled', 'relocated', 'completed'], true);
+        $data['attendance_open_at'] = $attendanceTimes['open_at'] ?? null;
+        $data['attendance_close_at'] = $attendanceTimes['close_at'] ?? null;
     }
 
     private function defaultAttendanceTimes(string $activityDate, ?string $startTime, ?string $endTime, array $attendanceDefaults): array
@@ -271,8 +262,7 @@ class ActivityController extends Controller
         }
 
         if ($endTime) {
-            $times['close_at'] = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$endTime}")
-                ->addMinutes($attendanceDefaults['close_minutes_after']);
+            $times['close_at'] = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$endTime}");
         }
 
         return $times;
@@ -280,8 +270,25 @@ class ActivityController extends Controller
 
     private function formOptions(): array
     {
+        $agendaSchedules = AgendaSchedule::orderBy('title')->get();
+        $departmentChairPics = $this->departmentChairPicMap();
+
         return [
-            'agendaSchedules' => AgendaSchedule::orderBy('title')->get(),
+            'agendaSchedules' => $agendaSchedules,
+            'agendaScheduleDefaults' => $agendaSchedules->mapWithKeys(fn (AgendaSchedule $agendaSchedule) => [
+                (string) $agendaSchedule->id => [
+                    'department_id' => $agendaSchedule->department_id ? (string) $agendaSchedule->department_id : '',
+                    'pic_id' => $agendaSchedule->pic_id ? (string) $agendaSchedule->pic_id : '',
+                    'description' => $agendaSchedule->description ?: '',
+                    'start_time' => $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '',
+                    'end_time' => $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : '',
+                    'default_location' => $agendaSchedule->default_location ?: '',
+                    'default_latitude' => $agendaSchedule->default_latitude !== null ? (string) $agendaSchedule->default_latitude : '',
+                    'default_longitude' => $agendaSchedule->default_longitude !== null ? (string) $agendaSchedule->default_longitude : '',
+                    'default_radius' => $agendaSchedule->default_radius ? (string) $agendaSchedule->default_radius : '',
+                ],
+            ])->all(),
+            'departmentChairPics' => $departmentChairPics,
             'departments' => Department::where('status', 'active')->orderBy('name')->get(),
             'members' => Member::where('member_status', 'active')->orderBy('full_name')->get(),
             'statuses' => $this->statuses(),
@@ -301,5 +308,29 @@ class ActivityController extends Controller
     private function statuses(): array
     {
         return ['scheduled', 'completed', 'holiday', 'postponed', 'relocated', 'cancelled'];
+    }
+
+    private function departmentChairPicMap(): array
+    {
+        return Member::query()
+            ->where('member_status', 'active')
+            ->whereNotNull('department_id')
+            ->whereHas('position', fn ($query) => $query->whereRaw('LOWER(name) = ?', ['ketua bidang']))
+            ->orderBy('id')
+            ->get(['id', 'department_id'])
+            ->unique('department_id')
+            ->mapWithKeys(fn (Member $member) => [(string) $member->department_id => (string) $member->id])
+            ->all();
+    }
+
+    private function departmentChairPicId(?int $departmentId): ?int
+    {
+        if (! $departmentId) {
+            return null;
+        }
+
+        $picId = $this->departmentChairPicMap()[(string) $departmentId] ?? null;
+
+        return $picId ? (int) $picId : null;
     }
 }

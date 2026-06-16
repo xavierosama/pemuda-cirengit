@@ -22,7 +22,7 @@ class AttendanceCheckInController extends Controller
             'activity' => $activity,
             'member' => $member,
             'attendance' => $attendance,
-            'availability' => $this->availability($activity),
+            'availability' => $activity->attendanceAvailability(),
             'canRetry' => $this->canRetry($attendance),
         ]);
     }
@@ -36,7 +36,7 @@ class AttendanceCheckInController extends Controller
             return back()->with('error', 'Akun Anda belum terhubung dengan data anggota.');
         }
 
-        $availability = $this->availability($activity);
+        $availability = $activity->attendanceAvailability();
 
         if ($availability !== 'open') {
             return back()->with('error', $this->availabilityMessage($availability));
@@ -103,32 +103,10 @@ class AttendanceCheckInController extends Controller
         return Activity::where('attendance_token', $token)->firstOrFail();
     }
 
-    private function availability(Activity $activity): string
-    {
-        if (! $activity->attendance_enabled) {
-            return 'disabled';
-        }
-
-        if (! $activity->attendance_open_at || ! $activity->attendance_close_at) {
-            return 'not_configured';
-        }
-
-        if ($activity->attendance_open_at && now()->lt($activity->attendance_open_at)) {
-            return 'not_open';
-        }
-
-        if ($activity->attendance_close_at && now()->gt($activity->attendance_close_at)) {
-            return 'closed';
-        }
-
-        return 'open';
-    }
-
     private function availabilityMessage(string $availability): string
     {
         return match ($availability) {
-            'disabled' => 'Presensi belum diaktifkan untuk kegiatan ini.',
-            'not_configured' => 'Waktu presensi belum dikonfigurasi oleh admin.',
+            'not_available' => 'Presensi tidak tersedia untuk kegiatan ini.',
             'not_open' => 'Presensi belum dibuka.',
             'closed' => 'Presensi sudah ditutup.',
             default => 'Presensi tidak tersedia.',

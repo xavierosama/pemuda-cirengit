@@ -44,8 +44,7 @@
                 'rejected' => 'bg-red-50 text-red-700 ring-red-200',
             ];
             $availabilityMessages = [
-                'disabled' => 'Presensi belum diaktifkan untuk kegiatan ini.',
-                'not_configured' => 'Waktu presensi belum dikonfigurasi oleh admin.',
+                'not_available' => 'Presensi tidak tersedia untuk kegiatan ini.',
                 'not_open' => 'Presensi belum dibuka.',
                 'closed' => 'Presensi sudah ditutup.',
             ];
@@ -53,15 +52,13 @@
                 'open' => 'Dibuka',
                 'closed' => 'Ditutup',
                 'not_open' => 'Belum Dibuka',
-                'disabled' => 'Ditutup',
-                'not_configured' => 'Ditutup',
+                'not_available' => 'Tidak Tersedia',
             ];
             $availabilityClasses = [
                 'open' => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
                 'closed' => 'bg-red-50 text-red-700 ring-red-200',
                 'not_open' => 'bg-amber-50 text-amber-700 ring-amber-200',
-                'disabled' => 'bg-slate-100 text-slate-600 ring-slate-200',
-                'not_configured' => 'bg-slate-100 text-slate-600 ring-slate-200',
+                'not_available' => 'bg-slate-100 text-slate-600 ring-slate-200',
             ];
             $hasRecordedAttendance = $attendance && $attendance->status !== 'absent';
             $canSubmit = $member && $availability === 'open' && ! $hasRecordedAttendance && $activity->latitude !== null && $activity->longitude !== null;
@@ -104,7 +101,7 @@
                                 <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Presensi Kegiatan</p>
                                 <h1 class="mt-1 text-xl font-bold text-slate-950 sm:text-2xl">{{ $activity->title }}</h1>
                             </div>
-                            <span class="{{ $availabilityClasses[$availability] ?? $availabilityClasses['disabled'] }} inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset">
+                            <span class="{{ $availabilityClasses[$availability] ?? $availabilityClasses['not_available'] }} inline-flex w-fit rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset">
                                 {{ $availabilityLabels[$availability] ?? 'Ditutup' }}
                             </span>
                         </div>

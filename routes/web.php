@@ -66,6 +66,10 @@ Route::middleware(['auth', 'internal'])->group(function () {
         ->name('agenda-schedules.activities.create');
     Route::post('agenda-schedules/{agenda_schedule}/activities', [ActivityController::class, 'storeFromSchedule'])
         ->name('agenda-schedules.activities.store');
+    Route::get('agenda-schedules/{agenda_schedule}/generate-monthly', [AgendaScheduleController::class, 'generateMonthlyForm'])
+        ->name('agenda-schedules.generate-monthly.create');
+    Route::post('agenda-schedules/{agenda_schedule}/generate-monthly', [AgendaScheduleController::class, 'generateMonthly'])
+        ->name('agenda-schedules.generate-monthly.store');
     Route::patch('agenda-schedules/{agenda_schedule}/deactivate', [AgendaScheduleController::class, 'deactivate'])
         ->name('agenda-schedules.deactivate');
     Route::resource('agenda-schedules', AgendaScheduleController::class)->except('destroy');

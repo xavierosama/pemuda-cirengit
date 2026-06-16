@@ -3,11 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\AgendaSchedule;
+use App\Models\Activity;
 use App\Models\Department;
 use App\Models\Member;
+use App\Support\SystemSettings;
 use App\Support\TableControls;
+use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -38,7 +42,7 @@ class AgendaScheduleController extends Controller
             ->when($search, fn ($query) => $query->where('title', 'like', "%{$search}%"))
             ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
             ->when(
-                in_array($scheduleType, ['once', 'daily', 'weekly', 'monthly'], true),
+                in_array($scheduleType, $this->scheduleTypes(), true),
                 fn ($query) => $query->where('schedule_type', $scheduleType)
             )
             ->when(
@@ -101,6 +105,82 @@ class AgendaScheduleController extends Controller
         return view('agenda-schedules.show', compact('agendaSchedule'));
     }
 
+    public function generateMonthlyForm(AgendaSchedule $agendaSchedule): View
+    {
+        $agendaSchedule->load(['department', 'pic']);
+
+        return view('agenda-schedules.generate-monthly', compact('agendaSchedule'));
+    }
+
+    public function generateMonthly(Request $request, AgendaSchedule $agendaSchedule): RedirectResponse
+    {
+        $validated = $request->validate([
+            'month' => ['required', 'integer', 'between:1,12'],
+            'year' => ['required', 'integer', 'between:2000,2100'],
+        ]);
+
+        if ($agendaSchedule->schedule_type !== 'weekly' || $agendaSchedule->day_of_week === null) {
+            return redirect()
+                ->route('agenda-schedules.show', $agendaSchedule)
+                ->with('warning', 'Generate kegiatan bulanan saat ini hanya tersedia untuk Jadwal Agenda mingguan.');
+        }
+
+        $startOfMonth = Carbon::create((int) $validated['year'], (int) $validated['month'], 1)->startOfDay();
+        $endOfMonth = $startOfMonth->copy()->endOfMonth();
+        $picId = $agendaSchedule->pic_id ?: $this->departmentChairPicId($agendaSchedule->department_id);
+        $attendanceDefaults = app(SystemSettings::class)->attendanceDefaults();
+        $created = 0;
+        $skipped = 0;
+
+        for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
+            if ((int) $date->dayOfWeek !== (int) $agendaSchedule->day_of_week) {
+                continue;
+            }
+
+            $exists = Activity::where('agenda_schedule_id', $agendaSchedule->id)
+                ->whereDate('activity_date', $date->toDateString())
+                ->exists();
+
+            if ($exists) {
+                $skipped++;
+                continue;
+            }
+
+            $attendanceTimes = $this->defaultAttendanceTimes(
+                $date->toDateString(),
+                $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : null,
+                $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : null,
+                $attendanceDefaults
+            );
+
+            Activity::create([
+                'agenda_schedule_id' => $agendaSchedule->id,
+                'department_id' => $agendaSchedule->department_id,
+                'pic_id' => $picId,
+                'title' => $agendaSchedule->title,
+                'description' => $agendaSchedule->description,
+                'activity_date' => $date->toDateString(),
+                'start_time' => $agendaSchedule->start_time,
+                'end_time' => $agendaSchedule->end_time,
+                'location' => $agendaSchedule->default_location,
+                'latitude' => $agendaSchedule->default_latitude,
+                'longitude' => $agendaSchedule->default_longitude,
+                'attendance_radius' => $agendaSchedule->default_radius ?: $attendanceDefaults['radius'],
+                'status' => 'scheduled',
+                'attendance_enabled' => true,
+                'attendance_open_at' => $attendanceTimes['open_at'] ?? null,
+                'attendance_close_at' => $attendanceTimes['close_at'] ?? null,
+                'attendance_token' => $this->generateUniqueAttendanceToken(),
+                'created_by' => $request->user()->id,
+            ]);
+            $created++;
+        }
+
+        return redirect()
+            ->route('agenda-schedules.show', $agendaSchedule)
+            ->with('success', "Generate kegiatan bulanan selesai. {$created} kegiatan dibuat, {$skipped} dilewati karena sudah ada.");
+    }
+
     /**
      * Show the form for editing the specified resource.
      */
@@ -148,10 +228,10 @@ class AgendaScheduleController extends Controller
             'description' => ['nullable', 'string'],
             'department_id' => ['nullable', 'exists:departments,id'],
             'pic_id' => ['nullable', 'exists:members,id'],
-            'schedule_type' => ['required', Rule::in(['once', 'daily', 'weekly', 'monthly'])],
+            'schedule_type' => ['required', Rule::in($this->scheduleTypes())],
             'day_of_week' => ['nullable', 'required_if:schedule_type,weekly', 'integer', 'between:0,6'],
             'day_of_month' => ['nullable', 'required_if:schedule_type,monthly', 'integer', 'between:1,31'],
-            'specific_date' => ['nullable', 'required_if:schedule_type,once', 'date'],
+            'specific_date' => ['nullable', 'required_if:schedule_type,incidental', 'date'],
             'start_time' => ['nullable', 'regex:/^([01][0-9]|2[0-3]):[0-5][0-9]$/'],
             'end_time' => ['nullable', 'regex:/^([01][0-9]|2[0-3]):[0-5][0-9]$/'],
             'default_location' => ['nullable', 'string', 'max:255'],
@@ -172,10 +252,57 @@ class AgendaScheduleController extends Controller
             $validated['day_of_month'] = null;
         }
 
-        if ($validated['schedule_type'] !== 'once') {
+        if ($validated['schedule_type'] !== 'incidental') {
             $validated['specific_date'] = null;
         }
 
         return $validated;
+    }
+
+    private function scheduleTypes(): array
+    {
+        return ['incidental', 'weekly', 'monthly', 'yearly'];
+    }
+
+    private function defaultAttendanceTimes(string $activityDate, ?string $startTime, ?string $endTime, array $attendanceDefaults): array
+    {
+        $times = [];
+        $date = Carbon::parse($activityDate)->format('Y-m-d');
+
+        if ($startTime) {
+            $times['open_at'] = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$startTime}")
+                ->subMinutes($attendanceDefaults['open_minutes_before']);
+        }
+
+        if ($endTime) {
+            $times['close_at'] = Carbon::createFromFormat('Y-m-d H:i', "{$date} {$endTime}");
+        }
+
+        return $times;
+    }
+
+    private function generateUniqueAttendanceToken(): string
+    {
+        do {
+            $token = Str::random(40);
+        } while (Activity::where('attendance_token', $token)->exists());
+
+        return $token;
+    }
+
+    private function departmentChairPicId(?int $departmentId): ?int
+    {
+        if (! $departmentId) {
+            return null;
+        }
+
+        $member = Member::query()
+            ->where('member_status', 'active')
+            ->where('department_id', $departmentId)
+            ->whereHas('position', fn ($query) => $query->whereRaw('LOWER(name) = ?', ['ketua bidang']))
+            ->orderBy('id')
+            ->first(['id']);
+
+        return $member?->id;
     }
 }

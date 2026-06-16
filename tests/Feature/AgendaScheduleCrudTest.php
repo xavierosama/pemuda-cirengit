@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\AgendaSchedule;
+use App\Models\Activity;
 use App\Models\Department;
 use App\Models\Member;
+use App\Models\Position;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -109,7 +111,7 @@ class AgendaScheduleCrudTest extends TestCase
 
         $this->actingAs($user)->post(route('agenda-schedules.store'), [
             'title' => 'Agenda Tanpa Tanggal',
-            'schedule_type' => 'once',
+            'schedule_type' => 'incidental',
             'default_radius' => 0,
             'is_active' => 1,
         ])->assertSessionHasErrors(['specific_date', 'default_radius']);
@@ -135,7 +137,7 @@ class AgendaScheduleCrudTest extends TestCase
 
         $this->actingAs($user)->post(route('agenda-schedules.store'), [
             'title' => 'Agenda AM PM',
-            'schedule_type' => 'daily',
+            'schedule_type' => 'yearly',
             'start_time' => '08:00 PM',
             'end_time' => '24:00',
             'default_radius' => 100,
@@ -147,7 +149,7 @@ class AgendaScheduleCrudTest extends TestCase
 
         $this->actingAs($user)->post(route('agenda-schedules.store'), [
             'title' => 'Agenda Format 24 Jam',
-            'schedule_type' => 'daily',
+            'schedule_type' => 'yearly',
             'start_time' => '08:00',
             'end_time' => '23:59',
             'default_radius' => 100,
@@ -158,6 +160,78 @@ class AgendaScheduleCrudTest extends TestCase
             'title' => 'Agenda Format 24 Jam',
             'start_time' => '08:00',
             'end_time' => '23:59',
+        ]);
+    }
+
+    public function test_weekly_agenda_can_generate_monthly_activities_without_duplicates(): void
+    {
+        $user = User::factory()->create();
+        $department = Department::create(['name' => 'Dakwah', 'status' => 'active']);
+        $chairPosition = Position::create(['name' => 'Ketua Bidang', 'status' => 'active']);
+        $chair = Member::create([
+            'department_id' => $department->id,
+            'position_id' => $chairPosition->id,
+            'full_name' => 'Ketua Dakwah',
+            'member_status' => 'active',
+        ]);
+        $agendaSchedule = AgendaSchedule::create([
+            'department_id' => $department->id,
+            'pic_id' => null,
+            'title' => 'Kajian Pemuda',
+            'description' => 'Kajian pekanan.',
+            'schedule_type' => 'weekly',
+            'day_of_week' => 2,
+            'start_time' => '20:00',
+            'end_time' => '22:00',
+            'default_location' => 'Masjid Cirengit',
+            'default_latitude' => '-6.1234567',
+            'default_longitude' => '107.1234567',
+            'default_radius' => 120,
+            'is_active' => true,
+            'created_by' => $user->id,
+        ]);
+        Activity::create([
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'department_id' => $department->id,
+            'pic_id' => $chair->id,
+            'title' => 'Kajian Pemuda',
+            'activity_date' => '2026-07-07',
+            'start_time' => '20:00',
+            'end_time' => '22:00',
+            'attendance_radius' => 120,
+            'status' => 'scheduled',
+            'attendance_enabled' => false,
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('agenda-schedules.generate-monthly.create', $agendaSchedule))
+            ->assertOk()
+            ->assertSee('Generate Kegiatan Bulanan')
+            ->assertSee('Selasa');
+
+        $this->actingAs($user)->post(route('agenda-schedules.generate-monthly.store', $agendaSchedule), [
+            'month' => 7,
+            'year' => 2026,
+        ])
+            ->assertRedirect(route('agenda-schedules.show', $agendaSchedule))
+            ->assertSessionHas('success', 'Generate kegiatan bulanan selesai. 3 kegiatan dibuat, 1 dilewati karena sudah ada.');
+
+        $dates = Activity::where('agenda_schedule_id', $agendaSchedule->id)
+            ->orderBy('activity_date')
+            ->pluck('activity_date')
+            ->map(fn ($date) => $date->format('Y-m-d'))
+            ->all();
+
+        $this->assertSame(['2026-07-07', '2026-07-14', '2026-07-21', '2026-07-28'], $dates);
+        $this->assertDatabaseHas('activities', [
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'activity_date' => '2026-07-14 00:00:00',
+            'department_id' => $department->id,
+            'pic_id' => $chair->id,
+            'location' => 'Masjid Cirengit',
+            'attendance_radius' => 120,
+            'attendance_enabled' => 1,
         ]);
     }
 }

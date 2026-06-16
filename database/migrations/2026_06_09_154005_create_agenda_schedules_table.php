@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('pic_id')->nullable()->constrained('members')->nullOnDelete();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->enum('schedule_type', ['once', 'daily', 'weekly', 'monthly']);
+            $table->enum('schedule_type', ['incidental', 'weekly', 'monthly', 'yearly']);
             $table->unsignedTinyInteger('day_of_week')->nullable();
             $table->unsignedTinyInteger('day_of_month')->nullable();
             $table->date('specific_date')->nullable();

@@ -21,6 +21,7 @@
         $activityStatusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Pindah Lokasi', 'cancelled' => 'Dibatalkan'];
         $activityStatusClasses = ['scheduled' => 'bg-sky-50 text-sky-700 ring-sky-200', 'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'holiday' => 'bg-slate-100 text-slate-600 ring-slate-200', 'postponed' => 'bg-amber-50 text-amber-700 ring-amber-200', 'relocated' => 'bg-cyan-50 text-cyan-700 ring-cyan-200', 'cancelled' => 'bg-red-50 text-red-700 ring-red-200'];
         $attendanceUrl = $activity->attendance_token ? route('attendance.check-in.show', $activity->attendance_token, true) : null;
+        $attendanceAvailability = $activity->attendanceAvailability();
         $activityTime = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
         $summaryCards = [
             ['label' => 'Total Hadir', 'value' => $summary['present'], 'class' => 'border-l-emerald-500'],
@@ -42,7 +43,7 @@
                     <h2 class="mt-3 text-2xl font-bold text-slate-950">{{ $activity->title }}</h2>
                     <div class="mt-3 flex flex-wrap gap-2">
                         <span class="{{ $activityStatusClasses[$activity->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $activityStatusLabels[$activity->status] }}</span>
-                        <span class="{{ $activity->attendance_enabled ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">Presensi {{ $activity->attendance_enabled ? 'Aktif' : 'Tidak Aktif' }}</span>
+                        <x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" />
                     </div>
                 </div>
                 <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:min-w-[520px]">
@@ -78,15 +79,15 @@
 
                     <x-ui.confirm-modal
                         title="Sinkronkan Peserta Presensi?"
-                        description="Peserta presensi kegiatan ini akan disesuaikan dengan data anggota aktif. Data presensi yang sudah tersimpan tetap mengikuti aturan sistem."
+                        description="Peserta presensi akan diambil dari semua anggota aktif. Data presensi yang sudah tersimpan tetap mengikuti aturan sistem."
                         confirm-text="Sinkronkan"
                         variant="warning"
                     />
                 </div>
-                @if ($activity->attendance_enabled)
+                @if ($attendanceAvailability !== 'not_available')
                     <a href="{{ route('activities.attendance-qr', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Lihat QR Presensi</a>
                 @else
-                    <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-500">QR Belum Aktif</button>
+                    <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-lg bg-slate-200 px-4 py-2 text-sm font-semibold text-slate-500">QR Tidak Tersedia</button>
                 @endif
                 @if ($attendanceUrl)
                     <button type="button" @click="navigator.clipboard.writeText(@js($attendanceUrl)).then(() => { copied = true; setTimeout(() => copied = false, 2000) })" class="inline-flex items-center justify-center rounded-lg border border-cyan-300 px-4 py-2 text-sm font-semibold text-cyan-700 hover:bg-cyan-50">Salin Link Presensi</button>
@@ -111,6 +112,7 @@
                 <a href="{{ route('activities.attendances.bulk.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Input Massal</a>
             </div>
             <p x-show="copied" x-transition class="mt-3 text-sm font-semibold text-emerald-700">Link disalin</p>
+            <p class="mt-3 text-sm text-slate-500">Sinkronisasi mengambil semua anggota aktif. Bidang kegiatan adalah penanggung jawab, bukan filter peserta. Anggota tanpa akun login tetap masuk daftar hadir.</p>
         </section>
 
         <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
@@ -183,7 +185,7 @@
                                 </div></td>
                             </tr>
                         @empty
-                            <tr><td colspan="11" class="px-4 py-12 text-center text-sm text-slate-500">Belum ada peserta presensi. Klik Sinkronkan Peserta Presensi untuk membuat daftar hadir.</td></tr>
+                            <tr><td colspan="11" class="px-4 py-12 text-center text-sm text-slate-500">Belum ada peserta presensi. Klik Sinkronkan Peserta Presensi untuk membuat daftar hadir dari anggota aktif.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

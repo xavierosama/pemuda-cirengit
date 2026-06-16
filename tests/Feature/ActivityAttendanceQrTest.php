@@ -23,6 +23,8 @@ class ActivityAttendanceQrTest extends TestCase
             'attendance_radius' => 100,
             'status' => 'scheduled',
             'attendance_enabled' => true,
+            'attendance_open_at' => '2026-06-20 19:00:00',
+            'attendance_close_at' => '2026-06-20 21:00:00',
             'attendance_token' => 'qr-attendance-token',
         ]);
 
@@ -47,6 +49,8 @@ class ActivityAttendanceQrTest extends TestCase
             'attendance_radius' => 100,
             'status' => 'scheduled',
             'attendance_enabled' => true,
+            'attendance_open_at' => '2026-06-20 19:00:00',
+            'attendance_close_at' => '2026-06-20 21:00:00',
             'attendance_token' => null,
         ]);
 
@@ -57,14 +61,14 @@ class ActivityAttendanceQrTest extends TestCase
         $this->assertNotNull($activity->fresh()->attendance_token);
     }
 
-    public function test_qr_is_not_rendered_when_attendance_is_disabled(): void
+    public function test_qr_is_not_rendered_when_attendance_is_not_available(): void
     {
         $user = User::factory()->create(['role' => 'admin']);
         $activity = Activity::create([
             'title' => 'Presensi Nonaktif',
             'activity_date' => '2026-06-20',
             'attendance_radius' => 100,
-            'status' => 'scheduled',
+            'status' => 'cancelled',
             'attendance_enabled' => false,
             'attendance_token' => 'inactive-token',
         ]);
@@ -72,7 +76,7 @@ class ActivityAttendanceQrTest extends TestCase
         $this->actingAs($user)
             ->get(route('activities.attendance-qr', $activity))
             ->assertOk()
-            ->assertSee('Presensi kegiatan belum aktif.')
+            ->assertSee('Presensi tidak tersedia.')
             ->assertDontSee('data:image/svg+xml;base64,', false);
     }
 }

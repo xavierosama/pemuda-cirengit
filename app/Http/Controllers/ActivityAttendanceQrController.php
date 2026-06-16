@@ -15,7 +15,7 @@ class ActivityAttendanceQrController extends Controller
 {
     public function show(Activity $activity): View
     {
-        if (! $activity->attendance_enabled) {
+        if ($activity->attendanceAvailability() === 'not_available') {
             return view('activities.attendance-qr', [
                 'activity' => $activity,
                 'attendanceUrl' => null,
