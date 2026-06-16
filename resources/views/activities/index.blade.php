@@ -130,7 +130,10 @@
                             @endphp
                             <tr class="align-top transition hover:bg-slate-50/70">
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ $activities->firstItem() + $loop->index }}</td>
-                                <td class="max-w-56 px-3 py-4"><p class="line-clamp-2 break-words text-sm font-semibold text-slate-900">{{ $activity->title }}</p><p class="mt-1 line-clamp-1 break-words text-xs text-slate-500">{{ $activity->agendaSchedule?->title ?? 'Kegiatan mandiri' }}</p></td>
+                                <td class="max-w-56 px-3 py-4">
+                                    <p class="line-clamp-2 break-words text-sm font-semibold text-slate-900">{{ $activity->title }}</p>
+                                    <p class="mt-1 line-clamp-1 break-words text-xs text-slate-500">{{ $activity->topic ?: ($activity->agendaSchedule?->title ?? 'Kegiatan mandiri') }}</p>
+                                </td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $time !== '' ? $time : '-' }}</td>
                                 <td class="max-w-32 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->department?->name ?? '-' }}</span></td>

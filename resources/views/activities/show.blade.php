@@ -56,6 +56,7 @@
                 <dl class="mt-6 grid gap-4 sm:grid-cols-2">
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tanggal Kegiatan</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Kegiatan</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activityTime ?: '-' }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Topik Agenda</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->topic ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Lokasi</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->location ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Bidang</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->department?->name ?? '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">PIC</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->pic?->full_name ?? '-' }}</dd></div>

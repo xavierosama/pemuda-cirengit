@@ -8,11 +8,18 @@ use App\Models\Department;
 use App\Models\Member;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class AdminTableControlsTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
+    }
 
     public function test_member_table_sorts_with_allowlisted_column_and_uses_per_page(): void
     {
@@ -78,5 +85,48 @@ class AdminTableControlsTest extends TestCase
             ]))
             ->assertOk()
             ->assertViewHas('attendances', fn ($attendances) => $attendances->first()->member->is($ahmad));
+    }
+
+    public function test_activity_index_default_sort_shows_nearest_activities_first(): void
+    {
+        Carbon::setTestNow('2026-06-16 09:00:00');
+        $admin = User::factory()->create();
+
+        Activity::create(['title' => 'Lewat Lama', 'activity_date' => '2026-06-10', 'start_time' => '20:00', 'attendance_radius' => 100, 'status' => 'scheduled']);
+        Activity::create(['title' => 'Mendatang Jauh', 'activity_date' => '2026-06-23', 'start_time' => '20:00', 'attendance_radius' => 100, 'status' => 'scheduled']);
+        Activity::create(['title' => 'Lewat Kemarin', 'activity_date' => '2026-06-15', 'start_time' => '21:00', 'attendance_radius' => 100, 'status' => 'scheduled']);
+        Activity::create(['title' => 'Hari Ini Malam', 'activity_date' => '2026-06-16', 'start_time' => '20:00', 'attendance_radius' => 100, 'status' => 'scheduled']);
+        Activity::create(['title' => 'Besok', 'activity_date' => '2026-06-17', 'start_time' => '19:30', 'attendance_radius' => 100, 'status' => 'scheduled']);
+        Activity::create(['title' => 'Hari Ini Sore', 'activity_date' => '2026-06-16', 'start_time' => '16:00', 'attendance_radius' => 100, 'status' => 'scheduled']);
+
+        $this->actingAs($admin)
+            ->get(route('activities.index'))
+            ->assertOk()
+            ->assertViewHas('currentSort', null)
+            ->assertViewHas('activities', function ($activities) {
+                return $activities->pluck('title')->all() === [
+                    'Hari Ini Sore',
+                    'Hari Ini Malam',
+                    'Besok',
+                    'Mendatang Jauh',
+                    'Lewat Kemarin',
+                    'Lewat Lama',
+                ];
+            });
+    }
+
+    public function test_activity_index_manual_sort_overrides_nearest_default_sort(): void
+    {
+        Carbon::setTestNow('2026-06-16 09:00:00');
+        $admin = User::factory()->create();
+
+        Activity::create(['title' => 'Zeta Hari Ini', 'activity_date' => '2026-06-16', 'start_time' => '20:00', 'attendance_radius' => 100, 'status' => 'scheduled']);
+        Activity::create(['title' => 'Alpha Mendatang', 'activity_date' => '2026-06-23', 'start_time' => '20:00', 'attendance_radius' => 100, 'status' => 'scheduled']);
+
+        $this->actingAs($admin)
+            ->get(route('activities.index', ['sort' => 'title', 'direction' => 'asc']))
+            ->assertOk()
+            ->assertViewHas('currentSort', 'title')
+            ->assertViewHas('activities', fn ($activities) => $activities->first()->title === 'Alpha Mendatang');
     }
 }

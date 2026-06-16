@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\AgendaSchedule;
 use App\Models\Department;
 use App\Models\Member;
+use App\Services\AttendanceSyncService;
 use App\Support\SystemSettings;
 use App\Support\TableControls;
 use Illuminate\Support\Carbon;
@@ -55,7 +56,7 @@ class ActivityController extends Controller
                 in_array($attendanceStatus, ['0', '1'], true),
                 fn ($query) => $query->where('attendance_enabled', $attendanceStatus === '1')
             )
-            ->tap(fn ($query) => TableControls::applySort($query, $currentSort, $currentDirection, $allowedSorts, fn ($query) => $query->orderByDesc('activity_date')->orderByDesc('start_time')))
+            ->tap(fn ($query) => TableControls::applySort($query, $currentSort, $currentDirection, $allowedSorts, fn ($query) => $this->applyDefaultUpcomingSort($query)))
             ->paginate($perPage)
             ->withQueryString();
 
@@ -89,10 +90,11 @@ class ActivityController extends Controller
         $this->ensureAttendanceToken($data);
 
         $activity = Activity::create($data);
+        $syncResult = app(AttendanceSyncService::class)->syncActiveMembers($activity, $request->user()->id);
 
         return redirect()
             ->route('activities.show', $activity)
-            ->with('success', 'Kegiatan aktual berhasil ditambahkan.');
+            ->with('success', $this->attendanceSyncMessage('Kegiatan aktual berhasil ditambahkan.', $syncResult));
     }
 
     public function show(Activity $activity): View
@@ -198,10 +200,11 @@ class ActivityController extends Controller
         $this->ensureAttendanceToken($data);
 
         $activity = Activity::create($data);
+        $syncResult = app(AttendanceSyncService::class)->syncActiveMembers($activity, $request->user()->id);
 
         return redirect()
             ->route('activities.edit', $activity)
-            ->with('success', 'Kegiatan dibuat dari jadwal. Lengkapi atau periksa detailnya.');
+            ->with('success', $this->attendanceSyncMessage('Kegiatan dibuat dari jadwal. Lengkapi atau periksa detailnya.', $syncResult));
     }
 
     private function validatedData(Request $request): array
@@ -222,6 +225,19 @@ class ActivityController extends Controller
             'status' => ['required', Rule::in($this->statuses())],
             'change_reason' => ['nullable', 'string'],
         ]);
+    }
+
+    private function applyDefaultUpcomingSort($query): void
+    {
+        $today = now()->toDateString();
+
+        $query
+            ->orderByRaw('CASE WHEN activity_date >= ? THEN 0 ELSE 1 END ASC', [$today])
+            ->orderByRaw('CASE WHEN activity_date >= ? THEN activity_date END ASC', [$today])
+            ->orderByRaw('CASE WHEN activity_date >= ? THEN start_time END ASC', [$today])
+            ->orderByRaw('CASE WHEN activity_date < ? THEN activity_date END DESC', [$today])
+            ->orderByRaw('CASE WHEN activity_date < ? THEN start_time END DESC', [$today])
+            ->orderBy('id');
     }
 
     private function ensureAttendanceToken(array &$data, ?Activity $activity = null): void
@@ -308,6 +324,16 @@ class ActivityController extends Controller
     private function statuses(): array
     {
         return ['scheduled', 'completed', 'holiday', 'postponed', 'relocated', 'cancelled'];
+    }
+
+    private function attendanceSyncMessage(string $prefix, array $syncResult): string
+    {
+        return sprintf(
+            '%s %d peserta presensi otomatis ditambahkan, %d peserta sudah ada/dilewati.',
+            $prefix,
+            $syncResult['created'],
+            $syncResult['already_exists'] + $syncResult['skipped']
+        );
     }
 
     private function departmentChairPicMap(): array

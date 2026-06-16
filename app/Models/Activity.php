@@ -14,6 +14,7 @@ class Activity extends Model
         'department_id',
         'pic_id',
         'title',
+        'topic',
         'description',
         'activity_date',
         'start_time',

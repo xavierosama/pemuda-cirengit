@@ -6,6 +6,7 @@ use App\Models\AgendaSchedule;
 use App\Models\Activity;
 use App\Models\Department;
 use App\Models\Member;
+use App\Services\AttendanceSyncService;
 use App\Support\SystemSettings;
 use App\Support\TableControls;
 use Illuminate\Support\Carbon;
@@ -117,6 +118,10 @@ class AgendaScheduleController extends Controller
         $validated = $request->validate([
             'month' => ['required', 'integer', 'between:1,12'],
             'year' => ['required', 'integer', 'between:2000,2100'],
+            'occurrences' => ['nullable', 'array'],
+            'occurrences.*.date' => ['required_with:occurrences', 'date'],
+            'occurrences.*.active' => ['nullable', 'boolean'],
+            'occurrences.*.topic' => ['nullable', 'string', 'max:255'],
         ]);
 
         if ($agendaSchedule->schedule_type !== 'weekly' || $agendaSchedule->day_of_week === null) {
@@ -130,10 +135,24 @@ class AgendaScheduleController extends Controller
         $picId = $agendaSchedule->pic_id ?: $this->departmentChairPicId($agendaSchedule->department_id);
         $attendanceDefaults = app(SystemSettings::class)->attendanceDefaults();
         $created = 0;
-        $skipped = 0;
+        $skippedInactive = 0;
+        $skippedDuplicate = 0;
+        $attendanceCreated = 0;
+        $attendanceAlreadyExists = 0;
+        $attendanceSkipped = 0;
+        $occurrences = $validated['occurrences'] ?? $this->monthlyOccurrences($agendaSchedule, $startOfMonth, $endOfMonth);
+        $attendanceSyncService = app(AttendanceSyncService::class);
 
-        for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
-            if ((int) $date->dayOfWeek !== (int) $agendaSchedule->day_of_week) {
+        foreach ($occurrences as $occurrence) {
+            $date = Carbon::parse($occurrence['date'] ?? null)->startOfDay();
+
+            if (! $date->betweenIncluded($startOfMonth, $endOfMonth)
+                || (int) $date->dayOfWeek !== (int) $agendaSchedule->day_of_week) {
+                continue;
+            }
+
+            if (! (bool) ($occurrence['active'] ?? false)) {
+                $skippedInactive++;
                 continue;
             }
 
@@ -142,7 +161,7 @@ class AgendaScheduleController extends Controller
                 ->exists();
 
             if ($exists) {
-                $skipped++;
+                $skippedDuplicate++;
                 continue;
             }
 
@@ -153,11 +172,12 @@ class AgendaScheduleController extends Controller
                 $attendanceDefaults
             );
 
-            Activity::create([
+            $activity = Activity::create([
                 'agenda_schedule_id' => $agendaSchedule->id,
                 'department_id' => $agendaSchedule->department_id,
                 'pic_id' => $picId,
                 'title' => $agendaSchedule->title,
+                'topic' => filled($occurrence['topic'] ?? null) ? $occurrence['topic'] : null,
                 'description' => $agendaSchedule->description,
                 'activity_date' => $date->toDateString(),
                 'start_time' => $agendaSchedule->start_time,
@@ -173,12 +193,16 @@ class AgendaScheduleController extends Controller
                 'attendance_token' => $this->generateUniqueAttendanceToken(),
                 'created_by' => $request->user()->id,
             ]);
+            $syncResult = $attendanceSyncService->syncActiveMembers($activity, $request->user()->id);
+            $attendanceCreated += $syncResult['created'];
+            $attendanceAlreadyExists += $syncResult['already_exists'];
+            $attendanceSkipped += $syncResult['skipped'];
             $created++;
         }
 
         return redirect()
             ->route('agenda-schedules.show', $agendaSchedule)
-            ->with('success', "Generate kegiatan bulanan selesai. {$created} kegiatan dibuat, {$skipped} dilewati karena sudah ada.");
+            ->with('success', "Generate kegiatan bulanan selesai. {$created} kegiatan dibuat, {$attendanceCreated} peserta presensi otomatis ditambahkan, ".($attendanceAlreadyExists + $attendanceSkipped)." peserta sudah ada/dilewati, {$skippedInactive} kegiatan dilewati karena tidak aktif, {$skippedDuplicate} kegiatan dilewati karena sudah ada.");
     }
 
     /**
@@ -279,6 +303,28 @@ class AgendaScheduleController extends Controller
         }
 
         return $times;
+    }
+
+    private function monthlyOccurrences(AgendaSchedule $agendaSchedule, Carbon $startOfMonth, Carbon $endOfMonth): array
+    {
+        $occurrences = [];
+        $week = 1;
+
+        for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
+            if ((int) $date->dayOfWeek !== (int) $agendaSchedule->day_of_week) {
+                continue;
+            }
+
+            $occurrences[] = [
+                'week' => $week,
+                'date' => $date->toDateString(),
+                'active' => true,
+                'topic' => null,
+            ];
+            $week++;
+        }
+
+        return $occurrences;
     }
 
     private function generateUniqueAttendanceToken(): string

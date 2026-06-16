@@ -20,6 +20,20 @@
             'yearly' => 'bg-amber-50 text-amber-700 ring-amber-200',
         ];
         $dayLabels = [0 => 'Minggu', 1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'];
+        $monthOptions = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
         $summaryCards = [
             ['label' => 'Total Jadwal Aktif', 'value' => $agendaStats['active'], 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-100'],
             ['label' => 'Total Jadwal Nonaktif', 'value' => $agendaStats['inactive'], 'class' => 'bg-slate-50 text-slate-700 ring-slate-200'],
@@ -28,7 +42,12 @@
         ];
     @endphp
 
-    <div class="space-y-6">
+    <div
+        class="space-y-6"
+        x-data="generateMonthlyModal()"
+        x-on:open-generate-monthly.window="openModal($event.detail)"
+        x-on:keydown.escape.window="closeModal()"
+    >
         <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -127,6 +146,16 @@
                     <tbody class="divide-y divide-slate-100 bg-white">
                         @forelse ($agendaSchedules as $agendaSchedule)
                             @php
+                                $generatePayload = [
+                                    'id' => $agendaSchedule->id,
+                                    'title' => $agendaSchedule->title,
+                                    'schedule_type' => $agendaSchedule->schedule_type,
+                                    'day_of_week' => $agendaSchedule->day_of_week,
+                                    'day_label' => $dayLabels[$agendaSchedule->day_of_week] ?? '-',
+                                    'start_time' => $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '-',
+                                    'end_time' => $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : '-',
+                                    'action' => route('agenda-schedules.generate-monthly.store', $agendaSchedule),
+                                ];
                                 $pattern = match ($agendaSchedule->schedule_type) {
                                     'incidental' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
                                     'weekly' => isset($dayLabels[$agendaSchedule->day_of_week]) ? 'Setiap '.$dayLabels[$agendaSchedule->day_of_week] : '-',
@@ -153,7 +182,11 @@
                                         <x-ui.action-dropdown>
                                             <x-ui.action-dropdown-item :href="route('agenda-schedules.edit', $agendaSchedule)" label="Edit" icon="pencil" />
                                             @if ($agendaSchedule->schedule_type === 'weekly')
-                                                <x-ui.action-dropdown-item :href="route('agenda-schedules.generate-monthly.create', $agendaSchedule)" label="Generate Kegiatan Bulanan" icon="calendar" />
+                                                <x-ui.action-dropdown-item
+                                                    label="Generate Kegiatan Bulanan"
+                                                    icon="calendar"
+                                                    :click="'$dispatch(\'open-generate-monthly\', '.\Illuminate\Support\Js::from($generatePayload).')'"
+                                                />
                                             @endif
                                             @if ($agendaSchedule->is_active)
                                                 <x-ui.action-dropdown-item
@@ -187,5 +220,175 @@
         </div>
 
         {{ $agendaSchedules->links() }}
+
+        <template x-teleport="body">
+            <div
+                x-cloak
+                x-show="open"
+                class="fixed inset-0 z-[80] flex min-h-screen items-center justify-center px-4 py-6"
+                role="dialog"
+                aria-modal="true"
+                style="display: none;"
+            >
+                <div x-show="open" x-transition.opacity class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" x-on:click="closeModal()" aria-hidden="true"></div>
+
+                <section
+                    x-show="open"
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="translate-y-3 scale-95 opacity-0"
+                    x-transition:enter-end="translate-y-0 scale-100 opacity-100"
+                    x-transition:leave="transition ease-in duration-150"
+                    x-transition:leave-start="translate-y-0 scale-100 opacity-100"
+                    x-transition:leave-end="translate-y-3 scale-95 opacity-0"
+                    class="relative flex max-h-[92vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-950/20"
+                >
+                    <div class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4">
+                        <div>
+                            <p class="text-xs font-bold uppercase tracking-wide text-emerald-700">Generate Kegiatan Bulanan</p>
+                            <h2 class="mt-1 text-xl font-bold text-slate-950" x-text="schedule?.title || 'Jadwal Agenda'"></h2>
+                            <p class="mt-1 text-sm text-slate-500">
+                                <span x-text="schedule?.day_label || '-'"></span>
+                                <span> &middot; </span>
+                                <span x-text="`${schedule?.start_time || '-'} - ${schedule?.end_time || '-'}`"></span>
+                            </p>
+                        </div>
+                        <button type="button" x-on:click="closeModal()" class="rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-800" aria-label="Tutup modal">
+                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 0 1 1.414 0L10 8.586l4.293-4.293a1 1 0 1 1 1.414 1.414L11.414 10l4.293 4.293a1 1 0 0 1-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 0 1-1.414-1.414L8.586 10 4.293 5.707a1 1 0 0 1 0-1.414Z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <form method="POST" x-bind:action="schedule?.action" x-on:submit="submitting = true" class="flex min-h-0 flex-1 flex-col">
+                        @csrf
+                        <div class="space-y-5 overflow-y-auto px-5 py-5">
+                            <div class="grid gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label for="generate_month" class="block text-sm font-semibold text-slate-700">Bulan</label>
+                                    <select id="generate_month" name="month" x-model.number="month" x-on:change="buildOccurrences()" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600" required>
+                                        @foreach ($monthOptions as $value => $label)
+                                            <option value="{{ $value }}">{{ $label }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="generate_year" class="block text-sm font-semibold text-slate-700">Tahun</label>
+                                    <input id="generate_year" name="year" type="number" min="2000" max="2100" x-model.number="year" x-on:input.debounce.250ms="buildOccurrences()" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600" required>
+                                </div>
+                            </div>
+
+                            <div class="rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                                Hanya minggu yang dicentang aktif yang akan dibuat menjadi Kegiatan Aktual.
+                            </div>
+
+                            <div class="overflow-hidden rounded-xl border border-slate-200">
+                                <div class="grid grid-cols-[96px_minmax(120px,1fr)_88px_minmax(180px,1.7fr)] gap-3 bg-slate-50 px-4 py-3 text-xs font-bold uppercase tracking-wide text-slate-500 max-sm:hidden">
+                                    <span>Minggu</span>
+                                    <span>Tanggal</span>
+                                    <span>Aktif</span>
+                                    <span>Topik Agenda</span>
+                                </div>
+
+                                <template x-if="occurrences.length === 0">
+                                    <div class="px-4 py-8 text-center text-sm text-slate-500">Tidak ada tanggal yang sesuai pola jadwal pada bulan ini.</div>
+                                </template>
+
+                                <template x-for="(occurrence, index) in occurrences" :key="occurrence.date">
+                                    <div class="grid gap-3 border-t border-slate-100 px-4 py-3 sm:grid-cols-[96px_minmax(120px,1fr)_88px_minmax(180px,1.7fr)] sm:items-center">
+                                        <input type="hidden" x-bind:name="`occurrences[${index}][date]`" x-bind:value="occurrence.date">
+                                        <input type="hidden" x-bind:name="`occurrences[${index}][active]`" value="0">
+
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 sm:hidden">Minggu</p>
+                                            <p class="text-sm font-semibold text-slate-800" x-text="`Minggu ke-${occurrence.week}`"></p>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 sm:hidden">Tanggal</p>
+                                            <p class="text-sm text-slate-700" x-text="occurrence.label"></p>
+                                        </div>
+                                        <label class="inline-flex items-center gap-2">
+                                            <input type="checkbox" x-bind:name="`occurrences[${index}][active]`" value="1" x-model="occurrence.active" class="rounded border-slate-300 text-emerald-700 shadow-sm focus:ring-emerald-600">
+                                            <span class="text-sm font-semibold text-slate-700">Aktif</span>
+                                        </label>
+                                        <div>
+                                            <label class="sr-only" x-bind:for="`topic_${index}`">Topik Agenda</label>
+                                            <input x-bind:id="`topic_${index}`" type="text" x-bind:name="`occurrences[${index}][topic]`" x-model="occurrence.topic" placeholder="Contoh: Adab Bermedia Sosial" class="block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col-reverse gap-3 border-t border-slate-200 bg-white px-5 py-4 sm:flex-row sm:justify-end">
+                            <button type="button" x-on:click="closeModal()" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Batal</button>
+                            <button type="submit" x-bind:disabled="submitting || occurrences.length === 0" class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-70">
+                                <svg x-cloak x-show="submitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
+                                </svg>
+                                <span x-show="! submitting">Generate</span>
+                                <span x-cloak x-show="submitting">Mengenerate...</span>
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </template>
     </div>
+
+    <script>
+        function generateMonthlyModal() {
+            return {
+                open: false,
+                submitting: false,
+                schedule: null,
+                month: new Date().getMonth() + 1,
+                year: new Date().getFullYear(),
+                occurrences: [],
+                openModal(schedule) {
+                    this.schedule = schedule;
+                    this.submitting = false;
+                    this.month = new Date().getMonth() + 1;
+                    this.year = new Date().getFullYear();
+                    this.buildOccurrences();
+                    this.open = true;
+                },
+                closeModal() {
+                    this.open = false;
+                    this.submitting = false;
+                },
+                buildOccurrences() {
+                    if (! this.schedule || this.schedule.schedule_type !== 'weekly') {
+                        this.occurrences = [];
+                        return;
+                    }
+
+                    const month = Number(this.month);
+                    const year = Number(this.year);
+                    const targetDay = Number(this.schedule.day_of_week);
+                    const lastDate = new Date(year, month, 0).getDate();
+                    const rows = [];
+
+                    for (let day = 1; day <= lastDate; day++) {
+                        const date = new Date(year, month - 1, day);
+
+                        if (date.getDay() !== targetDay) {
+                            continue;
+                        }
+
+                        const isoDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        rows.push({
+                            week: rows.length + 1,
+                            date: isoDate,
+                            label: `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`,
+                            active: true,
+                            topic: '',
+                        });
+                    }
+
+                    this.occurrences = rows;
+                },
+            };
+        }
+    </script>
 @endsection

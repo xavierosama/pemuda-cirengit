@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Member;
+use App\Services\AttendanceSyncService;
 use App\Support\TableControls;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\RedirectResponse;
@@ -247,42 +248,16 @@ class AttendanceController extends Controller
 
     public function syncParticipants(Request $request, Activity $activity): RedirectResponse
     {
-        $members = Member::query()
-            ->where('member_status', 'active')
-            ->get(['id']);
-        $totalFound = $members->count();
-        $skipped = 0;
-
-        $existingMemberIds = $activity->attendances()
-            ->whereIn('member_id', $members->pluck('id'))
-            ->pluck('member_id');
-        $existingCount = $existingMemberIds->count();
-
-        $newMemberIds = $members->pluck('id')->diff($existingMemberIds);
-        $addedCount = $newMemberIds->count();
-
-        DB::transaction(function () use ($activity, $newMemberIds, $request) {
-            foreach ($newMemberIds as $memberId) {
-                Attendance::create([
-                    'activity_id' => $activity->id,
-                    'member_id' => $memberId,
-                    'status' => 'absent',
-                    'attendance_method' => 'manual',
-                    'verification_status' => 'valid',
-                    'checked_in_at' => null,
-                    'created_by' => $request->user()->id,
-                ]);
-            }
-        });
+        $result = app(AttendanceSyncService::class)->syncActiveMembers($activity, $request->user()->id);
 
         return redirect()
             ->route('activities.attendances.index', $activity)
             ->with('success', sprintf(
                 'Sinkronisasi peserta selesai. %d anggota aktif ditemukan, %d attendance baru ditambahkan, %d anggota sudah ada di daftar hadir, %d anggota dilewati.',
-                $totalFound,
-                $addedCount,
-                $existingCount,
-                $skipped
+                $result['active_members_found'],
+                $result['created'],
+                $result['already_exists'],
+                $result['skipped']
             ));
     }
 

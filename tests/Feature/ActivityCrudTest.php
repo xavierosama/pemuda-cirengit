@@ -221,6 +221,41 @@ class ActivityCrudTest extends TestCase
         $this->assertSame('2026-06-20 21:00:00', $activity->attendance_close_at->format('Y-m-d H:i:s'));
     }
 
+    public function test_new_activity_automatically_syncs_active_members_to_attendance(): void
+    {
+        $user = User::factory()->create();
+        $firstMember = Member::create(['full_name' => 'Anggota Aktif Satu', 'member_status' => 'active']);
+        $secondMember = Member::create(['full_name' => 'Anggota Aktif Dua', 'member_status' => 'active']);
+        Member::create(['full_name' => 'Anggota Nonaktif', 'member_status' => 'inactive']);
+
+        $this->actingAs($user)->post(route('activities.store'), [
+            'title' => 'Kajian Auto Sinkron',
+            'activity_date' => '2026-06-20',
+            'start_time' => '19:30',
+            'end_time' => '21:00',
+            'attendance_radius' => 100,
+            'status' => 'scheduled',
+        ])
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Kegiatan aktual berhasil ditambahkan. 2 peserta presensi otomatis ditambahkan, 0 peserta sudah ada/dilewati.');
+
+        $activity = Activity::where('title', 'Kajian Auto Sinkron')->firstOrFail();
+
+        foreach ([$firstMember, $secondMember] as $member) {
+            $this->assertDatabaseHas('attendances', [
+                'activity_id' => $activity->id,
+                'member_id' => $member->id,
+                'status' => 'absent',
+                'attendance_method' => 'manual',
+                'verification_status' => 'valid',
+                'checked_in_at' => null,
+                'created_by' => $user->id,
+            ]);
+        }
+
+        $this->assertSame(2, Attendance::where('activity_id', $activity->id)->count());
+    }
+
     public function test_edit_activity_recalculates_automatic_attendance_schedule(): void
     {
         $user = User::factory()->create();

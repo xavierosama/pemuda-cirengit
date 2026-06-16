@@ -4,7 +4,7 @@
 ])
 
 @php
-    $originClass = $align === 'left' ? 'origin-top-left' : 'origin-top-right';
+    $horizontalOrigin = $align === 'left' ? 'left' : 'right';
 @endphp
 
 <div
@@ -12,7 +12,9 @@
         dropdownOpen: false,
         dropdownTop: 0,
         dropdownLeft: 0,
-        dropdownRight: 0,
+        dropdownMaxHeight: 9999,
+        openUpward: false,
+        margin: 8,
         toggleDropdown() {
             if (this.dropdownOpen) {
                 this.dropdownOpen = false;
@@ -20,13 +22,41 @@
             }
 
             const rect = this.$refs.trigger.getBoundingClientRect();
-            this.dropdownTop = rect.bottom + 8;
-            this.dropdownLeft = rect.left;
-            this.dropdownRight = window.innerWidth - rect.right;
+            this.dropdownTop = rect.bottom + this.margin;
+            this.dropdownLeft = @js($align) === 'left' ? rect.left : rect.right - 224;
             this.dropdownOpen = true;
+            setTimeout(() => this.positionDropdown(), 0);
+            setTimeout(() => this.positionDropdown(), 50);
+        },
+        positionDropdown() {
+            if (! this.dropdownOpen) return;
+
+            const rect = this.$refs.trigger.getBoundingClientRect();
+            const menu = this.$refs.menu;
+            const menuHeight = menu?.offsetHeight || 0;
+            const menuWidth = menu?.offsetWidth || 224;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const spaceAbove = rect.top;
+
+            this.dropdownMaxHeight = Math.max(160, window.innerHeight - (this.margin * 2));
+            this.openUpward = spaceBelow < menuHeight + this.margin && spaceAbove > spaceBelow;
+            this.dropdownTop = this.openUpward
+                ? Math.max(this.margin, rect.top - menuHeight - this.margin)
+                : Math.min(rect.bottom + this.margin, window.innerHeight - menuHeight - this.margin);
+
+            const preferredLeft = @js($align) === 'left'
+                ? rect.left
+                : rect.right - menuWidth;
+
+            this.dropdownLeft = Math.min(
+                Math.max(this.margin, preferredLeft),
+                window.innerWidth - menuWidth - this.margin
+            );
         }
     }"
     x-on:keydown.escape.window="dropdownOpen = false"
+    x-on:resize.window="positionDropdown()"
+    x-on:scroll.window.passive="positionDropdown()"
     class="relative inline-flex text-left"
 >
     <button
@@ -47,6 +77,7 @@
 
     <template x-teleport="body">
         <div
+            x-ref="menu"
             x-cloak
             x-show="dropdownOpen"
             x-transition:enter="transition ease-out duration-100"
@@ -56,10 +87,9 @@
             x-transition:leave-start="scale-100 opacity-100"
             x-transition:leave-end="scale-95 opacity-0"
             x-on:click.outside="dropdownOpen = false"
-            x-bind:style="@js($align) === 'left'
-                ? `top: ${dropdownTop}px; left: ${dropdownLeft}px;`
-                : `top: ${dropdownTop}px; right: ${dropdownRight}px;`"
-            class="{{ $originClass }} fixed z-[70] w-56 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10"
+            x-bind:style="`top: ${dropdownTop}px; left: ${dropdownLeft}px; max-height: ${dropdownMaxHeight}px;`"
+            x-bind:class="openUpward ? 'origin-bottom-{{ $horizontalOrigin }}' : 'origin-top-{{ $horizontalOrigin }}'"
+            class="fixed z-[70] min-w-48 w-56 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10 dark:border-slate-700 dark:bg-slate-900 dark:shadow-black/30"
             style="display: none;"
         >
             {{ $slot }}

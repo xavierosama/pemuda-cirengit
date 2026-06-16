@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\AgendaSchedule;
 use App\Models\Activity;
+use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Member;
 use App\Models\Position;
@@ -215,7 +216,7 @@ class AgendaScheduleCrudTest extends TestCase
             'year' => 2026,
         ])
             ->assertRedirect(route('agenda-schedules.show', $agendaSchedule))
-            ->assertSessionHas('success', 'Generate kegiatan bulanan selesai. 3 kegiatan dibuat, 1 dilewati karena sudah ada.');
+            ->assertSessionHas('success', 'Generate kegiatan bulanan selesai. 3 kegiatan dibuat, 3 peserta presensi otomatis ditambahkan, 0 peserta sudah ada/dilewati, 0 kegiatan dilewati karena tidak aktif, 1 kegiatan dilewati karena sudah ada.');
 
         $dates = Activity::where('agenda_schedule_id', $agendaSchedule->id)
             ->orderBy('activity_date')
@@ -224,6 +225,7 @@ class AgendaScheduleCrudTest extends TestCase
             ->all();
 
         $this->assertSame(['2026-07-07', '2026-07-14', '2026-07-21', '2026-07-28'], $dates);
+        $this->assertSame(3, Attendance::whereIn('activity_id', Activity::where('agenda_schedule_id', $agendaSchedule->id)->whereDate('activity_date', '!=', '2026-07-07')->pluck('id'))->count());
         $this->assertDatabaseHas('activities', [
             'agenda_schedule_id' => $agendaSchedule->id,
             'activity_date' => '2026-07-14 00:00:00',
@@ -232,6 +234,56 @@ class AgendaScheduleCrudTest extends TestCase
             'location' => 'Masjid Cirengit',
             'attendance_radius' => 120,
             'attendance_enabled' => 1,
+        ]);
+    }
+
+    public function test_weekly_monthly_generate_respects_active_rows_and_topic(): void
+    {
+        $user = User::factory()->create();
+        $agendaSchedule = AgendaSchedule::create([
+            'title' => 'Kajian Topik Pekanan',
+            'description' => 'Kajian dengan topik berbeda.',
+            'schedule_type' => 'weekly',
+            'day_of_week' => 2,
+            'start_time' => '20:00',
+            'end_time' => '22:00',
+            'default_location' => 'Masjid Cirengit',
+            'default_radius' => 120,
+            'is_active' => true,
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)->post(route('agenda-schedules.generate-monthly.store', $agendaSchedule), [
+            'month' => 7,
+            'year' => 2026,
+            'occurrences' => [
+                ['date' => '2026-07-07', 'active' => 1, 'topic' => 'Adab Bermedia Sosial'],
+                ['date' => '2026-07-14', 'active' => 0, 'topic' => 'Libur pekanan'],
+                ['date' => '2026-07-21', 'active' => 1, 'topic' => 'Manajemen Waktu Pemuda'],
+                ['date' => '2026-07-28', 'active' => 1, 'topic' => ''],
+            ],
+        ])
+            ->assertRedirect(route('agenda-schedules.show', $agendaSchedule))
+            ->assertSessionHas('success', 'Generate kegiatan bulanan selesai. 3 kegiatan dibuat, 0 peserta presensi otomatis ditambahkan, 0 peserta sudah ada/dilewati, 1 kegiatan dilewati karena tidak aktif, 0 kegiatan dilewati karena sudah ada.');
+
+        $this->assertDatabaseHas('activities', [
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'activity_date' => '2026-07-07 00:00:00',
+            'title' => 'Kajian Topik Pekanan',
+            'topic' => 'Adab Bermedia Sosial',
+            'description' => 'Kajian dengan topik berbeda.',
+            'attendance_enabled' => 1,
+        ]);
+        $this->assertDatabaseMissing('activities', [
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'activity_date' => '2026-07-14 00:00:00',
+        ]);
+        $this->assertDatabaseHas('activities', [
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'activity_date' => '2026-07-21 00:00:00',
+            'topic' => 'Manajemen Waktu Pemuda',
+            'attendance_open_at' => '2026-07-21 19:30:00',
+            'attendance_close_at' => '2026-07-21 22:00:00',
         ]);
     }
 }
