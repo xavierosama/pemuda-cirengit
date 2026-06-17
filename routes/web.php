@@ -97,6 +97,8 @@ Route::middleware(['auth', 'internal'])->group(function () {
         ->name('activities.attendances.bulk.store');
     Route::post('activities/{activity}/attendances/sync-participants', [AttendanceController::class, 'syncParticipants'])
         ->name('activities.attendances.sync-participants');
+    Route::patch('activities/{activity}/attendances/finalize', [AttendanceController::class, 'finalize'])
+        ->name('activities.attendances.finalize');
     Route::resource('activities', ActivityController::class);
 
     Route::get('attendances', [AttendanceController::class, 'index'])->name('attendances.index');

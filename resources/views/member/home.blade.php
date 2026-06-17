@@ -43,7 +43,7 @@
             $memberStatusLabels = ['active' => 'Aktif', 'inactive' => 'Tidak Aktif', 'alumni' => 'Alumni', 'moved' => 'Pindah'];
             $attendanceLabels = ['present' => 'Hadir', 'permission' => 'Izin', 'absent' => 'Tidak Hadir', 'need_verification' => 'Perlu Verifikasi'];
             $verificationLabels = ['valid' => 'Valid', 'need_verification' => 'Perlu Verifikasi', 'rejected' => 'Ditolak'];
-            $activityStatusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Dipindah', 'cancelled' => 'Dibatalkan'];
+            $activityStatusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Pindah Lokasi', 'cancelled' => 'Dibatalkan'];
             $scheduleTypeLabels = ['incidental' => 'Insidental', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan', 'yearly' => 'Tahunan'];
         @endphp
 
@@ -159,6 +159,12 @@
                         </div>
                     </section>
 
+                    <nav class="grid gap-2 sm:grid-cols-3" aria-label="Navigasi cepat anggota">
+                        <a href="{{ route('member.home') }}" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800">Kembali ke Dashboard</a>
+                        <a href="#kegiatan-mendatang" class="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-50">Lihat Kegiatan Mendatang</a>
+                        <a href="#riwayat-presensi" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50">Lihat Riwayat Presensi</a>
+                    </nav>
+
                     <section class="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm ring-1 ring-emerald-50 dark:border-emerald-900/60 dark:bg-slate-900 dark:ring-emerald-400/10 sm:p-5">
                         <div class="flex flex-col gap-1 border-b border-slate-100 pb-3 dark:border-slate-800 sm:flex-row sm:items-end sm:justify-between">
                             <div>
@@ -177,6 +183,7 @@
                                         $attendanceAvailability = $activity->attendanceAvailability();
                                         $attendanceOpenAt = $activity->effectiveAttendanceOpenAt();
                                         $attendanceCloseAt = $activity->effectiveAttendanceCloseAt();
+                                        $subInfo = $activity->topic ?: ($activity->description ?: $activity->location);
                                     @endphp
                                     <article class="rounded-xl border border-emerald-100 bg-emerald-50/40 p-3 dark:border-emerald-900/60 dark:bg-emerald-500/5 sm:p-4" x-data="{ permissionOpen: false, submittingPermission: false }" @keydown.escape.window="permissionOpen = false">
                                         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -186,6 +193,9 @@
                                                     <x-ui.status-badge :status="$activity->status" :label="$activityStatusLabels[$activity->status] ?? $activity->status" />
                                                     <x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" />
                                                 </div>
+                                                @if ($subInfo)
+                                                    <p class="mt-2 line-clamp-2 break-words text-sm font-medium text-slate-600">{{ $activity->topic ? 'Topik: '.$activity->topic : $subInfo }}</p>
+                                                @endif
                                                 <div class="mt-3 grid gap-x-4 gap-y-1.5 text-sm text-slate-700 dark:text-slate-300 sm:grid-cols-2 lg:grid-cols-4">
                                                     <p><span class="font-semibold text-slate-900">Tanggal:</span> {{ $activity->activity_date->format('d/m/Y') }}</p>
                                                     <p><span class="font-semibold text-slate-900">Waktu:</span> {{ $time !== '' ? $time : '-' }}</p>
@@ -359,7 +369,37 @@
                             <h2 class="text-base font-bold text-slate-950">Riwayat Presensi Pribadi</h2>
                             <p class="mt-1 text-sm text-slate-500">Maksimal 10 presensi terbaru yang tercatat.</p>
                         </div>
-                        <div class="overflow-x-auto">
+                        <div class="divide-y divide-slate-100 md:hidden">
+                            @forelse ($attendanceHistory as $attendance)
+                                @php
+                                    $historyActivity = $attendance->activity;
+                                    $historySubInfo = $historyActivity?->topic ?: ($historyActivity?->description ?: $historyActivity?->location);
+                                    $historyTime = trim(($historyActivity?->start_time ? substr($historyActivity->start_time, 0, 5) : '').($historyActivity?->end_time ? ' - '.substr($historyActivity->end_time, 0, 5) : ''));
+                                @endphp
+                                <article class="px-4 py-4">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="min-w-0">
+                                            <p class="line-clamp-2 break-words text-sm font-bold text-slate-950">{{ $historyActivity?->title ?? '-' }}</p>
+                                            @if ($historySubInfo)
+                                                <p class="mt-1 line-clamp-1 text-xs text-slate-500">{{ $historyActivity?->topic ? 'Topik: '.$historyActivity->topic : $historySubInfo }}</p>
+                                            @endif
+                                        </div>
+                                        <x-ui.status-badge :status="$attendance->status" :label="$attendanceLabels[$attendance->status] ?? $attendance->status" />
+                                    </div>
+                                    <p class="mt-2 text-xs font-medium text-slate-600">{{ $historyActivity?->activity_date?->format('d/m/Y') ?? '-' }} @if($historyTime) &middot; {{ $historyTime }} @endif</p>
+                                    <div class="mt-3 flex flex-wrap items-center gap-2">
+                                        <x-ui.status-badge :status="$attendance->verification_status" :label="$verificationLabels[$attendance->verification_status] ?? $attendance->verification_status" />
+                                        <span class="text-xs text-slate-500">Presensi: {{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</span>
+                                    </div>
+                                    @if ($attendance->status === 'permission' && $attendance->notes)
+                                        <p class="mt-2 line-clamp-2 text-xs text-slate-500">Alasan: {{ $attendance->notes }}</p>
+                                    @endif
+                                </article>
+                            @empty
+                                <x-ui.empty-state title="Belum ada riwayat presensi." description="Riwayat presensi akan muncul setelah Anda melakukan presensi." />
+                            @endforelse
+                        </div>
+                        <div class="hidden overflow-x-auto md:block">
                             <table class="min-w-full divide-y divide-slate-200">
                                 <thead class="bg-slate-50">
                                     <tr>

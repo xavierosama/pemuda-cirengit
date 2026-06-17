@@ -362,6 +362,7 @@ class ActivityCrudTest extends TestCase
             'department_id' => $department->id,
             'pic_id' => $pic->id,
             'title' => 'Kajian Kontrol',
+            'topic' => 'Istifta dan Keputusan Hisbah',
             'activity_date' => '2026-06-10',
             'start_time' => '20:00',
             'end_time' => '21:30',
@@ -386,6 +387,14 @@ class ActivityCrudTest extends TestCase
             ->assertSee('Informasi Kegiatan')
             ->assertSee('Presensi Otomatis')
             ->assertSee('Aksi Cepat')
+            ->assertSee('Reminder WhatsApp Grup')
+            ->assertSee('Pesan ini belum dikirim otomatis. Silakan edit jika diperlukan, salin pesan, lalu kirim manual ke grup WhatsApp Pemuda.')
+            ->assertSee('Kegiatan: Kajian Kontrol')
+            ->assertSee('Topik: Istifta dan Keputusan Hisbah')
+            ->assertSee('Hari/Tanggal: Rabu, 10/06/2026')
+            ->assertSee(route('attendance.check-in.show', 'activity-control-token'))
+            ->assertSee('Salin Pesan')
+            ->assertSee('Buka WhatsApp Web')
             ->assertSee('Ringkasan Presensi')
             ->assertSee('10/06/2026')
             ->assertSee('20:00 - 21:30')
@@ -395,6 +404,41 @@ class ActivityCrudTest extends TestCase
             ->assertSee('Salin Link Presensi')
             ->assertSee('Export Rekap Excel')
             ->assertSee('50.00%');
+    }
+
+    public function test_activity_whatsapp_reminder_uses_setting_template_and_hides_empty_topic_line(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        Setting::create([
+            'key' => 'whatsapp_group_reminder_template',
+            'value' => "Reminder Grup\nKegiatan: {nama_kegiatan}\nTopik: {topic}\nTanggal: {hari_tanggal}\nJam: {jam_mulai}-{jam_selesai}\nLokasi: {lokasi}\nLink: {link_presensi}",
+            'type' => 'text',
+        ]);
+        $activity = Activity::create([
+            'title' => 'Kajian Tanpa Topik',
+            'topic' => null,
+            'activity_date' => '2026-06-17',
+            'start_time' => '20:00',
+            'end_time' => '22:00',
+            'attendance_radius' => 100,
+            'status' => 'scheduled',
+            'attendance_enabled' => true,
+            'attendance_open_at' => '2026-06-17 19:30:00',
+            'attendance_close_at' => '2026-06-17 22:00:00',
+            'attendance_token' => 'custom-template-token',
+            'created_by' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('activities.show', $activity))
+            ->assertOk()
+            ->assertSee('Reminder Grup')
+            ->assertSee('Kegiatan: Kajian Tanpa Topik')
+            ->assertSee('Tanggal: Rabu, 17/06/2026')
+            ->assertSee('Jam: 20:00-22:00')
+            ->assertSee('Lokasi: Menyesuaikan')
+            ->assertSee(route('attendance.check-in.show', 'custom-template-token'))
+            ->assertDontSee('Topik:');
     }
 
     public function test_activity_validation_rejects_invalid_required_fields(): void

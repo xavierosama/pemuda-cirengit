@@ -8,10 +8,14 @@
         ->values();
 @endphp
 
-@if ($toasts->isNotEmpty())
-    <div
+<div
         x-data="{
             toasts: @js($toasts),
+            push(type, message) {
+                const toast = { type, message, id: `${type}-${Date.now()}-${Math.random()}` };
+                this.toasts.push(toast);
+                setTimeout(() => this.remove(toast.id), 5000);
+            },
             remove(id) {
                 this.toasts = this.toasts.filter((toast) => toast.id !== id);
             },
@@ -23,6 +27,8 @@
             }
         }"
         x-cloak
+        x-show="toasts.length > 0"
+        x-on:toast.window="push($event.detail.type || 'info', $event.detail.message || '')"
         class="fixed right-4 top-20 z-50 w-[calc(100%-2rem)] max-w-sm space-y-3 sm:right-6"
         aria-live="polite"
         aria-atomic="true"
@@ -56,4 +62,3 @@
             </div>
         </template>
     </div>
-@endif

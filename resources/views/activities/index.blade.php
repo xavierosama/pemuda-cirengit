@@ -110,12 +110,9 @@
                     <thead class="bg-slate-50">
                         <tr>
                             <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">No</th>
-                            <x-sortable-th field="title" label="Nama Kegiatan" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
-                            <x-sortable-th field="activity_date" label="Tanggal" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
-                            <x-sortable-th field="start_time" label="Waktu" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
-                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Bidang</th>
-                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">PIC</th>
-                            <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Lokasi</th>
+                            <x-sortable-th field="title" label="Kegiatan" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <x-sortable-th field="activity_date" label="Tanggal/Jam" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
+                            <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Penanggung Jawab</th>
                             <x-sortable-th field="status" label="Status Kegiatan" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
                             <x-sortable-th field="attendance_enabled" label="Status Presensi" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
                             <x-sortable-th field="created_at" label="Dibuat" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
@@ -130,17 +127,22 @@
                             @endphp
                             <tr class="align-top transition hover:bg-slate-50/70">
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">{{ $activities->firstItem() + $loop->index }}</td>
-                                <td class="max-w-56 px-3 py-4">
-                                    <p class="line-clamp-2 break-words text-sm font-semibold text-slate-900">{{ $activity->title }}</p>
-                                    <p class="mt-1 line-clamp-1 break-words text-xs text-slate-500">{{ $activity->topic ?: ($activity->agendaSchedule?->title ?? 'Kegiatan mandiri') }}</p>
+                                <td class="max-w-md px-3 py-4">
+                                    <x-activity-summary :activity="$activity" :show-meta="false" />
                                 </td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $time !== '' ? $time : '-' }}</td>
-                                <td class="max-w-32 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->department?->name ?? '-' }}</span></td>
-                                <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->pic?->full_name ?? '-' }}</span></td>
-                                <td class="max-w-44 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $activity->location ?: '-' }}</span></td>
-                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$activity->status" :label="$statusLabels[$activity->status]" /></td>
-                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" /></td>
+                                <td class="px-3 py-4 text-sm text-slate-600">
+                                    <span class="block font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</span>
+                                    <span class="mt-1 block text-xs text-slate-500">{{ $time !== '' ? $time : '-' }}</span>
+                                    @if ($activity->location)
+                                        <span class="mt-1 line-clamp-1 block max-w-44 break-words text-xs text-slate-500">{{ $activity->location }}</span>
+                                    @endif
+                                </td>
+                                <td class="max-w-44 px-3 py-4 text-sm text-slate-600">
+                                    <span class="line-clamp-1 break-words font-medium text-slate-800">{{ $activity->department?->name ?? '-' }}</span>
+                                    <span class="mt-1 line-clamp-1 break-words text-xs text-slate-500">{{ $activity->pic?->full_name ?? '-' }}</span>
+                                </td>
+                                <td class="px-3 py-4"><x-ui.status-badge :status="$activity->status" /></td>
+                                <td class="px-3 py-4"><x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" /></td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $activity->created_at?->format('d/m/Y') ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
@@ -169,8 +171,8 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11">
-                                    <x-ui.empty-state title="Belum ada kegiatan aktual." description="Tambahkan kegiatan baru atau ubah filter pencarian." />
+                                <td colspan="8">
+                                    <x-ui.empty-state title="Belum ada kegiatan aktual." description="Generate dari Jadwal Agenda atau buat kegiatan manual untuk mulai menyusun daftar hadir." />
                                 </td>
                             </tr>
                         @endforelse

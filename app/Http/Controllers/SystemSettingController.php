@@ -37,6 +37,7 @@ class SystemSettingController extends Controller
             'default_attendance_open_minutes_before' => ['required', 'integer', 'min:0'],
             'default_attendance_close_minutes_after' => ['required', 'integer', 'min:0'],
             'default_location_accuracy_tolerance' => ['required', 'integer', 'min:0'],
+            'whatsapp_group_reminder_template' => ['nullable', 'string', 'max:5000'],
         ]);
 
         $systemSettings->set('app_name', $validated['app_name'], 'string');
@@ -46,6 +47,7 @@ class SystemSettingController extends Controller
         $systemSettings->set('default_attendance_open_minutes_before', (string) $validated['default_attendance_open_minutes_before'], 'integer');
         $systemSettings->set('default_attendance_close_minutes_after', (string) $validated['default_attendance_close_minutes_after'], 'integer');
         $systemSettings->set('default_location_accuracy_tolerance', (string) $validated['default_location_accuracy_tolerance'], 'integer');
+        $systemSettings->set('whatsapp_group_reminder_template', $validated['whatsapp_group_reminder_template'] ?? null, 'text');
 
         foreach (['app_logo', 'login_logo', 'favicon'] as $fileKey) {
             if (! $request->hasFile($fileKey)) {

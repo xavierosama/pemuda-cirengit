@@ -261,6 +261,15 @@ class AttendanceController extends Controller
             ));
     }
 
+    public function finalize(Activity $activity): RedirectResponse
+    {
+        $activity->update(['status' => 'completed']);
+
+        return redirect()
+            ->route('activities.attendances.index', $activity)
+            ->with('success', 'Presensi kegiatan berhasil difinalisasi. Status kegiatan menjadi selesai dan member tidak bisa lagi melakukan presensi.');
+    }
+
     public function edit(Attendance $attendance): View
     {
         $attendance->load(['activity', 'member.department']);
@@ -275,10 +284,10 @@ class AttendanceController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in($this->statuses())],
-            'notes' => ['nullable', 'string'],
+            'notes' => [Rule::requiredIf($request->input('status') === 'permission'), 'nullable', 'string', 'max:500'],
         ]);
 
-        $attendance->update($validated);
+        $attendance->update($this->attendanceCorrectionData($attendance, $validated, $request->user()->id));
 
         return redirect()
             ->route('activities.attendances.index', $attendance->activity_id)
@@ -322,6 +331,54 @@ class AttendanceController extends Controller
     private function statuses(): array
     {
         return ['present', 'permission', 'absent', 'need_verification'];
+    }
+
+    private function attendanceCorrectionData(Attendance $attendance, array $validated, int $userId): array
+    {
+        $data = [
+            'status' => $validated['status'],
+            'notes' => $validated['notes'] ?? null,
+        ];
+
+        if ($validated['status'] === 'present') {
+            $data['checked_in_at'] = $attendance->checked_in_at ?? now();
+            $data['attendance_method'] = $attendance->attendance_method ?: 'manual';
+            $data['verification_status'] = 'valid';
+            $data['verified_by'] = $userId;
+            $data['verified_at'] = now();
+        }
+
+        if ($validated['status'] === 'permission') {
+            $data['checked_in_at'] = null;
+            $data['attendance_method'] = 'manual';
+            $data['verification_status'] = 'valid';
+            $data['verified_by'] = $userId;
+            $data['verified_at'] = now();
+            $data['latitude'] = null;
+            $data['longitude'] = null;
+            $data['distance_from_activity'] = null;
+            $data['location_accuracy'] = null;
+        }
+
+        if ($validated['status'] === 'absent') {
+            $data['checked_in_at'] = null;
+            $data['attendance_method'] = 'manual';
+            $data['verification_status'] = 'valid';
+            $data['verified_by'] = $userId;
+            $data['verified_at'] = now();
+            $data['latitude'] = null;
+            $data['longitude'] = null;
+            $data['distance_from_activity'] = null;
+            $data['location_accuracy'] = null;
+        }
+
+        if ($validated['status'] === 'need_verification') {
+            $data['verification_status'] = 'need_verification';
+            $data['verified_by'] = null;
+            $data['verified_at'] = null;
+        }
+
+        return $data;
     }
 
     private function applyDefaultAttendanceSort($query): void

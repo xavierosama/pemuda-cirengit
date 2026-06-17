@@ -25,7 +25,10 @@ class SystemSettingTest extends TestCase
             ->assertSee('Mode Tema')
             ->assertSee('Logo Halaman Login')
             ->assertSee('Default Presensi')
-            ->assertSee('Default Radius Presensi');
+            ->assertSee('Default Radius Presensi')
+            ->assertSee('Template Pesan WhatsApp Grup')
+            ->assertSee('{nama_kegiatan}')
+            ->assertSee('Reset ke Template Default');
     }
 
     public function test_member_cannot_access_system_settings_page(): void
@@ -58,6 +61,7 @@ class SystemSettingTest extends TestCase
                 'default_attendance_open_minutes_before' => 45,
                 'default_attendance_close_minutes_after' => 60,
                 'default_location_accuracy_tolerance' => 25,
+                'whatsapp_group_reminder_template' => "Reminder: {nama_kegiatan}\nTopik: {topic}\nLink: {link_presensi}",
                 'app_logo' => $this->fakePng('logo.png'),
                 'login_logo' => $this->fakePng('login-logo.png'),
             ])
@@ -98,6 +102,11 @@ class SystemSettingTest extends TestCase
             'key' => 'default_location_accuracy_tolerance',
             'value' => '25',
             'type' => 'integer',
+        ]);
+        $this->assertDatabaseHas('settings', [
+            'key' => 'whatsapp_group_reminder_template',
+            'value' => "Reminder: {nama_kegiatan}\nTopik: {topic}\nLink: {link_presensi}",
+            'type' => 'text',
         ]);
 
         $appLogo = Setting::where('key', 'app_logo')->first();

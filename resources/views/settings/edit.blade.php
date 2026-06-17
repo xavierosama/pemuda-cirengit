@@ -20,7 +20,14 @@
         $sectionIconClass = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/20';
     @endphp
 
-    <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data" class="space-y-6" x-data="{ submitting: false }" x-on:submit="submitting = true">
+    <form
+        method="POST"
+        action="{{ route('settings.update') }}"
+        enctype="multipart/form-data"
+        class="space-y-6"
+        x-data="{ submitting: false, whatsappTemplate: @js(old('whatsapp_group_reminder_template', $settings['whatsapp_group_reminder_template'])), defaultWhatsappTemplate: @js(\App\Support\SystemSettings::DEFAULT_WHATSAPP_GROUP_REMINDER_TEMPLATE) }"
+        x-on:submit="submitting = true"
+    >
         @csrf
         @method('put')
 
@@ -64,6 +71,45 @@
                             <p class="{{ $helperClass }}">Digunakan sebagai informasi organisasi di beberapa tampilan.</p>
                             <x-input-error :messages="$errors->get('organization_name')" class="mt-2" />
                         </div>
+                    </div>
+                </x-ui.card>
+
+                <x-ui.card padding="lg" class="dark:border-slate-800 dark:bg-slate-900">
+                    <div class="mb-6 flex items-start justify-between gap-4">
+                        <div class="flex items-start gap-4">
+                            <div class="{{ $sectionIconClass }}">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M7.75 8.25h8.5M7.75 12h5.5M5.75 19.25l2.75-2h9.75a2 2 0 0 0 2-2v-8.5a2 2 0 0 0-2-2H5.75a2 2 0 0 0-2 2v8.5a2 2 0 0 0 2 2v2Z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-base font-bold text-slate-950 dark:text-white">Template Pesan WhatsApp Grup</h3>
+                                <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">Atur template default reminder kegiatan yang bisa disalin admin ke grup WhatsApp Pemuda.</p>
+                            </div>
+                        </div>
+                        <button type="button" x-on:click="whatsappTemplate = defaultWhatsappTemplate" class="shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">Reset ke Template Default</button>
+                    </div>
+
+                    <div>
+                        <x-input-label for="whatsapp_group_reminder_template" value="Template Reminder Grup" class="{{ $labelClass }}" />
+                        <textarea
+                            id="whatsapp_group_reminder_template"
+                            name="whatsapp_group_reminder_template"
+                            rows="14"
+                            x-model="whatsappTemplate"
+                            class="{{ $fieldClass }} font-mono leading-6"
+                            placeholder="Tulis template pesan reminder WhatsApp grup."
+                        ></textarea>
+                        <div class="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/60">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Placeholder tersedia</p>
+                            <div class="mt-2 flex flex-wrap gap-2">
+                                @foreach (['{nama_kegiatan}', '{topic}', '{hari_tanggal}', '{jam_mulai}', '{jam_selesai}', '{lokasi}', '{link_presensi}'] as $placeholder)
+                                    <code class="rounded-lg bg-white px-2 py-1 text-xs font-semibold text-slate-700 ring-1 ring-inset ring-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:ring-slate-700">{{ $placeholder }}</code>
+                                @endforeach
+                            </div>
+                        </div>
+                        <p class="{{ $helperClass }}">Jika topik kegiatan kosong, baris template yang mengandung {topic} otomatis dihapus dari pesan reminder.</p>
+                        <x-input-error :messages="$errors->get('whatsapp_group_reminder_template')" class="mt-2" />
                     </div>
                 </x-ui.card>
 

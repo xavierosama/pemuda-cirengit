@@ -112,7 +112,41 @@
                 </div>
                 <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" />
             </div>
-            <div class="overflow-x-auto">
+            <div class="divide-y divide-slate-100 md:hidden">
+                @forelse ($activities as $activity)
+                    @php
+                        $attendanceAvailability = $activity->attendanceAvailability();
+                        $summaryBadges = [
+                            ['short' => 'H', 'label' => 'Hadir', 'value' => $activity->present_count, 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-200'],
+                            ['short' => 'TH', 'label' => 'Tidak Hadir', 'value' => $activity->absent_count, 'class' => 'bg-slate-100 text-slate-700 ring-slate-200'],
+                            ['short' => 'I', 'label' => 'Izin', 'value' => $activity->permission_count, 'class' => 'bg-sky-50 text-sky-700 ring-sky-200'],
+                            ['short' => 'V', 'label' => 'Perlu Verifikasi', 'value' => $activity->need_verification_count, 'class' => 'bg-amber-50 text-amber-700 ring-amber-200'],
+                        ];
+                    @endphp
+                    <article class="px-4 py-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-sm font-bold text-slate-700">{{ $activities->firstItem() + $loop->index }}</div>
+                            <x-activity-summary :activity="$activity" class="flex-1" />
+                        </div>
+                        <div class="mt-3 flex flex-wrap items-center gap-2">
+                            <x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" />
+                            @foreach ($summaryBadges as $badge)
+                                <span title="{{ $badge['label'] }}" class="{{ $badge['class'] }} inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold ring-1 ring-inset">
+                                    <span>{{ $badge['short'] }}</span>
+                                    <span>{{ number_format($badge['value']) }}</span>
+                                </span>
+                            @endforeach
+                        </div>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <a href="{{ route('activities.show', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Detail</a>
+                            <a href="{{ route('activities.attendances.index', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Daftar Hadir</a>
+                        </div>
+                    </article>
+                @empty
+                    <x-ui.empty-state title="Belum ada daftar hadir." description="Buat atau generate kegiatan terlebih dahulu, lalu daftar hadir akan tersinkron otomatis." />
+                @endforelse
+            </div>
+            <div class="hidden overflow-x-auto md:block">
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
@@ -129,7 +163,6 @@
                             @php
                                 $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
                                 $attendanceAvailability = $activity->attendanceAvailability();
-                                $subInfo = $activity->topic ?: ($activity->description ?: $activity->location);
                                 $summaryBadges = [
                                     ['short' => 'H', 'label' => 'Hadir', 'value' => $activity->present_count, 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-200'],
                                     ['short' => 'TH', 'label' => 'Tidak Hadir', 'value' => $activity->absent_count, 'class' => 'bg-slate-100 text-slate-700 ring-slate-200'],
@@ -140,10 +173,7 @@
                             <tr class="align-top transition hover:bg-slate-50/70">
                                 <td class="px-3 py-4 text-sm text-slate-500">{{ $activities->firstItem() + $loop->index }}</td>
                                 <td class="max-w-md px-3 py-4">
-                                    <p class="line-clamp-2 break-words text-sm font-semibold text-slate-900">{{ $activity->title }}</p>
-                                    @if ($subInfo)
-                                        <p class="mt-1 line-clamp-1 break-words text-xs text-slate-500">{{ $subInfo }}</p>
-                                    @endif
+                                    <x-activity-summary :activity="$activity" :show-meta="false" />
                                 </td>
                                 <td class="px-3 py-4 text-sm text-slate-600">
                                     <span class="block font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</span>
@@ -177,6 +207,7 @@
                                                 confirm-title="Sinkronkan Peserta Presensi?"
                                                 confirm-description="Peserta presensi kegiatan ini akan disesuaikan dengan data anggota aktif. Data presensi yang sudah tersimpan tetap mengikuti aturan sistem."
                                                 confirm-text="Sinkronkan"
+                                                loading-text="Menyinkronkan..."
                                                 confirm-variant="warning"
                                             />
                                             <x-ui.action-dropdown-item :href="route('activities.attendances.export', $activity)" label="Export Excel" icon="download" />
@@ -187,7 +218,7 @@
                         @empty
                             <tr>
                                 <td colspan="6">
-                                    <x-ui.empty-state title="Belum ada kegiatan presensi." description="Tambahkan kegiatan aktual atau ubah filter pencarian." />
+                                    <x-ui.empty-state title="Belum ada daftar hadir." description="Buat atau generate kegiatan terlebih dahulu, lalu daftar hadir akan tersinkron otomatis." />
                                 </td>
                             </tr>
                         @endforelse

@@ -10,6 +10,7 @@
     'confirmTitle' => null,
     'confirmDescription' => null,
     'confirmText' => null,
+    'loadingText' => 'Memproses...',
     'cancelText' => 'Batal',
     'confirmVariant' => null,
 ])
@@ -75,6 +76,7 @@
             :title="$resolvedTitle"
             :description="$resolvedDescription"
             :confirm-text="$resolvedConfirmText"
+            :loading-text="$loadingText"
             :cancel-text="$cancelText"
             :variant="$resolvedVariant"
         />

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AgendaSchedule;
+use App\Models\AgendaWeeklyTopic;
 use App\Models\Activity;
 use App\Models\Department;
 use App\Models\Member;
@@ -40,7 +41,7 @@ class AgendaScheduleController extends Controller
         $perPage = TableControls::perPage($request);
 
         $agendaSchedules = AgendaSchedule::query()
-            ->with(['department', 'pic'])
+            ->with(['department', 'pic', 'weeklyTopics'])
             ->when($search, fn ($query) => $query->where('title', 'like', "%{$search}%"))
             ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
             ->when(
@@ -120,6 +121,7 @@ class AgendaScheduleController extends Controller
             'month' => ['required', 'integer', 'between:1,12'],
             'year' => ['required', 'integer', 'between:2000,2100'],
             'occurrences' => ['nullable', 'array'],
+            'occurrences.*.week' => ['nullable', 'integer', 'between:1,5'],
             'occurrences.*.date' => ['required_with:occurrences', 'date'],
             'occurrences.*.active' => ['nullable', 'boolean'],
             'occurrences.*.topic' => ['nullable', 'string', 'max:255'],
@@ -144,6 +146,7 @@ class AgendaScheduleController extends Controller
         $attendanceSkipped = 0;
         $occurrences = $validated['occurrences'] ?? $this->monthlyOccurrences($agendaSchedule, $startOfMonth, $endOfMonth);
         $attendanceSyncService = app(AttendanceSyncService::class);
+        $fallbackWeek = 1;
 
         foreach ($occurrences as $occurrence) {
             $date = Carbon::parse($occurrence['date'] ?? null)->startOfDay();
@@ -153,7 +156,28 @@ class AgendaScheduleController extends Controller
                 continue;
             }
 
-            if (! (bool) ($occurrence['active'] ?? false)) {
+            $weekNumber = (int) ($occurrence['week'] ?? $fallbackWeek);
+            $fallbackWeek++;
+
+            if ($weekNumber < 1 || $weekNumber > 5) {
+                continue;
+            }
+
+            $topic = filled($occurrence['topic'] ?? null) ? trim($occurrence['topic']) : null;
+            $isActive = (bool) ($occurrence['active'] ?? false);
+
+            AgendaWeeklyTopic::updateOrCreate(
+                [
+                    'agenda_schedule_id' => $agendaSchedule->id,
+                    'week_number' => $weekNumber,
+                ],
+                [
+                    'topic' => $topic,
+                    'is_active' => $isActive,
+                ]
+            );
+
+            if (! $isActive) {
                 $skippedInactive++;
                 continue;
             }
@@ -178,7 +202,7 @@ class AgendaScheduleController extends Controller
                 'department_id' => $agendaSchedule->department_id,
                 'pic_id' => $picId,
                 'title' => $agendaSchedule->title,
-                'topic' => filled($occurrence['topic'] ?? null) ? $occurrence['topic'] : null,
+                'topic' => $topic,
                 'description' => $agendaSchedule->description,
                 'activity_date' => $date->toDateString(),
                 'start_time' => $agendaSchedule->start_time,
@@ -293,17 +317,20 @@ class AgendaScheduleController extends Controller
     {
         $occurrences = [];
         $week = 1;
+        $agendaSchedule->loadMissing('weeklyTopics');
+        $weeklyTopics = $agendaSchedule->weeklyTopics->keyBy('week_number');
 
         for ($date = $startOfMonth->copy(); $date->lte($endOfMonth); $date->addDay()) {
             if ((int) $date->dayOfWeek !== (int) $agendaSchedule->day_of_week) {
                 continue;
             }
 
+            $template = $weeklyTopics->get($week);
             $occurrences[] = [
                 'week' => $week,
                 'date' => $date->toDateString(),
-                'active' => true,
-                'topic' => null,
+                'active' => $template?->is_active ?? true,
+                'topic' => $template?->topic,
             ];
             $week++;
         }

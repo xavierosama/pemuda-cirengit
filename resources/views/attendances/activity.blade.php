@@ -15,11 +15,8 @@
 @section('content')
     @php
         $statusLabels = ['present' => 'Hadir', 'permission' => 'Izin', 'absent' => 'Tidak Hadir', 'need_verification' => 'Perlu Verifikasi'];
-        $statusClasses = ['present' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'permission' => 'bg-sky-50 text-sky-700 ring-sky-200', 'absent' => 'bg-slate-100 text-slate-700 ring-slate-200', 'need_verification' => 'bg-amber-50 text-amber-700 ring-amber-200'];
         $verificationLabels = ['valid' => 'Valid', 'need_verification' => 'Perlu Verifikasi', 'rejected' => 'Ditolak'];
-        $verificationClasses = ['valid' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'need_verification' => 'bg-amber-50 text-amber-700 ring-amber-200', 'rejected' => 'bg-red-50 text-red-700 ring-red-200'];
         $activityStatusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Pindah Lokasi', 'cancelled' => 'Dibatalkan'];
-        $activityStatusClasses = ['scheduled' => 'bg-sky-50 text-sky-700 ring-sky-200', 'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'holiday' => 'bg-slate-100 text-slate-600 ring-slate-200', 'postponed' => 'bg-amber-50 text-amber-700 ring-amber-200', 'relocated' => 'bg-cyan-50 text-cyan-700 ring-cyan-200', 'cancelled' => 'bg-red-50 text-red-700 ring-red-200'];
         $attendanceUrl = $activity->attendance_token ? route('attendance.check-in.show', $activity->attendance_token, true) : null;
         $attendanceAvailability = $activity->attendanceAvailability();
         $activityTime = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
@@ -42,7 +39,7 @@
                     <a href="{{ route('activities.show', $activity) }}" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Kembali ke Detail Kegiatan</a>
                     <h2 class="mt-3 text-2xl font-bold text-slate-950">{{ $activity->title }}</h2>
                     <div class="mt-3 flex flex-wrap gap-2">
-                        <span class="{{ $activityStatusClasses[$activity->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $activityStatusLabels[$activity->status] }}</span>
+                        <x-ui.status-badge :status="$activity->status" :label="$activityStatusLabels[$activity->status]" />
                         <x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" />
                     </div>
                 </div>
@@ -81,9 +78,27 @@
                         title="Sinkronkan Peserta Presensi?"
                         description="Peserta presensi akan diambil dari semua anggota aktif. Data presensi yang sudah tersimpan tetap mengikuti aturan sistem."
                         confirm-text="Sinkronkan"
+                        loading-text="Menyinkronkan..."
                         variant="warning"
                     />
                 </div>
+                @if (in_array(auth()->user()->role, ['admin', 'secretary'], true) && $activity->status !== 'completed')
+                    <div x-data="{ open: false, submitting: false }" x-on:confirmed="submitting = true; $refs.finalizeAttendanceForm.submit()">
+                        <form x-ref="finalizeAttendanceForm" method="POST" action="{{ route('activities.attendances.finalize', $activity) }}" x-on:submit.prevent="open = true">
+                            @csrf
+                            @method('PATCH')
+                            <x-ui.submit-button class="w-full" variant="warning" loading-text="Memfinalisasi...">Finalisasi Presensi</x-ui.submit-button>
+                        </form>
+
+                        <x-ui.confirm-modal
+                            title="Finalisasi Presensi?"
+                            description="Status kegiatan akan menjadi selesai. Member tidak bisa lagi melakukan hadir atau izin, tetapi admin tetap bisa melihat dan mengoreksi daftar hadir."
+                            confirm-text="Finalisasi"
+                            loading-text="Memfinalisasi..."
+                            variant="warning"
+                        />
+                    </div>
+                @endif
                 @if ($attendanceAvailability !== 'not_available')
                     <a href="{{ route('activities.attendance-qr', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Lihat QR Presensi</a>
                 @else
@@ -106,7 +121,7 @@
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
                     </svg>
                     <span x-show="! submitting">Export Excel</span>
-                    <span x-cloak x-show="submitting">Menyiapkan file...</span>
+                    <span x-cloak x-show="submitting">Mengekspor...</span>
                 </a>
                 <a href="{{ route('activities.attendances.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Input Satu Anggota</a>
                 <a href="{{ route('activities.attendances.bulk.create', $activity) }}" class="inline-flex items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Input Massal</a>
@@ -114,6 +129,8 @@
             <p x-show="copied" x-transition class="mt-3 text-sm font-semibold text-emerald-700">Link disalin</p>
             <p class="mt-3 text-sm text-slate-500">Sinkronisasi mengambil semua anggota aktif. Bidang kegiatan adalah penanggung jawab, bukan filter peserta. Anggota tanpa akun login tetap masuk daftar hadir.</p>
         </section>
+
+        <x-activity-whatsapp-reminder :activity="$activity" />
 
         <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
             <form method="GET" action="{{ route('activities.attendances.index', $activity) }}" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_200px_auto]">
@@ -144,7 +161,49 @@
             <div class="flex justify-end border-b border-slate-200 px-4 py-3">
                 <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" />
             </div>
-            <div class="overflow-x-auto">
+            <div class="divide-y divide-slate-100 md:hidden">
+                @forelse ($attendances as $attendance)
+                    <article class="px-4 py-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-xs font-bold text-slate-500">#{{ $attendances->firstItem() + $loop->index }} &middot; {{ $attendance->member->npa ?: 'NPA kosong' }}</p>
+                                <h3 class="mt-1 line-clamp-2 break-words text-sm font-bold text-slate-950">{{ $attendance->member->full_name }}</h3>
+                                <p class="mt-1 line-clamp-1 text-xs text-slate-500">{{ $attendance->member->position?->name ?? 'Jabatan belum diisi' }}</p>
+                            </div>
+                            <x-ui.status-badge :status="$attendance->status" :label="$statusLabels[$attendance->status]" />
+                        </div>
+                        <div class="mt-3 flex flex-wrap items-center gap-2">
+                            <x-ui.status-badge :status="$attendance->verification_status" :label="$verificationLabels[$attendance->verification_status]" />
+                            <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ ucfirst($attendance->attendance_method) }}</span>
+                            <span class="text-xs text-slate-500">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? 'Belum presensi' }}</span>
+                        </div>
+                        <dl class="mt-3 grid gap-2 text-xs text-slate-600">
+                            <div class="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
+                                <dt class="font-semibold text-slate-500">Jarak</dt>
+                                <dd class="text-right">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' m' : '-' }}</dd>
+                            </div>
+                            @if ($attendance->notes)
+                                <div class="rounded-lg bg-slate-50 px-3 py-2">
+                                    <dt class="font-semibold text-slate-500">Catatan</dt>
+                                    <dd class="mt-1 line-clamp-2">{{ $attendance->notes }}</dd>
+                                </div>
+                            @endif
+                        </dl>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <a href="{{ route('attendances.edit', $attendance) }}" class="inline-flex flex-1 items-center justify-center rounded-lg bg-amber-500 px-3 py-2 text-sm font-semibold text-white hover:bg-amber-600">Ubah Status</a>
+                            @if ($attendance->verification_status === 'need_verification')
+                                <x-ui.action-dropdown>
+                                    <x-ui.action-dropdown-item :action="route('attendances.verify', $attendance)" method="PATCH" label="Verifikasi" icon="check" />
+                                    <x-ui.action-dropdown-item :action="route('attendances.reject', $attendance)" method="PATCH" label="Tolak" icon="x" variant="danger" />
+                                </x-ui.action-dropdown>
+                            @endif
+                        </div>
+                    </article>
+                @empty
+                    <x-ui.empty-state title="Belum ada peserta presensi." description="Klik Sinkronkan Peserta Presensi untuk membuat daftar hadir dari anggota aktif." />
+                @endforelse
+            </div>
+            <div class="hidden overflow-x-auto md:block">
                 <table class="min-w-full divide-y divide-slate-200">
                     <thead class="bg-slate-50">
                         <tr>
@@ -168,14 +227,108 @@
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $attendance->member->npa ?: '-' }}</td>
                                 <td class="max-w-48 px-3 py-4 text-sm font-semibold text-slate-900"><span class="line-clamp-2 break-words">{{ $attendance->member->full_name }}</span></td>
                                 <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $attendance->member->position?->name ?? '-' }}</span></td>
-                                <td class="whitespace-nowrap px-3 py-4"><span class="{{ $statusClasses[$attendance->status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$attendance->status] }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$attendance->status" :label="$statusLabels[$attendance->status]" /></td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm capitalize text-slate-600">{{ $attendance->attendance_method }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' m' : '-' }}</td>
-                                <td class="whitespace-nowrap px-3 py-4"><span class="{{ $verificationClasses[$attendance->verification_status] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $verificationLabels[$attendance->verification_status] }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$attendance->verification_status" :label="$verificationLabels[$attendance->verification_status]" /></td>
                                 <td class="max-w-48 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $attendance->notes ?: '-' }}</span></td>
-                                <td class="whitespace-nowrap px-3 py-4 text-right"><div class="flex justify-end gap-1.5">
-                                    <x-action-icon :href="route('attendances.edit', $attendance)" label="Ubah Status" icon="pencil" variant="amber" />
+                                <td class="whitespace-nowrap px-3 py-4 text-right"><div class="flex justify-end gap-1.5" x-data="{ correctionOpen: false, correctionSubmitting: false, correctionStatus: @js($attendance->status) }">
+                                    <button
+                                        type="button"
+                                        title="Ubah Status"
+                                        aria-label="Ubah Status"
+                                        class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-700 transition hover:bg-amber-100 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+                                        x-on:click="correctionOpen = true"
+                                    >
+                                        <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.688-1.688a1.875 1.875 0 1 1 2.652 2.652L8.582 18.07a4.5 4.5 0 0 1-1.897 1.13L3 20.25l1.05-3.685a4.5 4.5 0 0 1 1.13-1.897L16.862 4.487Z" />
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 7.125-2.625-2.625" />
+                                        </svg>
+                                    </button>
+
+                                    <div
+                                        x-cloak
+                                        x-show="correctionOpen"
+                                        x-on:keydown.escape.window="correctionOpen = false"
+                                        class="fixed inset-0 z-[60] flex min-h-screen items-center justify-center px-4 py-6 text-left"
+                                        role="dialog"
+                                        aria-modal="true"
+                                        style="display: none;"
+                                    >
+                                        <div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm" x-on:click="correctionOpen = false" aria-hidden="true"></div>
+                                        <form
+                                            method="POST"
+                                            action="{{ route('attendances.update', $attendance) }}"
+                                            class="relative w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-950/20"
+                                            x-on:submit="correctionSubmitting = true"
+                                        >
+                                            @csrf
+                                            @method('PUT')
+
+                                            <div class="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <h2 class="text-lg font-bold text-slate-950">Ubah Status Kehadiran</h2>
+                                                    <p class="mt-1 text-sm leading-6 text-slate-600">{{ $attendance->member->full_name }} &middot; {{ $attendance->member->npa ?: 'NPA kosong' }}</p>
+                                                </div>
+                                                <button type="button" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" x-on:click="correctionOpen = false" aria-label="Tutup modal">
+                                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+
+                                            <div class="mt-5 space-y-4">
+                                                <div>
+                                                    <label for="status-{{ $attendance->id }}" class="block text-sm font-semibold text-slate-700">Status Kehadiran</label>
+                                                    <select
+                                                        id="status-{{ $attendance->id }}"
+                                                        name="status"
+                                                        x-model="correctionStatus"
+                                                        class="mt-1 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-emerald-600 focus:ring-emerald-600"
+                                                        required
+                                                    >
+                                                        @foreach ($statusLabels as $value => $label)
+                                                            <option value="{{ $value }}" @selected($attendance->status === $value)>{{ $label }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+
+                                                <div>
+                                                    <label for="notes-{{ $attendance->id }}" class="block text-sm font-semibold text-slate-700">Catatan</label>
+                                                    <textarea
+                                                        id="notes-{{ $attendance->id }}"
+                                                        name="notes"
+                                                        rows="4"
+                                                        maxlength="500"
+                                                        x-bind:required="correctionStatus === 'permission'"
+                                                        class="mt-1 block w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-emerald-600 focus:ring-emerald-600"
+                                                        placeholder="Tambahkan catatan koreksi jika diperlukan."
+                                                    >{{ $attendance->notes }}</textarea>
+                                                    <p class="mt-2 text-xs text-slate-500" x-show="correctionStatus === 'present'">Jika waktu presensi masih kosong, sistem akan mengisi waktu koreksi sekarang.</p>
+                                                    <p class="mt-2 text-xs text-slate-500" x-show="correctionStatus === 'permission'">Catatan/alasan izin wajib diisi untuk status Izin.</p>
+                                                    <p class="mt-2 text-xs text-slate-500" x-show="correctionStatus === 'absent'">Status Tidak Hadir akan mengosongkan waktu dan data lokasi presensi.</p>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                                                <button type="button" class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50" x-on:click="correctionOpen = false">Batal</button>
+                                                <button
+                                                    type="submit"
+                                                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-75"
+                                                    x-bind:disabled="correctionSubmitting"
+                                                >
+                                                    <svg x-cloak x-show="correctionSubmitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                                                    </svg>
+                                                    <span x-show="! correctionSubmitting">Simpan Koreksi</span>
+                                                    <span x-cloak x-show="correctionSubmitting">Menyimpan...</span>
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+
                                     @if ($attendance->verification_status === 'need_verification')
                                         <x-ui.action-dropdown>
                                             <x-ui.action-dropdown-item :action="route('attendances.verify', $attendance)" method="PATCH" label="Verifikasi" icon="check" />
@@ -185,7 +338,11 @@
                                 </div></td>
                             </tr>
                         @empty
-                            <tr><td colspan="11" class="px-4 py-12 text-center text-sm text-slate-500">Belum ada peserta presensi. Klik Sinkronkan Peserta Presensi untuk membuat daftar hadir dari anggota aktif.</td></tr>
+                            <tr>
+                                <td colspan="11">
+                                    <x-ui.empty-state title="Belum ada peserta presensi." description="Klik Sinkronkan Peserta Presensi untuk membuat daftar hadir dari anggota aktif." />
+                                </td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>

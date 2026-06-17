@@ -356,10 +356,89 @@ class AttendanceCrudTest extends TestCase
             ->assertSee('Persentase Kehadiran')
             ->assertSee('Cari nama anggota atau NPA')
             ->assertSee('Sinkronkan Peserta Presensi')
-            ->assertSee('Belum ada peserta presensi. Klik Sinkronkan Peserta Presensi untuk membuat daftar hadir dari anggota aktif.')
+            ->assertSee('Belum ada peserta presensi.')
+            ->assertSee('Klik Sinkronkan Peserta Presensi untuk membuat daftar hadir dari anggota aktif.')
             ->assertSee('Lihat QR Presensi')
             ->assertSee('Salin Link Presensi')
+            ->assertSee('Finalisasi Presensi')
+            ->assertSee('Reminder WhatsApp Grup')
+            ->assertSee('Tempat: Menyesuaikan')
+            ->assertSee('Salin Pesan')
+            ->assertSee('Buka WhatsApp Web')
             ->assertSee('Export Excel');
+    }
+
+    public function test_activity_attendance_can_be_finalized(): void
+    {
+        Carbon::setTestNow('2026-06-25 20:15:00');
+        $user = User::factory()->create(['role' => 'admin']);
+        $activity = $this->createActivity($user);
+        $member = Member::create(['full_name' => 'Peserta Finalisasi', 'member_status' => 'active']);
+        $attendance = Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $member->id,
+            'status' => 'absent',
+            'attendance_method' => 'manual',
+            'verification_status' => 'valid',
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('activities.attendances.finalize', $activity))
+            ->assertRedirect(route('activities.attendances.index', $activity))
+            ->assertSessionHas('success', 'Presensi kegiatan berhasil difinalisasi. Status kegiatan menjadi selesai dan member tidak bisa lagi melakukan presensi.');
+
+        $activity->refresh();
+
+        $this->assertSame('completed', $activity->status);
+        $this->assertSame('closed', $activity->attendanceAvailability());
+        $this->assertSame('Ditutup', $activity->attendanceAvailabilityLabel());
+        $this->assertDatabaseHas('attendances', ['id' => $attendance->id]);
+    }
+
+    public function test_attendance_quick_correction_applies_status_specific_fields(): void
+    {
+        Carbon::setTestNow('2026-06-25 20:20:00');
+        $user = User::factory()->create(['role' => 'admin']);
+        $activity = $this->createActivity($user);
+        $member = Member::create(['full_name' => 'Peserta Koreksi', 'member_status' => 'active']);
+        $attendance = Attendance::create([
+            'activity_id' => $activity->id,
+            'member_id' => $member->id,
+            'status' => 'absent',
+            'attendance_method' => 'manual',
+            'verification_status' => 'valid',
+        ]);
+
+        $this->actingAs($user)
+            ->put(route('attendances.update', $attendance), [
+                'status' => 'present',
+                'notes' => 'Koreksi hadir manual.',
+            ])
+            ->assertRedirect(route('activities.attendances.index', $activity));
+
+        $attendance->refresh();
+        $this->assertSame('present', $attendance->status);
+        $this->assertTrue($attendance->checked_in_at->equalTo(Carbon::parse('2026-06-25 20:20:00')));
+        $this->assertSame('valid', $attendance->verification_status);
+
+        $this->actingAs($user)
+            ->put(route('attendances.update', $attendance), [
+                'status' => 'permission',
+                'notes' => '',
+            ])
+            ->assertSessionHasErrors('notes');
+
+        $this->actingAs($user)
+            ->put(route('attendances.update', $attendance), [
+                'status' => 'permission',
+                'notes' => 'Izin manual dari pengurus.',
+            ])
+            ->assertRedirect(route('activities.attendances.index', $activity));
+
+        $attendance->refresh();
+        $this->assertSame('permission', $attendance->status);
+        $this->assertNull($attendance->checked_in_at);
+        $this->assertSame('Izin manual dari pengurus.', $attendance->notes);
     }
 
     public function test_activity_attendance_page_filters_by_search_status_and_department(): void

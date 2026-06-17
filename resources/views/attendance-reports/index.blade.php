@@ -98,8 +98,8 @@
         </section>
 
         @if (! $hasAttendanceData)
-            <section class="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm font-medium text-amber-800">
-                Belum ada data presensi pada periode terpilih. Sinkronkan peserta presensi atau pilih periode lain untuk melihat rekap.
+            <section class="rounded-2xl border border-amber-200 bg-amber-50">
+                <x-ui.empty-state title="Belum ada data presensi pada periode ini." description="Sinkronkan peserta presensi atau pilih periode lain untuk melihat rekap." />
             </section>
         @endif
 
@@ -184,7 +184,6 @@
                             @php
                                 $activity = $row['activity'];
                                 $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
-                                $subInfo = $activity->topic ?: ($activity->description ?: $activity->location);
                                 $summaryBadges = [
                                     ['short' => 'H', 'label' => 'Hadir', 'value' => $row['counts']['present'], 'class' => 'bg-emerald-50 text-emerald-700 ring-emerald-200'],
                                     ['short' => 'TH', 'label' => 'Tidak Hadir', 'value' => $row['counts']['absent'], 'class' => 'bg-slate-100 text-slate-700 ring-slate-200'],
@@ -195,10 +194,7 @@
                             <tr class="align-top">
                                 <td class="px-3 py-4 text-sm text-slate-500">{{ $activityRows->firstItem() + $loop->index }}</td>
                                 <td class="max-w-md px-3 py-4">
-                                    <p class="line-clamp-2 break-words text-sm font-semibold text-slate-900">{{ $activity->title }}</p>
-                                    @if ($subInfo)
-                                        <p class="mt-1 line-clamp-1 break-words text-xs text-slate-500">{{ $subInfo }}</p>
-                                    @endif
+                                    <x-activity-summary :activity="$activity" :show-meta="false" />
                                 </td>
                                 <td class="px-3 py-4 text-sm text-slate-600">
                                     <span class="block font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</span>

@@ -14,7 +14,6 @@
 @section('content')
     @php
         $statusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Pindah Lokasi', 'cancelled' => 'Dibatalkan'];
-        $statusClasses = ['scheduled' => 'bg-sky-50 text-sky-700 ring-sky-200', 'completed' => 'bg-emerald-50 text-emerald-700 ring-emerald-200', 'holiday' => 'bg-slate-100 text-slate-600 ring-slate-200', 'postponed' => 'bg-amber-50 text-amber-700 ring-amber-200', 'relocated' => 'bg-cyan-50 text-cyan-700 ring-cyan-200', 'cancelled' => 'bg-red-50 text-red-700 ring-red-200'];
         $attendanceUrl = $activity->attendance_token ? route('attendance.check-in.show', $activity->attendance_token, true) : null;
         $attendanceAvailability = $activity->attendanceAvailability();
         $attendanceOpenAt = $activity->effectiveAttendanceOpenAt();
@@ -42,7 +41,7 @@
                 <h2 class="mt-3 text-2xl font-bold text-slate-950">{{ $activity->title }}</h2>
                 <p class="mt-2 text-sm text-slate-500">{{ $activity->agendaSchedule?->title ?? 'Kegiatan mandiri' }}</p>
             </div>
-            <span class="{{ $statusClasses[$activity->status] }} inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$activity->status] }}</span>
+            <x-ui.status-badge class="w-fit" :status="$activity->status" :label="$statusLabels[$activity->status]" />
         </div>
 
         <div class="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
@@ -52,7 +51,7 @@
                         <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Informasi Kegiatan</p>
                         <h3 class="mt-2 text-lg font-bold text-slate-950">{{ $activity->title }}</h3>
                     </div>
-                    <span class="{{ $statusClasses[$activity->status] }} inline-flex shrink-0 rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$activity->status] }}</span>
+                    <x-ui.status-badge class="shrink-0" :status="$activity->status" :label="$statusLabels[$activity->status]" />
                 </div>
 
                 <dl class="mt-6 grid gap-4 sm:grid-cols-2">
@@ -121,6 +120,7 @@
                         title="Sinkronkan Peserta Presensi?"
                         description="Peserta presensi kegiatan ini akan disesuaikan dengan data anggota aktif. Data presensi yang sudah tersimpan tetap mengikuti aturan sistem."
                         confirm-text="Sinkronkan"
+                        loading-text="Menyinkronkan..."
                         variant="warning"
                     />
                 </div>
@@ -134,9 +134,24 @@
                 @else
                     <button type="button" disabled class="inline-flex cursor-not-allowed items-center justify-center rounded-lg border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-400">Link Belum Tersedia</button>
                 @endif
-                <a href="{{ route('activities.attendances.export', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-emerald-600 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50">Export Rekap Excel</a>
+                <a
+                    href="{{ route('activities.attendances.export', $activity) }}"
+                    x-data="{ submitting: false }"
+                    x-on:click="submitting = true"
+                    x-bind:class="{ 'pointer-events-none opacity-80': submitting }"
+                    class="inline-flex items-center justify-center gap-2 rounded-lg border border-emerald-600 px-4 py-2.5 text-sm font-semibold text-emerald-700 hover:bg-emerald-50"
+                >
+                    <svg x-cloak x-show="submitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4z"></path>
+                    </svg>
+                    <span x-show="! submitting">Export Rekap Excel</span>
+                    <span x-cloak x-show="submitting">Mengekspor...</span>
+                </a>
             </div>
         </section>
+
+        <x-activity-whatsapp-reminder :activity="$activity" />
 
         <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">

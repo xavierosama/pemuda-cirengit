@@ -74,7 +74,7 @@ class AttendanceReportTest extends TestCase
             ]))
             ->assertOk()
             ->assertSee('01/07/2026 - 31/07/2026')
-            ->assertSee('Belum ada data presensi pada periode terpilih.')
+            ->assertSee('Belum ada data presensi pada periode ini.')
             ->assertSee('Belum ada kegiatan pada periode ini.')
             ->assertSee('Belum ada anggota aktif sesuai filter.');
     }

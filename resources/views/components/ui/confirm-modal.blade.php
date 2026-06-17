@@ -4,6 +4,7 @@
     'confirmText' => 'Ya, lanjutkan',
     'cancelText' => 'Batal',
     'variant' => 'primary',
+    'loadingText' => 'Memproses...',
 ])
 
 @php
@@ -71,17 +72,24 @@
         <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
                 type="button"
-                class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+                class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
                 x-on:click="open = false"
+                x-bind:disabled="typeof submitting !== 'undefined' && submitting"
             >
                 {{ $cancelText }}
             </button>
             <button
                 type="button"
-                class="{{ $variantClasses[$variant] ?? $variantClasses['primary'] }} inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2"
-                x-on:click="$dispatch('confirmed'); open = false"
+                class="{{ $variantClasses[$variant] ?? $variantClasses['primary'] }} inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-80"
+                x-on:click="$dispatch('confirmed')"
+                x-bind:disabled="typeof submitting !== 'undefined' && submitting"
             >
-                {{ $confirmText }}
+                <svg x-cloak x-show="typeof submitting !== 'undefined' && submitting" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-90" fill="currentColor" d="M21 12a9 9 0 0 0-9-9v4a5 5 0 0 1 5 5h4Z"></path>
+                </svg>
+                <span x-show="!(typeof submitting !== 'undefined' && submitting)">{{ $confirmText }}</span>
+                <span x-cloak x-show="typeof submitting !== 'undefined' && submitting">{{ $loadingText }}</span>
             </button>
         </div>
     </div>

@@ -56,4 +56,9 @@ class AgendaSchedule extends Model
     {
         return $this->hasMany(Activity::class);
     }
+
+    public function weeklyTopics(): HasMany
+    {
+        return $this->hasMany(AgendaWeeklyTopic::class);
+    }
 }

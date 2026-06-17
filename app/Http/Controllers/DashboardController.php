@@ -32,6 +32,44 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        $todayActivities = Activity::query()
+            ->with(['agendaSchedule', 'department', 'pic'])
+            ->whereDate('activity_date', today())
+            ->orderByRaw('start_time is null')
+            ->orderBy('start_time')
+            ->limit(5)
+            ->get();
+
+        $openAttendanceActivities = Activity::query()
+            ->with(['agendaSchedule', 'department', 'pic'])
+            ->whereIn('status', ['scheduled', 'relocated'])
+            ->where('attendance_enabled', true)
+            ->where('attendance_open_at', '<=', now())
+            ->where('attendance_close_at', '>=', now())
+            ->orderBy('activity_date')
+            ->orderByRaw('start_time is null')
+            ->orderBy('start_time')
+            ->limit(5)
+            ->get();
+
+        $needFinalizationActivities = Activity::query()
+            ->with(['agendaSchedule', 'department', 'pic'])
+            ->whereIn('status', ['scheduled', 'relocated'])
+            ->where(function ($query) {
+                $query
+                    ->whereDate('activity_date', '<', today())
+                    ->orWhere(function ($query) {
+                        $query
+                            ->whereDate('activity_date', today())
+                            ->whereNotNull('end_time')
+                            ->where('end_time', '<', now()->format('H:i:s'));
+                    });
+            })
+            ->orderByDesc('activity_date')
+            ->orderByDesc('end_time')
+            ->limit(5)
+            ->get();
+
         $monthlyAttendanceCounts = Attendance::query()
             ->whereHas('activity', fn ($query) => $query->whereBetween('activity_date', [$monthStart, $monthEnd]))
             ->selectRaw("sum(case when status = 'present' then 1 else 0 end) as present")
@@ -63,6 +101,9 @@ class DashboardController extends Controller
         return view('dashboard', compact(
             'statistics',
             'upcomingActivities',
+            'todayActivities',
+            'openAttendanceActivities',
+            'needFinalizationActivities',
             'monthlyAttendanceSummary',
             'needVerificationAttendances'
         ));

@@ -25,6 +25,11 @@
             ['label' => 'Total Tidak Hadir', 'value' => $monthlyAttendanceSummary['absent'], 'color' => 'text-slate-700'],
             ['label' => 'Total Perlu Verifikasi', 'value' => $monthlyAttendanceSummary['need_verification'], 'color' => 'text-amber-700'],
         ];
+        $commandCards = [
+            ['label' => 'Kegiatan Hari Ini', 'value' => $todayActivities->count(), 'note' => 'Agenda pada '.now()->format('d/m/Y'), 'color' => 'border-l-emerald-600'],
+            ['label' => 'Presensi Dibuka', 'value' => $openAttendanceActivities->count(), 'note' => 'Butuh pemantauan langsung', 'color' => 'border-l-sky-600'],
+            ['label' => 'Perlu Finalisasi', 'value' => $needFinalizationActivities->count(), 'note' => 'Kegiatan lewat belum selesai', 'color' => 'border-l-amber-500'],
+        ];
         $dayLabels = [0 => 'Minggu', 1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'];
     @endphp
 
@@ -42,6 +47,104 @@
                         <p class="mt-2 text-xs font-medium text-slate-500">{{ $card['note'] }}</p>
                     </x-ui.card>
                 @endforeach
+            </div>
+        </section>
+
+        <section>
+            <div class="mb-4">
+                <h2 class="text-xl font-bold text-slate-950">Command Center</h2>
+                <p class="mt-1 text-sm text-slate-500">Sinyal operasional yang perlu dilihat pengurus hari ini.</p>
+            </div>
+
+            <div class="grid gap-4 md:grid-cols-3">
+                @foreach ($commandCards as $card)
+                    <x-ui.card class="{{ $card['color'] }} border-l-4" padding="md">
+                        <p class="text-sm font-medium text-slate-500">{{ $card['label'] }}</p>
+                        <p class="mt-3 text-3xl font-bold text-slate-950">{{ number_format($card['value']) }}</p>
+                        <p class="mt-2 text-xs font-medium text-slate-500">{{ $card['note'] }}</p>
+                    </x-ui.card>
+                @endforeach
+            </div>
+
+            <div class="mt-4 grid gap-4 xl:grid-cols-3">
+                <x-ui.card padding="none" class="overflow-hidden">
+                    <div class="border-b border-slate-200 px-5 py-4">
+                        <h3 class="text-base font-bold text-slate-950">Hari Ini Ada Apa?</h3>
+                        <p class="mt-1 text-sm text-slate-500">Kegiatan pada tanggal {{ now()->format('d/m/Y') }}.</p>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        @forelse ($todayActivities as $activity)
+                            <article class="px-5 py-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <x-activity-summary :activity="$activity" />
+                                    <x-ui.status-badge :status="$activity->attendanceAvailability()" :label="$activity->attendanceAvailabilityLabel()" />
+                                </div>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    <x-ui.button :href="route('activities.show', $activity)" variant="secondary" size="sm">Detail</x-ui.button>
+                                    <x-ui.button :href="route('activities.attendances.index', $activity)" size="sm">Daftar Hadir</x-ui.button>
+                                </div>
+                            </article>
+                        @empty
+                            <x-ui.empty-state title="Tidak ada kegiatan hari ini." description="Kegiatan hari ini akan muncul di sini saat sudah dibuat." />
+                        @endforelse
+                    </div>
+                </x-ui.card>
+
+                <x-ui.card padding="none" class="overflow-hidden">
+                    <div class="border-b border-slate-200 px-5 py-4">
+                        <h3 class="text-base font-bold text-slate-950">Presensi Sedang Dibuka</h3>
+                        <p class="mt-1 text-sm text-slate-500">Kegiatan yang sedang menerima hadir/izin.</p>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        @forelse ($openAttendanceActivities as $activity)
+                            <article class="px-5 py-4">
+                                <div class="flex items-start justify-between gap-3">
+                                    <x-activity-summary :activity="$activity" />
+                                    <x-ui.status-badge status="open" label="Dibuka" />
+                                </div>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    <x-ui.button :href="route('activities.attendance-qr', $activity)" size="sm">QR Presensi</x-ui.button>
+                                    <x-ui.button :href="route('activities.attendances.index', $activity)" variant="secondary" size="sm">Daftar Hadir</x-ui.button>
+                                </div>
+                            </article>
+                        @empty
+                            <x-ui.empty-state title="Belum ada presensi yang sedang dibuka." description="Saat presensi masuk jam buka, kegiatan akan tampil di sini." />
+                        @endforelse
+                    </div>
+                </x-ui.card>
+
+                <x-ui.card padding="none" class="overflow-hidden">
+                    <div class="border-b border-slate-200 px-5 py-4">
+                        <h3 class="text-base font-bold text-slate-950">Perlu Finalisasi</h3>
+                        <p class="mt-1 text-sm text-slate-500">Kegiatan lewat yang statusnya belum selesai.</p>
+                    </div>
+                    <div class="divide-y divide-slate-100">
+                        @forelse ($needFinalizationActivities as $activity)
+                            <article class="px-5 py-4">
+                                <x-activity-summary :activity="$activity" />
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    <x-ui.button :href="route('activities.attendances.index', $activity)" variant="secondary" size="sm">Cek Daftar Hadir</x-ui.button>
+                                    <div x-data="{ open: false, submitting: false }" x-on:confirmed="submitting = true; $refs.finalizeDashboardForm.submit()">
+                                        <form x-ref="finalizeDashboardForm" method="POST" action="{{ route('activities.attendances.finalize', $activity) }}" x-on:submit.prevent="open = true">
+                                            @csrf
+                                            @method('PATCH')
+                                            <x-ui.button type="submit" variant="warning" size="sm" loading-text="Memfinalisasi...">Finalisasi</x-ui.button>
+                                        </form>
+                                        <x-ui.confirm-modal
+                                            title="Finalisasi Presensi?"
+                                            description="Status kegiatan akan menjadi selesai. Member tidak bisa lagi melakukan hadir atau izin, tetapi admin tetap bisa mengoreksi daftar hadir."
+                                            confirm-text="Finalisasi"
+                                            loading-text="Memfinalisasi..."
+                                            variant="warning"
+                                        />
+                                    </div>
+                                </div>
+                            </article>
+                        @empty
+                            <x-ui.empty-state title="Tidak ada kegiatan yang perlu difinalisasi." description="Kegiatan yang sudah lewat dan belum selesai akan muncul di sini." />
+                        @endforelse
+                    </div>
+                </x-ui.card>
             </div>
         </section>
 
@@ -78,7 +181,7 @@
                                     <p class="mt-2 line-clamp-2 break-words text-sm text-slate-600">{{ $subInfo }}</p>
                                 @endif
                                 <p class="mt-2 text-sm font-medium text-slate-700">{{ $dateLabel }} <span class="text-slate-400">&bull;</span> {{ $time !== '' ? $time : '-' }}</p>
-                                <p class="mt-1 line-clamp-1 text-xs text-slate-500">{{ $activity->location ?: '-' }}{{ $activity->department?->name ? ' • '.$activity->department->name : '' }}</p>
+                                <p class="mt-1 line-clamp-1 text-xs text-slate-500">{{ $activity->location ?: '-' }}{{ $activity->department?->name ? ' - '.$activity->department->name : '' }}</p>
                             </div>
                             <div class="flex flex-wrap gap-2 sm:justify-end">
                                 <x-ui.button :href="route('activities.show', $activity)" variant="secondary" size="sm">Detail</x-ui.button>

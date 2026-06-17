@@ -257,14 +257,33 @@ class AgendaScheduleCrudTest extends TestCase
             'month' => 7,
             'year' => 2026,
             'occurrences' => [
-                ['date' => '2026-07-07', 'active' => 1, 'topic' => 'Adab Bermedia Sosial'],
-                ['date' => '2026-07-14', 'active' => 0, 'topic' => 'Libur pekanan'],
-                ['date' => '2026-07-21', 'active' => 1, 'topic' => 'Manajemen Waktu Pemuda'],
-                ['date' => '2026-07-28', 'active' => 1, 'topic' => ''],
+                ['week' => 1, 'date' => '2026-07-07', 'active' => 1, 'topic' => 'Adab Bermedia Sosial'],
+                ['week' => 2, 'date' => '2026-07-14', 'active' => 0, 'topic' => 'Libur pekanan'],
+                ['week' => 3, 'date' => '2026-07-21', 'active' => 1, 'topic' => 'Manajemen Waktu Pemuda'],
+                ['week' => 4, 'date' => '2026-07-28', 'active' => 1, 'topic' => ''],
             ],
         ])
             ->assertRedirect(route('agenda-schedules.show', $agendaSchedule))
             ->assertSessionHas('success', 'Generate kegiatan bulanan selesai. 3 kegiatan dibuat, 0 peserta presensi otomatis ditambahkan, 0 peserta sudah ada/dilewati, 1 kegiatan dilewati karena tidak aktif, 0 kegiatan dilewati karena sudah ada.');
+
+        $this->assertDatabaseHas('agenda_weekly_topics', [
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'week_number' => 1,
+            'topic' => 'Adab Bermedia Sosial',
+            'is_active' => 1,
+        ]);
+        $this->assertDatabaseHas('agenda_weekly_topics', [
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'week_number' => 2,
+            'topic' => 'Libur pekanan',
+            'is_active' => 0,
+        ]);
+        $this->assertDatabaseHas('agenda_weekly_topics', [
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'week_number' => 4,
+            'topic' => null,
+            'is_active' => 1,
+        ]);
 
         $this->assertDatabaseHas('activities', [
             'agenda_schedule_id' => $agendaSchedule->id,
@@ -284,6 +303,34 @@ class AgendaScheduleCrudTest extends TestCase
             'topic' => 'Manajemen Waktu Pemuda',
             'attendance_open_at' => '2026-07-21 19:30:00',
             'attendance_close_at' => '2026-07-21 22:00:00',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('agenda-schedules.index'))
+            ->assertOk()
+            ->assertSee('Adab Bermedia Sosial')
+            ->assertSee('Libur pekanan');
+
+        $this->actingAs($user)->post(route('agenda-schedules.generate-monthly.store', $agendaSchedule), [
+            'month' => 8,
+            'year' => 2026,
+        ])
+            ->assertRedirect(route('agenda-schedules.show', $agendaSchedule))
+            ->assertSessionHas('success', 'Generate kegiatan bulanan selesai. 3 kegiatan dibuat, 0 peserta presensi otomatis ditambahkan, 0 peserta sudah ada/dilewati, 1 kegiatan dilewati karena tidak aktif, 0 kegiatan dilewati karena sudah ada.');
+
+        $this->assertDatabaseHas('activities', [
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'activity_date' => '2026-08-04 00:00:00',
+            'topic' => 'Adab Bermedia Sosial',
+        ]);
+        $this->assertDatabaseMissing('activities', [
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'activity_date' => '2026-08-11 00:00:00',
+        ]);
+        $this->assertDatabaseHas('activities', [
+            'agenda_schedule_id' => $agendaSchedule->id,
+            'activity_date' => '2026-08-18 00:00:00',
+            'topic' => 'Manajemen Waktu Pemuda',
         ]);
     }
 }

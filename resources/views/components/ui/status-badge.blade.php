@@ -16,7 +16,7 @@
         'scheduled' => 'Terjadwal',
         'completed' => 'Selesai',
         'postponed' => 'Ditunda',
-        'relocated' => 'Dipindah',
+        'relocated' => 'Pindah Lokasi',
         'cancelled' => 'Dibatalkan',
         'holiday' => 'Libur',
         'moved' => 'Pindah',

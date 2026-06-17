@@ -155,6 +155,14 @@
                                     'start_time' => $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '-',
                                     'end_time' => $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : '-',
                                     'action' => route('agenda-schedules.generate-monthly.store', $agendaSchedule),
+                                    'weekly_topics' => $agendaSchedule->weeklyTopics
+                                        ->mapWithKeys(fn ($topic) => [
+                                            $topic->week_number => [
+                                                'topic' => $topic->topic,
+                                                'is_active' => $topic->is_active,
+                                            ],
+                                        ])
+                                        ->all(),
                                 ];
                                 $pattern = match ($agendaSchedule->schedule_type) {
                                     'incidental' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
@@ -174,7 +182,7 @@
                                 <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $pattern }}</span></td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $time !== '' ? $time : '-' }}</td>
                                 <td class="max-w-44 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $agendaSchedule->default_location ?: '-' }}</span></td>
-                                <td class="whitespace-nowrap px-3 py-4"><span class="{{ $agendaSchedule->is_active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $agendaSchedule->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
+                                <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$agendaSchedule->is_active ? 'active' : 'inactive'" :label="$agendaSchedule->is_active ? 'Aktif' : 'Nonaktif'" /></td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $agendaSchedule->created_at?->format('d/m/Y') ?? '-' }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
@@ -208,9 +216,8 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="11" class="px-4 py-14 text-center">
-                                    <p class="text-base font-semibold text-slate-800">Belum ada jadwal agenda.</p>
-                                    <p class="mt-1 text-sm text-slate-500">Tambahkan jadwal agenda baru atau ubah filter pencarian.</p>
+                                <td colspan="11">
+                                    <x-ui.empty-state title="Belum ada jadwal agenda." description="Buat jadwal agenda pertama untuk mulai menyusun kegiatan rutin." />
                                 </td>
                             </tr>
                         @endforelse
@@ -259,7 +266,15 @@
                         </button>
                     </div>
 
-                    <form method="POST" x-bind:action="schedule?.action" x-on:submit="submitting = true" class="flex min-h-0 flex-1 flex-col">
+                    <form
+                        x-data="{ open: false }"
+                        x-ref="generateMonthlyForm"
+                        method="POST"
+                        x-bind:action="schedule?.action"
+                        x-on:submit.prevent="open = true"
+                        x-on:confirmed="submitting = true; $refs.generateMonthlyForm.submit()"
+                        class="flex min-h-0 flex-1 flex-col"
+                    >
                         @csrf
                         <div class="space-y-5 overflow-y-auto px-5 py-5">
                             <div class="grid gap-4 sm:grid-cols-2">
@@ -296,6 +311,7 @@
                                 <template x-for="(occurrence, index) in occurrences" :key="occurrence.date">
                                     <div class="grid gap-3 border-t border-slate-100 px-4 py-3 sm:grid-cols-[96px_minmax(120px,1fr)_88px_minmax(180px,1.7fr)] sm:items-center">
                                         <input type="hidden" x-bind:name="`occurrences[${index}][date]`" x-bind:value="occurrence.date">
+                                        <input type="hidden" x-bind:name="`occurrences[${index}][week]`" x-bind:value="occurrence.week">
                                         <input type="hidden" x-bind:name="`occurrences[${index}][active]`" value="0">
 
                                         <div>
@@ -330,6 +346,14 @@
                                 <span x-cloak x-show="submitting">Mengenerate...</span>
                             </button>
                         </div>
+
+                        <x-ui.confirm-modal
+                            title="Generate Kegiatan Bulanan?"
+                            description="Sistem akan membuat Kegiatan Aktual dari minggu yang dicentang aktif. Kegiatan yang sudah ada pada tanggal yang sama akan dilewati."
+                            confirm-text="Generate"
+                            loading-text="Menggenerate..."
+                            variant="primary"
+                        />
                     </form>
                 </section>
             </div>
@@ -367,6 +391,7 @@
                     const year = Number(this.year);
                     const targetDay = Number(this.schedule.day_of_week);
                     const lastDate = new Date(year, month, 0).getDate();
+                    const templates = this.schedule.weekly_topics || {};
                     const rows = [];
 
                     for (let day = 1; day <= lastDate; day++) {
@@ -377,12 +402,14 @@
                         }
 
                         const isoDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                        const weekNumber = rows.length + 1;
+                        const template = templates[weekNumber] || {};
                         rows.push({
-                            week: rows.length + 1,
+                            week: weekNumber,
                             date: isoDate,
                             label: `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`,
-                            active: true,
-                            topic: '',
+                            active: Object.prototype.hasOwnProperty.call(template, 'is_active') ? Boolean(template.is_active) : true,
+                            topic: template.topic || '',
                         });
                     }
 

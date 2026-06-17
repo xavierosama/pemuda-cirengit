@@ -36,7 +36,7 @@
         <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div><p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">{{ $typeLabels[$agendaSchedule->schedule_type] ?? $agendaSchedule->schedule_type }}</p><h2 class="mt-2 text-2xl font-bold text-slate-950">{{ $agendaSchedule->title }}</h2><p class="mt-3 max-w-3xl whitespace-pre-line text-sm leading-6 text-slate-600">{{ $agendaSchedule->description ?: 'Tidak ada deskripsi.' }}</p></div>
-                <span class="{{ $agendaSchedule->is_active ? 'bg-emerald-50 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200' }} inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset">{{ $agendaSchedule->is_active ? 'Aktif' : 'Nonaktif' }}</span>
+                <x-ui.status-badge class="w-fit" :status="$agendaSchedule->is_active ? 'active' : 'inactive'" :label="$agendaSchedule->is_active ? 'Aktif' : 'Nonaktif'" />
             </div>
         </section>
 
