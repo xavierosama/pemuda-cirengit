@@ -153,7 +153,7 @@ class MemberController extends Controller
     {
         $member = $request->route('member');
 
-        return $request->validate([
+        $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],
             'npa' => [
                 'nullable',
@@ -165,12 +165,24 @@ class MemberController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
             'address' => ['nullable', 'string'],
             'joined_at' => ['nullable', 'date'],
+            'birth_date' => ['nullable', 'date'],
             'department_id' => ['nullable', 'exists:departments,id'],
             'position_id' => ['nullable', 'exists:positions,id'],
-            'member_status' => ['required', Rule::in(['active', 'inactive', 'alumni', 'moved'])],
+            'member_status' => ['required', Rule::in(['active', 'inactive'])],
+            'inactive_reason' => ['nullable', Rule::in(array_keys(Member::INACTIVE_REASONS))],
+            'inactive_at' => ['nullable', 'date'],
+            'status_notes' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string'],
         ], [
             'npa.unique' => 'NPA sudah digunakan oleh anggota lain.',
         ]);
+
+        if ($validated['member_status'] === 'active') {
+            $validated['inactive_reason'] = null;
+            $validated['inactive_at'] = null;
+            $validated['status_notes'] = null;
+        }
+
+        return $validated;
     }
 }

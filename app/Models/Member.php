@@ -19,7 +19,11 @@ class Member extends Model
         'address',
         'profile_photo',
         'joined_at',
+        'birth_date',
         'member_status',
+        'inactive_reason',
+        'inactive_at',
+        'status_notes',
         'notes',
     ];
 
@@ -27,8 +31,19 @@ class Member extends Model
     {
         return [
             'joined_at' => 'date',
+            'birth_date' => 'date',
+            'inactive_at' => 'date',
         ];
     }
+
+    public const INACTIVE_REASONS = [
+        'rarely_active' => 'Jarang aktif mengikuti kegiatan',
+        'resigned' => 'Mengundurkan diri',
+        'age_limit' => 'Melebihi batas usia Pemuda',
+        'transferred_to_persis' => 'Dimutasikan ke Persis',
+        'moved_domicile' => 'Pindah domisili',
+        'other' => 'Lainnya',
+    ];
 
     public function department(): BelongsTo
     {
@@ -58,5 +73,15 @@ class Member extends Model
     public function attendances(): HasMany
     {
         return $this->hasMany(Attendance::class);
+    }
+
+    public function displayStatusKey(): string
+    {
+        return $this->member_status === 'active' ? 'active' : 'inactive';
+    }
+
+    public function displayStatusLabel(): string
+    {
+        return $this->displayStatusKey() === 'active' ? 'Aktif' : 'Tidak Aktif';
     }
 }

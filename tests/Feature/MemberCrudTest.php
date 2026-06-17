@@ -36,6 +36,7 @@ class MemberCrudTest extends TestCase
             'email' => 'ahmad@example.test',
             'address' => 'Cirengit',
             'joined_at' => '2026-06-10',
+            'birth_date' => '2000-06-10',
             'department_id' => $department->id,
             'position_id' => $position->id,
             'member_status' => 'active',
@@ -85,13 +86,17 @@ class MemberCrudTest extends TestCase
             'email' => 'updated@example.test',
             'department_id' => $department->id,
             'position_id' => $position->id,
-            'member_status' => 'alumni',
+            'member_status' => 'inactive',
+            'inactive_reason' => 'resigned',
+            'inactive_at' => '2026-06-10',
+            'status_notes' => 'Mengundurkan diri.',
         ])->assertRedirect(route('members.index'));
 
         $this->assertDatabaseHas('members', [
             'id' => $member->id,
             'full_name' => 'Ahmad Updated',
-            'member_status' => 'alumni',
+            'member_status' => 'inactive',
+            'inactive_reason' => 'resigned',
             'npa' => 'PC-001',
         ]);
 
@@ -292,6 +297,7 @@ class MemberCrudTest extends TestCase
             'email' => 'ahmad@example.test',
             'address' => 'Kp. Cirengit',
             'joined_at' => '2026-06-10',
+            'birth_date' => '2000-06-10',
             'member_status' => 'active',
             'notes' => 'Catatan export',
         ]);

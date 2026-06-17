@@ -5,6 +5,8 @@
     $labelClass = 'block text-sm font-semibold text-slate-700';
     $helperClass = 'mt-1 text-xs text-slate-500';
     $errorClass = 'mt-2 text-sm text-red-600';
+    $inactiveReasons = \App\Models\Member::INACTIVE_REASONS;
+    $currentStatus = old('member_status', isset($member) ? $member->displayStatusKey() : 'active');
 @endphp
 
 <div class="space-y-5">
@@ -35,14 +37,55 @@
             </div>
 
             <div>
+                <label for="birth_date" class="{{ $labelClass }}">Tanggal Lahir</label>
+                <input id="birth_date" name="birth_date" type="date" value="{{ old('birth_date', isset($member) && $member->birth_date ? $member->birth_date->format('Y-m-d') : '') }}" class="{{ $inputClass }}">
+                <p class="{{ $helperClass }}">Dipakai untuk memantau batas usia anggota Pemuda.</p>
+                @error('birth_date') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
+            </div>
+        </div>
+    </section>
+
+    <section
+        class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+        x-data="{ status: @js($currentStatus) }"
+    >
+        <div class="mb-5 border-b border-slate-100 pb-4">
+            <h3 class="text-base font-bold text-slate-950">Status Keanggotaan</h3>
+            <p class="mt-1 text-sm text-slate-500">Status utama dibuat sederhana. Jika tidak aktif, lengkapi alasan agar riwayat administrasi tetap jelas.</p>
+        </div>
+        <div class="grid gap-5 md:grid-cols-2">
+            <div>
                 <label for="member_status" class="{{ $labelClass }}">Status Anggota</label>
-                <select id="member_status" name="member_status" class="{{ $inputClass }}" required>
-                    @foreach (['active' => 'Aktif', 'inactive' => 'Tidak Aktif', 'alumni' => 'Alumni', 'moved' => 'Pindah'] as $value => $label)
-                        <option value="{{ $value }}" @selected(old('member_status', $member->member_status ?? 'active') === $value)>{{ $label }}</option>
+                <select id="member_status" name="member_status" class="{{ $inputClass }}" required x-model="status">
+                    @foreach (['active' => 'Aktif', 'inactive' => 'Tidak Aktif'] as $value => $label)
+                        <option value="{{ $value }}">{{ $label }}</option>
                     @endforeach
                 </select>
-                <p class="{{ $helperClass }}">Pilih active untuk anggota aktif.</p>
+                <p class="{{ $helperClass }}">Status utama anggota hanya Aktif atau Tidak Aktif.</p>
                 @error('member_status') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
+            </div>
+
+            <div x-cloak x-show="status === 'inactive'" x-transition>
+                <label for="inactive_reason" class="{{ $labelClass }}">Alasan Tidak Aktif</label>
+                <select id="inactive_reason" name="inactive_reason" class="{{ $inputClass }}">
+                    <option value="">Pilih alasan</option>
+                    @foreach ($inactiveReasons as $value => $label)
+                        <option value="{{ $value }}" @selected(old('inactive_reason', $member->inactive_reason ?? '') === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('inactive_reason') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
+            </div>
+
+            <div x-cloak x-show="status === 'inactive'" x-transition>
+                <label for="inactive_at" class="{{ $labelClass }}">Tanggal Tidak Aktif</label>
+                <input id="inactive_at" name="inactive_at" type="date" value="{{ old('inactive_at', isset($member) && $member->inactive_at ? $member->inactive_at->format('Y-m-d') : '') }}" class="{{ $inputClass }}">
+                @error('inactive_at') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="md:col-span-2" x-cloak x-show="status === 'inactive'" x-transition>
+                <label for="status_notes" class="{{ $labelClass }}">Catatan Status</label>
+                <textarea id="status_notes" name="status_notes" rows="3" class="{{ $inputClass }}" placeholder="Tambahkan keterangan status tidak aktif bila diperlukan.">{{ old('status_notes', $member->status_notes ?? '') }}</textarea>
+                @error('status_notes') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
         </div>
     </section>
