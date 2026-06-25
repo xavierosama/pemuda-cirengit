@@ -55,7 +55,7 @@
                 </div>
 
                 <dl class="mt-6 grid gap-4 sm:grid-cols-2">
-                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tanggal Kegiatan</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tanggal Kegiatan</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ \App\Support\DateFormatter::date($activity->activity_date) }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Kegiatan</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activityTime ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Topik Agenda</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->topic ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Lokasi</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->location ?: '-' }}</dd></div>
@@ -87,8 +87,8 @@
 
                 <dl class="mt-6 grid gap-4 sm:grid-cols-2">
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Status Presensi Dinamis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendanceAvailabilityLabel() }}</dd></div>
-                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Buka Otomatis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $attendanceOpenAt?->format('d/m/Y H:i') ?? '-' }}</dd></div>
-                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Tutup Otomatis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $attendanceCloseAt?->format('d/m/Y H:i') ?? '-' }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Buka Otomatis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ \App\Support\DateFormatter::dateTime($attendanceOpenAt) }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu Tutup Otomatis</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ \App\Support\DateFormatter::dateTime($attendanceCloseAt) }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Radius Presensi</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->attendance_radius }} meter</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Latitude</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->latitude ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Longitude</dt><dd class="mt-1 text-sm font-medium text-slate-800">{{ $activity->longitude ?: '-' }}</dd></div>

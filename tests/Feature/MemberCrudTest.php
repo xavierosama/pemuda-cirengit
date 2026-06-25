@@ -140,7 +140,7 @@ class MemberCrudTest extends TestCase
             ->assertOk()
             ->assertSee('Kelola data anggota, NPA, bidang, jabatan, dan akun login anggota.')
             ->assertSee('Total Anggota Aktif')
-            ->assertSee('Total Sudah Punya Akun')
+            ->assertSee('Perlu Diproses Batas Usia')
             ->assertSee('Filter Data Anggota')
             ->assertSee('Anggota Punya Akun')
             ->assertDontSee('Anggota Tanpa Akun');
@@ -150,6 +150,74 @@ class MemberCrudTest extends TestCase
             ->assertOk()
             ->assertSee('Anggota Tanpa Akun')
             ->assertDontSee('Anggota Punya Akun');
+    }
+
+    public function test_member_index_shows_age_status_and_age_limit_action(): void
+    {
+        Carbon::setTestNow('2026-06-24 09:00:00');
+        $user = User::factory()->create(['role' => 'admin']);
+        $eligible = Member::create([
+            'full_name' => 'Anggota Memenuhi',
+            'birth_date' => '1985-06-25',
+            'member_status' => 'active',
+        ]);
+        $needsProcessing = Member::create([
+            'full_name' => 'Anggota Batas Usia',
+            'birth_date' => '1985-06-24',
+            'member_status' => 'active',
+        ]);
+        Member::create([
+            'full_name' => 'Anggota Nonaktif',
+            'birth_date' => '1980-01-01',
+            'member_status' => 'inactive',
+            'inactive_reason' => 'rarely_active',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('members.index'))
+            ->assertOk()
+            ->assertSee('Anggota Memenuhi')
+            ->assertSee('40 tahun')
+            ->assertSee('Memenuhi')
+            ->assertSee('Anggota Batas Usia')
+            ->assertSee('41 tahun')
+            ->assertSee('Perlu Diproses')
+            ->assertSee('Tandai Tidak Aktif karena Batas Usia')
+            ->assertSee('Jarang aktif mengikuti kegiatan');
+
+        $this->actingAs($user)
+            ->get(route('members.index', ['member_status' => 'age_limit_due']))
+            ->assertOk()
+            ->assertSee('Anggota Batas Usia')
+            ->assertDontSee('Anggota Memenuhi');
+
+        $this->actingAs($user)
+            ->get(route('members.index', ['inactive_reason' => 'rarely_active']))
+            ->assertOk()
+            ->assertSee('Anggota Nonaktif')
+            ->assertDontSee('Anggota Batas Usia');
+
+        $this->assertDatabaseHas('members', [
+            'id' => $needsProcessing->id,
+            'member_status' => 'active',
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('members.mark-age-limit-inactive', $needsProcessing))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('members', [
+            'id' => $needsProcessing->id,
+            'member_status' => 'inactive',
+            'inactive_reason' => 'age_limit',
+            'inactive_at' => '2026-06-24 00:00:00',
+            'status_notes' => 'Tidak aktif karena telah mencapai batas usia anggota Pemuda.',
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('members.mark-age-limit-inactive', $eligible))
+            ->assertRedirect()
+            ->assertSessionHas('info', 'Anggota ini belum memenuhi kriteria batas usia untuk diproses.');
     }
 
     public function test_npa_is_nullable_and_unique_when_filled(): void
@@ -207,9 +275,9 @@ class MemberCrudTest extends TestCase
             ->assertSee('File Excel')
             ->assertSee('Import Data Anggota')
             ->assertSee('Gunakan template yang tersedia agar format kolom sesuai.')
-            ->assertSee('Format tanggal: dd/mm/yyyy.')
+            ->assertSee('Format tanggal: dd/mm/yyyy atau yyyy-mm-dd.')
             ->assertSee('Pastikan nama bidang dan jabatan sesuai dengan data master.')
-            ->assertSee('Status anggota yang tersedia: active, inactive, alumni, moved.');
+            ->assertSee('Status anggota yang tersedia: active dan inactive.');
 
         $response = $this->actingAs($user)->get(route('members.import.template'));
 
@@ -221,11 +289,11 @@ class MemberCrudTest extends TestCase
         $worksheet = $zip->getFromName('xl/worksheets/sheet1.xml');
         $zip->close();
 
-        foreach (['npa', 'full_name', 'phone', 'email', 'address', 'joined_at', 'department', 'position', 'member_status', 'notes'] as $header) {
+        foreach (['npa', 'full_name', 'phone', 'email', 'address', 'joined_at', 'birth_date', 'department', 'position', 'member_status', 'inactive_reason', 'inactive_at', 'status_notes', 'notes'] as $header) {
             $this->assertStringContainsString($header, $worksheet);
         }
 
-        foreach (['20.0001', 'Ahmad Fulan', '081234567890', 'ahmad.fulan@example.com', 'Kp. Cirengit', '10/06/2026', 'Pendidikan', 'Anggota', 'active', 'Contoh data anggota'] as $value) {
+        foreach (['20.0001', 'Ahmad Fulan', '081234567890', 'ahmad.fulan@example.com', 'Kp. Cirengit', '10/06/2026', '10/06/2000', 'Pendidikan', 'Anggota', 'active', 'Contoh data anggota'] as $value) {
             $this->assertStringContainsString($value, $worksheet);
         }
     }
@@ -243,10 +311,10 @@ class MemberCrudTest extends TestCase
         ]);
 
         $file = $this->makeMemberImportFile([
-            ['npa', 'full_name', 'phone', 'email', 'address', 'joined_at', 'department', 'position', 'member_status', 'notes'],
-            ['20.0001', 'Ahmad Update', '081234567890', 'ahmad.update@example.com', 'Kp. Cirengit', '10/06/2026', 'Pendidikan', 'Anggota', 'active', 'Data update'],
-            ['20.0002', 'Budi Baru', '081111111111', 'budi@example.com', 'Cirengit', '11/06/2026', 'Pendidikan', 'Anggota', 'inactive', 'Data baru'],
-            ['20.0003', '', '', 'salah-email', '', '31/06/2026', 'Tidak Ada', 'Anggota', 'aktif', 'Data gagal'],
+            ['npa', 'full_name', 'phone', 'email', 'address', 'joined_at', 'birth_date', 'department', 'position', 'member_status', 'inactive_reason', 'inactive_at', 'status_notes', 'notes'],
+            ['20.0001', 'Ahmad Update', '081234567890', 'ahmad.update@example.com', 'Kp. Cirengit', '10/06/2026', '2000-06-10', 'Pendidikan', 'Anggota', 'active', '', '', '', 'Data update'],
+            ['20.0002', 'Budi Baru', '081111111111', 'budi@example.com', 'Cirengit', '11/06/2026', '', 'Pendidikan', 'Anggota', 'inactive', 'rarely_active', '2026-06-12', 'Jarang ikut kegiatan', 'Data baru'],
+            ['20.0003', '', '', 'salah-email', '', '31/06/2026', '31/06/2000', 'Tidak Ada', 'Anggota', 'aktif', '', '', '', 'Data gagal'],
         ]);
 
         $this->actingAs($user)
@@ -262,11 +330,15 @@ class MemberCrudTest extends TestCase
             'npa' => '20.0001',
             'full_name' => 'Ahmad Update',
             'joined_at' => '2026-06-10 00:00:00',
+            'birth_date' => '2000-06-10 00:00:00',
         ]);
         $this->assertDatabaseHas('members', [
             'npa' => '20.0002',
             'full_name' => 'Budi Baru',
             'member_status' => 'inactive',
+            'inactive_reason' => 'rarely_active',
+            'inactive_at' => '2026-06-12 00:00:00',
+            'status_notes' => 'Jarang ikut kegiatan',
         ]);
         $this->assertDatabaseMissing('members', ['npa' => '20.0003']);
     }
@@ -278,6 +350,26 @@ class MemberCrudTest extends TestCase
         $this->actingAs($user)
             ->post(route('members.import.store'), ['file' => UploadedFile::fake()->create('anggota.pdf', 12, 'application/pdf')])
             ->assertSessionHasErrors(['file']);
+    }
+
+    public function test_member_import_reports_invalid_birth_date_format(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+        Department::create(['name' => 'Pendidikan', 'status' => 'active']);
+        Position::create(['name' => 'Anggota', 'status' => 'active']);
+
+        $file = $this->makeMemberImportFile([
+            ['npa', 'full_name', 'phone', 'email', 'address', 'joined_at', 'birth_date', 'department', 'position', 'member_status', 'inactive_reason', 'inactive_at', 'status_notes', 'notes'],
+            ['20.0004', 'Tanggal Salah', '081222222222', 'tanggal@example.com', 'Cirengit', '10/06/2026', '31/06/2000', 'Pendidikan', 'Anggota', 'active', '', '', '', 'Data gagal'],
+        ]);
+
+        $this->actingAs($user)
+            ->from(route('members.import'))
+            ->post(route('members.import.store'), ['file' => $file])
+            ->assertRedirect(route('members.import'))
+            ->assertSessionHas('import_result', fn (array $result) => $result['created'] === 0
+                && $result['failed'] === 1
+                && str_contains($result['errors'][0], 'Tanggal lahir harus format dd/mm/yyyy atau yyyy-mm-dd.'));
     }
 
     public function test_internal_user_can_export_filtered_members_to_excel(): void
@@ -324,11 +416,11 @@ class MemberCrudTest extends TestCase
 
         $worksheet = $this->worksheetXmlFromDownload($response);
 
-        foreach (['No', 'NPA', 'Nama Lengkap', 'No HP', 'Email', 'Alamat', 'Tanggal Bergabung', 'Bidang', 'Jabatan', 'Status Anggota', 'Status Akun Login', 'Catatan'] as $header) {
+        foreach (['No', 'NPA', 'Nama Lengkap', 'No HP', 'Email', 'Alamat', 'Tanggal Bergabung', 'Tanggal Lahir', 'Usia', 'Status Usia', 'Bidang', 'Jabatan', 'Status Anggota', 'Alasan Tidak Aktif', 'Tanggal Tidak Aktif', 'Catatan Status', 'Status Akun Login', 'Catatan'] as $header) {
             $this->assertStringContainsString($header, $worksheet);
         }
 
-        foreach (['20.0001', 'Ahmad Pendidikan', '081234567890', 'ahmad@example.test', 'Kp. Cirengit', '10/06/2026', 'Pendidikan', 'Anggota', 'Aktif', 'Sudah Ada', 'Catatan export'] as $value) {
+        foreach (['20.0001', 'Ahmad Pendidikan', '081234567890', 'ahmad@example.test', 'Kp. Cirengit', '10/06/2026', '10/06/2000', '26 tahun', 'Memenuhi', 'Pendidikan', 'Anggota', 'Aktif', 'Sudah Ada', 'Catatan export'] as $value) {
             $this->assertStringContainsString($value, $worksheet);
         }
 

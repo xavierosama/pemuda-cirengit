@@ -61,7 +61,7 @@
                     </div>
                     <div>
                         <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Tanggal</dt>
-                        <dd class="mt-1 text-sm text-slate-700">{{ $activity->activity_date->format('d/m/Y') }}</dd>
+                        <dd class="mt-1 text-sm text-slate-700">{{ \App\Support\DateFormatter::date($activity->activity_date) }}</dd>
                     </div>
                     <div>
                         <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu</dt>
@@ -99,11 +99,11 @@
                     </div>
                     <div class="rounded-xl bg-slate-50 p-4">
                         <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu Buka Presensi Otomatis</dt>
-                        <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $attendanceOpenAt?->format('d/m/Y H:i') ?? '-' }}</dd>
+                        <dd class="mt-1 text-sm font-semibold text-slate-800">{{ \App\Support\DateFormatter::dateTime($attendanceOpenAt) }}</dd>
                     </div>
                     <div class="rounded-xl bg-slate-50 p-4">
                         <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu Tutup Presensi Otomatis</dt>
-                        <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $attendanceCloseAt?->format('d/m/Y H:i') ?? '-' }}</dd>
+                        <dd class="mt-1 text-sm font-semibold text-slate-800">{{ \App\Support\DateFormatter::dateTime($attendanceCloseAt) }}</dd>
                     </div>
                 </dl>
             </section>

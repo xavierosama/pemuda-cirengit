@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\Member;
 use App\Models\Position;
+use App\Support\DateFormatter;
 use App\Support\TableControls;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,9 @@ class MemberController extends Controller
         $departmentId = $request->integer('department_id') ?: null;
         $positionId = $request->integer('position_id') ?: null;
         $memberStatus = $request->string('member_status')->toString();
+        $inactiveReason = $request->string('inactive_reason')->toString();
         $accountStatus = $request->string('account_status')->toString();
+        $ageLimitDate = now()->subYears(41)->toDateString();
         $allowedSorts = [
             'npa' => 'npa',
             'full_name' => 'full_name',
@@ -46,9 +49,15 @@ class MemberController extends Controller
             })
             ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
             ->when($positionId, fn ($query) => $query->where('position_id', $positionId))
+            ->when($memberStatus === 'active', fn ($query) => $query->where('member_status', 'active'))
+            ->when($memberStatus === 'inactive', fn ($query) => $query->where('member_status', '!=', 'active'))
+            ->when($memberStatus === 'age_limit_due', fn ($query) => $query
+                ->where('member_status', 'active')
+                ->whereNotNull('birth_date')
+                ->whereDate('birth_date', '<=', $ageLimitDate))
             ->when(
-                in_array($memberStatus, ['active', 'inactive', 'alumni', 'moved'], true),
-                fn ($query) => $query->where('member_status', $memberStatus)
+                in_array($inactiveReason, array_keys(Member::INACTIVE_REASONS), true),
+                fn ($query) => $query->where('inactive_reason', $inactiveReason)
             )
             ->when($accountStatus === 'exists', fn ($query) => $query->whereHas('user'))
             ->when($accountStatus === 'missing', fn ($query) => $query->whereDoesntHave('user'))
@@ -58,11 +67,15 @@ class MemberController extends Controller
 
         $departments = Department::orderBy('name')->get(['id', 'name']);
         $positions = Position::orderBy('name')->get(['id', 'name']);
+        $inactiveReasons = Member::INACTIVE_REASONS;
         $memberStats = [
+            'total' => Member::count(),
             'active' => Member::where('member_status', 'active')->count(),
-            'inactive' => Member::where('member_status', 'inactive')->count(),
-            'alumni' => Member::where('member_status', 'alumni')->count(),
-            'moved' => Member::where('member_status', 'moved')->count(),
+            'inactive' => Member::where('member_status', '!=', 'active')->count(),
+            'age_limit_due' => Member::where('member_status', 'active')
+                ->whereNotNull('birth_date')
+                ->whereDate('birth_date', '<=', $ageLimitDate)
+                ->count(),
             'account_exists' => Member::whereHas('user')->count(),
             'account_missing' => Member::whereDoesntHave('user')->count(),
         ];
@@ -71,11 +84,13 @@ class MemberController extends Controller
             'members',
             'departments',
             'positions',
+            'inactiveReasons',
             'memberStats',
             'search',
             'departmentId',
             'positionId',
             'memberStatus',
+            'inactiveReason',
             'accountStatus'
         ), TableControls::viewData($request, $currentSort, $currentDirection, $perPage)));
     }
@@ -149,9 +164,30 @@ class MemberController extends Controller
             ->with('success', 'Data anggota berhasil dihapus.');
     }
 
+    public function markInactiveBecauseAgeLimit(Member $member): RedirectResponse
+    {
+        if (! $member->needsAgeLimitProcessing()) {
+            return back()->with('info', 'Anggota ini belum memenuhi kriteria batas usia untuk diproses.');
+        }
+
+        $member->update([
+            'member_status' => 'inactive',
+            'inactive_reason' => 'age_limit',
+            'inactive_at' => now()->toDateString(),
+            'status_notes' => 'Tidak aktif karena telah mencapai batas usia anggota Pemuda.',
+        ]);
+
+        return back()->with('success', 'Anggota berhasil ditandai tidak aktif karena batas usia.');
+    }
+
     private function validatedData(Request $request): array
     {
         $member = $request->route('member');
+        $request->merge([
+            'joined_at' => DateFormatter::normalizeInputDateForValidation($request->input('joined_at')),
+            'birth_date' => DateFormatter::normalizeInputDateForValidation($request->input('birth_date')),
+            'inactive_at' => DateFormatter::normalizeInputDateForValidation($request->input('inactive_at')),
+        ]);
 
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:255'],

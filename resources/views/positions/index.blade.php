@@ -105,7 +105,7 @@
                                     </span>
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-slate-700">{{ number_format($position->members_count) }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $position->created_at?->format('d/m/Y') ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ \App\Support\DateFormatter::date($position->created_at) }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
                                         <x-action-icon :href="route('positions.show', $position)" label="Detail" icon="eye" variant="blue" />

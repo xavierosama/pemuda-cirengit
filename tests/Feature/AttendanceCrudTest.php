@@ -312,7 +312,7 @@ class AttendanceCrudTest extends TestCase
             'full_name' => 'Anggota Tanpa Akun Dua',
             'member_status' => 'active',
         ]);
-        Member::create([
+        $inactiveMember = Member::create([
             'full_name' => 'Anggota Nonaktif',
             'member_status' => 'inactive',
         ]);
@@ -336,6 +336,11 @@ class AttendanceCrudTest extends TestCase
                 'created_by' => $user->id,
             ]);
         }
+
+        $this->assertDatabaseMissing('attendances', [
+            'activity_id' => $activity->id,
+            'member_id' => $inactiveMember->id,
+        ]);
 
         $this->actingAs($user)
             ->get(route('activities.attendances.index', $activity))

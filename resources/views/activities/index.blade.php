@@ -131,7 +131,7 @@
                                     <x-activity-summary :activity="$activity" :show-meta="false" />
                                 </td>
                                 <td class="px-3 py-4 text-sm text-slate-600">
-                                    <span class="block font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</span>
+                                    <span class="block font-medium text-slate-800">{{ \App\Support\DateFormatter::date($activity->activity_date) }}</span>
                                     <span class="mt-1 block text-xs text-slate-500">{{ $time !== '' ? $time : '-' }}</span>
                                     @if ($activity->location)
                                         <span class="mt-1 line-clamp-1 block max-w-44 break-words text-xs text-slate-500">{{ $activity->location }}</span>
@@ -143,7 +143,7 @@
                                 </td>
                                 <td class="px-3 py-4"><x-ui.status-badge :status="$activity->status" /></td>
                                 <td class="px-3 py-4"><x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" /></td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $activity->created_at?->format('d/m/Y') ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ \App\Support\DateFormatter::date($activity->created_at) }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
                                         <x-ui.action-icon :href="route('activities.show', $activity)" label="Detail" variant="detail" />

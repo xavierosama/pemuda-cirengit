@@ -105,7 +105,7 @@
                                     </span>
                                 </td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-slate-700">{{ number_format($department->members_count) }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $department->created_at?->format('d/m/Y') ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ \App\Support\DateFormatter::date($department->created_at) }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
                                         <x-action-icon :href="route('departments.show', $department)" label="Detail" icon="eye" variant="blue" />

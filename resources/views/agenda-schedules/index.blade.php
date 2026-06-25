@@ -165,7 +165,7 @@
                                         ->all(),
                                 ];
                                 $pattern = match ($agendaSchedule->schedule_type) {
-                                    'incidental' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
+                                    'incidental' => \App\Support\DateFormatter::date($agendaSchedule->specific_date),
                                     'weekly' => isset($dayLabels[$agendaSchedule->day_of_week]) ? 'Setiap '.$dayLabels[$agendaSchedule->day_of_week] : '-',
                                     'monthly' => $agendaSchedule->day_of_month ? 'Setiap tanggal '.$agendaSchedule->day_of_month : '-',
                                     'yearly' => $agendaSchedule->specific_date ? 'Tahunan, '.$agendaSchedule->specific_date->format('d/m') : 'Tahunan',
@@ -183,7 +183,7 @@
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $time !== '' ? $time : '-' }}</td>
                                 <td class="max-w-44 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $agendaSchedule->default_location ?: '-' }}</span></td>
                                 <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$agendaSchedule->is_active ? 'active' : 'inactive'" :label="$agendaSchedule->is_active ? 'Aktif' : 'Nonaktif'" /></td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $agendaSchedule->created_at?->format('d/m/Y') ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ \App\Support\DateFormatter::date($agendaSchedule->created_at) }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
                                     <div class="flex justify-end gap-1.5">
                                         <x-action-icon :href="route('agenda-schedules.show', $agendaSchedule)" label="Detail" icon="eye" variant="blue" />

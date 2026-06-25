@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Member;
 use App\Services\ActivityAttendanceScheduleService;
 use App\Services\AttendanceSyncService;
+use App\Support\DateFormatter;
 use App\Support\SystemSettings;
 use App\Support\TableControls;
 use Illuminate\Http\RedirectResponse;
@@ -21,9 +22,9 @@ class ActivityController extends Controller
     public function index(Request $request): View
     {
         $search = $request->string('search')->toString();
-        $activityDate = $request->string('activity_date')->toString();
-        $startDate = $request->string('start_date')->toString();
-        $endDate = $request->string('end_date')->toString();
+        $activityDate = DateFormatter::normalizeInputDate($request->string('activity_date')->toString());
+        $startDate = DateFormatter::normalizeInputDate($request->string('start_date')->toString());
+        $endDate = DateFormatter::normalizeInputDate($request->string('end_date')->toString());
         $departmentId = $request->integer('department_id') ?: null;
         $status = $request->string('status')->toString();
         $agendaScheduleId = $request->integer('agenda_schedule_id') ?: null;
@@ -175,6 +176,10 @@ class ActivityController extends Controller
 
     public function storeFromSchedule(Request $request, AgendaSchedule $agendaSchedule): RedirectResponse
     {
+        $request->merge([
+            'activity_date' => DateFormatter::normalizeInputDateForValidation($request->input('activity_date')),
+        ]);
+
         $validated = $request->validate([
             'activity_date' => ['required', 'date'],
         ]);
@@ -209,6 +214,10 @@ class ActivityController extends Controller
 
     private function validatedData(Request $request): array
     {
+        $request->merge([
+            'activity_date' => DateFormatter::normalizeInputDateForValidation($request->input('activity_date')),
+        ]);
+
         return $request->validate([
             'agenda_schedule_id' => ['nullable', 'exists:agenda_schedules,id'],
             'department_id' => ['nullable', 'exists:departments,id'],

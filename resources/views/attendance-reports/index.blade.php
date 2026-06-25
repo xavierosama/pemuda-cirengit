@@ -21,7 +21,7 @@
         $percentageClass = fn ($percentage) => $percentage >= 75
             ? 'bg-emerald-50 text-emerald-700 ring-emerald-200'
             : ($percentage >= 50 ? 'bg-amber-50 text-amber-700 ring-amber-200' : 'bg-red-50 text-red-700 ring-red-200');
-        $periodLabel = \Illuminate\Support\Carbon::parse($filters['start_date'])->format('d/m/Y').' - '.\Illuminate\Support\Carbon::parse($filters['end_date'])->format('d/m/Y');
+        $periodLabel = \App\Support\DateFormatter::dateRange($filters['start_date'], $filters['end_date']);
         $hasAttendanceData = array_sum($statusCounts) > 0;
         $hasActivityTrend = $chartData['activityTrend']['data']->sum() > 0;
         $hasDepartmentData = $chartData['departmentAttendance']['data']->sum() > 0;
@@ -84,7 +84,7 @@
                     <select id="activity_id" name="activity_id" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
                         <option value="">Semua kegiatan</option>
                         @foreach ($activityOptions as $activity)
-                            <option value="{{ $activity->id }}" @selected((string) $filters['activity_id'] === (string) $activity->id)>{{ $activity->activity_date->format('d/m/Y') }} - {{ $activity->title }}</option>
+                            <option value="{{ $activity->id }}" @selected((string) $filters['activity_id'] === (string) $activity->id)>{{ \App\Support\DateFormatter::date($activity->activity_date) }} - {{ $activity->title }}</option>
                         @endforeach
                     </select>
                     @error('activity_id') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
@@ -197,7 +197,7 @@
                                     <x-activity-summary :activity="$activity" :show-meta="false" />
                                 </td>
                                 <td class="px-3 py-4 text-sm text-slate-600">
-                                    <span class="block font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</span>
+                                    <span class="block font-medium text-slate-800">{{ \App\Support\DateFormatter::date($activity->activity_date) }}</span>
                                     <span class="mt-1 block text-xs text-slate-500">{{ $time !== '' ? $time : '-' }}</span>
                                 </td>
                                 <td class="px-3 py-4">

@@ -9,9 +9,9 @@
         : 'Link presensi belum tersedia. Buka QR Presensi untuk membuat token.';
     $dayLabels = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     $dayName = $activity->activity_date ? $dayLabels[$activity->activity_date->dayOfWeek] : '-';
-    $activityDate = $activity->activity_date ? $activity->activity_date->format('d/m/Y') : '-';
-    $startTime = $activity->start_time ? substr($activity->start_time, 0, 5) : '-';
-    $endTime = $activity->end_time ? substr($activity->end_time, 0, 5) : '-';
+    $activityDate = \App\Support\DateFormatter::date($activity->activity_date);
+    $startTime = \App\Support\DateFormatter::time($activity->start_time);
+    $endTime = \App\Support\DateFormatter::time($activity->end_time);
     $location = $activity->location ?: 'Menyesuaikan';
     $topic = trim((string) $activity->topic);
     $templateLines = preg_split("/\r\n|\n|\r/", $template);

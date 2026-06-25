@@ -5,9 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Department;
 use App\Models\Member;
 use App\Models\Position;
+use App\Support\DateFormatter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 use Illuminate\Validation\Rule;
@@ -93,7 +93,22 @@ class MemberImportTemplateController extends Controller
         }
 
         $headers = array_map(fn ($header) => str($header)->trim()->lower()->toString(), $rows[0]);
-        $expectedHeaders = ['npa', 'full_name', 'phone', 'email', 'address', 'joined_at', 'department', 'position', 'member_status', 'notes'];
+        $expectedHeaders = [
+            'npa',
+            'full_name',
+            'phone',
+            'email',
+            'address',
+            'joined_at',
+            'birth_date',
+            'department',
+            'position',
+            'member_status',
+            'inactive_reason',
+            'inactive_at',
+            'status_notes',
+            'notes',
+        ];
 
         if ($headers !== $expectedHeaders) {
             return back()
@@ -119,12 +134,16 @@ class MemberImportTemplateController extends Controller
             $position = $this->findPosition($data['position'] ?? null);
             $existingMember = $this->findExistingMember($data['npa'] ?? null, $data['email'] ?? null);
             $joinedAt = $this->parseDate($data['joined_at'] ?? null);
+            $birthDate = $this->parseDate($data['birth_date'] ?? null);
+            $inactiveAt = $this->parseDate($data['inactive_at'] ?? null);
 
             $validator = Validator::make([
                 ...$data,
                 'department_id' => $department?->id,
                 'position_id' => $position?->id,
                 'joined_at_parsed' => $joinedAt,
+                'birth_date_parsed' => $birthDate,
+                'inactive_at_parsed' => $inactiveAt,
             ], [
                 'full_name' => ['required', 'string', 'max:255'],
                 'npa' => [
@@ -137,19 +156,26 @@ class MemberImportTemplateController extends Controller
                 'email' => ['nullable', 'email', 'max:255'],
                 'address' => ['nullable', 'string'],
                 'joined_at_parsed' => ['nullable', 'date'],
+                'birth_date_parsed' => ['nullable', 'date'],
                 'department_id' => filled($data['department'] ?? null) ? ['required'] : ['nullable'],
                 'position_id' => filled($data['position'] ?? null) ? ['required'] : ['nullable'],
-                'member_status' => ['required', Rule::in(['active', 'inactive', 'alumni', 'moved'])],
+                'member_status' => ['required', Rule::in(['active', 'inactive'])],
+                'inactive_reason' => ['nullable', Rule::in(array_keys(Member::INACTIVE_REASONS))],
+                'inactive_at_parsed' => ['nullable', 'date'],
+                'status_notes' => ['nullable', 'string', 'max:1000'],
                 'notes' => ['nullable', 'string'],
             ], [
                 'full_name.required' => 'Nama anggota wajib diisi.',
                 'npa.unique' => 'NPA sudah digunakan oleh anggota lain.',
                 'email.email' => 'Email tidak valid.',
-                'joined_at_parsed.date' => 'Tanggal bergabung harus format dd/mm/yyyy.',
+                'joined_at_parsed.date' => 'Tanggal bergabung harus format dd/mm/yyyy atau yyyy-mm-dd.',
+                'birth_date_parsed.date' => 'Tanggal lahir harus format dd/mm/yyyy atau yyyy-mm-dd.',
+                'inactive_at_parsed.date' => 'Tanggal tidak aktif harus format dd/mm/yyyy atau yyyy-mm-dd.',
                 'department_id.required' => 'Nama bidang tidak ditemukan di data master.',
                 'position_id.required' => 'Nama jabatan tidak ditemukan di data master.',
                 'member_status.required' => 'Status anggota wajib diisi.',
-                'member_status.in' => 'Status anggota harus active, inactive, alumni, atau moved.',
+                'member_status.in' => 'Status anggota harus active atau inactive.',
+                'inactive_reason.in' => 'Alasan tidak aktif tidak valid.',
             ]);
 
             if ($validator->fails()) {
@@ -165,9 +191,13 @@ class MemberImportTemplateController extends Controller
                 'email' => $data['email'] ?: null,
                 'address' => $data['address'] ?: null,
                 'joined_at' => $joinedAt,
+                'birth_date' => $birthDate,
                 'department_id' => $department?->id,
                 'position_id' => $position?->id,
                 'member_status' => $data['member_status'],
+                'inactive_reason' => $data['member_status'] === 'inactive' ? ($data['inactive_reason'] ?: null) : null,
+                'inactive_at' => $data['member_status'] === 'inactive' ? $inactiveAt : null,
+                'status_notes' => $data['member_status'] === 'inactive' ? ($data['status_notes'] ?: null) : null,
                 'notes' => $data['notes'] ?: null,
             ];
 
@@ -341,18 +371,14 @@ class MemberImportTemplateController extends Controller
             return null;
         }
 
-        try {
-            return Carbon::createFromFormat('d/m/Y', trim($date))->format('Y-m-d');
-        } catch (\Throwable) {
-            return 'invalid-date';
-        }
+        return DateFormatter::normalizeInputDateForValidation($date);
     }
 
     private function worksheetXml(): string
     {
         $rows = [
-            ['npa', 'full_name', 'phone', 'email', 'address', 'joined_at', 'department', 'position', 'member_status', 'notes'],
-            ['20.0001', 'Ahmad Fulan', '081234567890', 'ahmad.fulan@example.com', 'Kp. Cirengit', '10/06/2026', 'Pendidikan', 'Anggota', 'active', 'Contoh data anggota'],
+            ['npa', 'full_name', 'phone', 'email', 'address', 'joined_at', 'birth_date', 'department', 'position', 'member_status', 'inactive_reason', 'inactive_at', 'status_notes', 'notes'],
+            ['20.0001', 'Ahmad Fulan', '081234567890', 'ahmad.fulan@example.com', 'Kp. Cirengit', '10/06/2026', '10/06/2000', 'Pendidikan', 'Anggota', 'active', '', '', '', 'Contoh data anggota'],
         ];
 
         $rowXml = collect($rows)
@@ -381,10 +407,10 @@ class MemberImportTemplateController extends Controller
         <col min="3" max="3" width="18" customWidth="1"/>
         <col min="4" max="4" width="28" customWidth="1"/>
         <col min="5" max="5" width="22" customWidth="1"/>
-        <col min="6" max="6" width="14" customWidth="1"/>
-        <col min="7" max="8" width="18" customWidth="1"/>
-        <col min="9" max="9" width="16" customWidth="1"/>
-        <col min="10" max="10" width="26" customWidth="1"/>
+        <col min="6" max="7" width="14" customWidth="1"/>
+        <col min="8" max="9" width="18" customWidth="1"/>
+        <col min="10" max="10" width="16" customWidth="1"/>
+        <col min="11" max="14" width="26" customWidth="1"/>
     </cols>
     <sheetData>{$rowXml}</sheetData>
 </worksheet>

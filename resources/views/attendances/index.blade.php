@@ -176,7 +176,7 @@
                                     <x-activity-summary :activity="$activity" :show-meta="false" />
                                 </td>
                                 <td class="px-3 py-4 text-sm text-slate-600">
-                                    <span class="block font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</span>
+                                    <span class="block font-medium text-slate-800">{{ \App\Support\DateFormatter::date($activity->activity_date) }}</span>
                                     <span class="mt-1 block text-xs text-slate-500">{{ $time !== '' ? $time : '-' }}</span>
                                 </td>
                                 <td class="px-3 py-4"><x-ui.status-badge :status="$attendanceAvailability" :label="$activity->attendanceAvailabilityLabel()" /></td>

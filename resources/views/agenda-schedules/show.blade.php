@@ -9,7 +9,7 @@
         $typeLabels = ['incidental' => 'Insidental', 'weekly' => 'Mingguan', 'monthly' => 'Bulanan', 'yearly' => 'Tahunan'];
         $dayLabels = [0 => 'Minggu', 1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'];
         $pattern = match ($agendaSchedule->schedule_type) {
-            'incidental' => $agendaSchedule->specific_date?->format('d/m/Y') ?? '-',
+            'incidental' => \App\Support\DateFormatter::date($agendaSchedule->specific_date),
             'weekly' => isset($dayLabels[$agendaSchedule->day_of_week]) ? 'Setiap '.$dayLabels[$agendaSchedule->day_of_week] : '-',
             'monthly' => 'Setiap tanggal '.$agendaSchedule->day_of_month,
             'yearly' => $agendaSchedule->specific_date ? 'Tahunan, '.$agendaSchedule->specific_date->format('d/m') : 'Tahunan',

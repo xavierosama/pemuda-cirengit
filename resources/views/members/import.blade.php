@@ -77,8 +77,9 @@
             <ul class="mt-4 list-disc space-y-2 pl-5 text-sm text-slate-600">
                 <li>Gunakan template yang tersedia agar format kolom sesuai.</li>
                 <li>Pastikan nama bidang dan jabatan sesuai dengan data master.</li>
-                <li>Format tanggal: dd/mm/yyyy.</li>
-                <li>Status anggota yang tersedia: active, inactive, alumni, moved.</li>
+                <li>Format tanggal: dd/mm/yyyy atau yyyy-mm-dd.</li>
+                <li>Status anggota yang tersedia: active dan inactive.</li>
+                <li>Alasan tidak aktif opsional: rarely_active, resigned, age_limit, transferred_to_persis, moved_domicile, other.</li>
             </ul>
         </section>
     </div>

@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Member;
 use App\Services\AttendanceSyncService;
+use App\Support\DateFormatter;
 use App\Support\TableControls;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Http\RedirectResponse;
@@ -23,8 +24,8 @@ class AttendanceController extends Controller
         $departmentId = $request->integer('department_id') ?: null;
         $activityStatus = $request->string('activity_status')->toString();
         $attendanceStatus = $request->string('attendance_enabled')->toString();
-        $startDate = $request->string('start_date')->toString();
-        $endDate = $request->string('end_date')->toString();
+        $startDate = DateFormatter::normalizeInputDate($request->string('start_date')->toString());
+        $endDate = DateFormatter::normalizeInputDate($request->string('end_date')->toString());
         $activityStatuses = ['scheduled', 'completed', 'holiday', 'postponed', 'relocated', 'cancelled'];
         $allowedSorts = [
             'title' => 'title',

@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\Member;
 use App\Services\ActivityAttendanceScheduleService;
 use App\Services\AttendanceSyncService;
+use App\Support\DateFormatter;
 use App\Support\SystemSettings;
 use App\Support\TableControls;
 use Illuminate\Support\Carbon;
@@ -117,6 +118,16 @@ class AgendaScheduleController extends Controller
 
     public function generateMonthly(Request $request, AgendaSchedule $agendaSchedule): RedirectResponse
     {
+        $occurrencesInput = $request->input('occurrences');
+        if ($request->has('occurrences') && is_array($occurrencesInput)) {
+            foreach ($occurrencesInput as $key => $occurrence) {
+                if (is_array($occurrence) && array_key_exists('date', $occurrence)) {
+                    $occurrencesInput[$key]['date'] = DateFormatter::normalizeInputDateForValidation($occurrence['date']);
+                }
+            }
+            $request->merge(['occurrences' => $occurrencesInput]);
+        }
+
         $validated = $request->validate([
             'month' => ['required', 'integer', 'between:1,12'],
             'year' => ['required', 'integer', 'between:2000,2100'],
@@ -272,6 +283,10 @@ class AgendaScheduleController extends Controller
 
     private function validatedData(Request $request): array
     {
+        $request->merge([
+            'specific_date' => DateFormatter::normalizeInputDateForValidation($request->input('specific_date')),
+        ]);
+
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],

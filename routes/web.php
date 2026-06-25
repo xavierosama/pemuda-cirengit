@@ -120,6 +120,8 @@ Route::middleware(['auth', 'internal'])->group(function () {
         ->name('members.import.template');
     Route::get('members/export', MemberExportController::class)
         ->name('members.export');
+    Route::patch('members/{member}/mark-age-limit-inactive', [MemberController::class, 'markInactiveBecauseAgeLimit'])
+        ->name('members.mark-age-limit-inactive');
     Route::resource('members', MemberController::class);
     Route::resource('departments', DepartmentController::class);
     Route::resource('positions', PositionController::class);

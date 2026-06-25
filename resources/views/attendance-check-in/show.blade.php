@@ -121,7 +121,7 @@
                     <dl class="grid gap-4 p-5 sm:grid-cols-2">
                         <div>
                             <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Tanggal</dt>
-                            <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</dd>
+                            <dd class="mt-1 text-sm font-semibold text-slate-800">{{ \App\Support\DateFormatter::date($activity->activity_date) }}</dd>
                         </div>
                         <div>
                             <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu</dt>
@@ -172,7 +172,7 @@
                             </div>
                             <div>
                                 <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Waktu Presensi</dt>
-                                <dd class="mt-1 text-sm font-semibold text-slate-800">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</dd>
+                                <dd class="mt-1 text-sm font-semibold text-slate-800">{{ \App\Support\DateFormatter::dateTime($attendance->checked_in_at) }}</dd>
                             </div>
                             <div>
                                 <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Jarak dari Lokasi</dt>

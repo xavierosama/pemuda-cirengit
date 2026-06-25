@@ -14,7 +14,7 @@
             <div>
                 <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Daftar Hadir Manual</p>
                 <h2 class="mt-1 text-2xl font-bold text-slate-950">{{ $activity->title }}</h2>
-                <p class="mt-2 text-sm text-slate-500">{{ $activity->activity_date->format('d/m/Y') }}</p>
+                <p class="mt-2 text-sm text-slate-500">{{ \App\Support\DateFormatter::date($activity->activity_date) }}</p>
             </div>
             <a href="{{ route('activities.attendances.index', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
                 Kembali ke Daftar Hadir

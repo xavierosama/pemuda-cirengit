@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Member;
+use App\Support\DateFormatter;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use ZipArchive;
@@ -40,6 +41,7 @@ class MemberExportController extends Controller
         $departmentId = $request->integer('department_id') ?: null;
         $positionId = $request->integer('position_id') ?: null;
         $memberStatus = $request->string('member_status')->toString();
+        $ageLimitDate = now()->subYears(41)->toDateString();
 
         return Member::query()
             ->with(['department', 'position', 'user'])
@@ -53,10 +55,12 @@ class MemberExportController extends Controller
             })
             ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
             ->when($positionId, fn ($query) => $query->where('position_id', $positionId))
-            ->when(
-                in_array($memberStatus, ['active', 'inactive', 'alumni', 'moved'], true),
-                fn ($query) => $query->where('member_status', $memberStatus)
-            )
+            ->when($memberStatus === 'active', fn ($query) => $query->where('member_status', 'active'))
+            ->when($memberStatus === 'inactive', fn ($query) => $query->where('member_status', '!=', 'active'))
+            ->when($memberStatus === 'age_limit_due', fn ($query) => $query
+                ->where('member_status', 'active')
+                ->whereNotNull('birth_date')
+                ->whereDate('birth_date', '<=', $ageLimitDate))
             ->orderBy('full_name');
     }
 
@@ -65,8 +69,8 @@ class MemberExportController extends Controller
         $statusLabels = [
             'active' => 'Aktif',
             'inactive' => 'Tidak Aktif',
-            'alumni' => 'Alumni',
-            'moved' => 'Pindah',
+            'alumni' => 'Tidak Aktif',
+            'moved' => 'Tidak Aktif',
         ];
 
         $rows = [[
@@ -77,9 +81,15 @@ class MemberExportController extends Controller
             'Email',
             'Alamat',
             'Tanggal Bergabung',
+            'Tanggal Lahir',
+            'Usia',
+            'Status Usia',
             'Bidang',
             'Jabatan',
             'Status Anggota',
+            'Alasan Tidak Aktif',
+            'Tanggal Tidak Aktif',
+            'Catatan Status',
             'Status Akun Login',
             'Catatan',
         ]];
@@ -92,10 +102,16 @@ class MemberExportController extends Controller
                 $member->phone ?: '',
                 $member->email ?: '',
                 $member->address ?: '',
-                $member->joined_at?->format('d/m/Y') ?? '',
+                DateFormatter::date($member->joined_at, ''),
+                DateFormatter::date($member->birth_date, ''),
+                $member->age() !== null ? $member->age().' tahun' : '',
+                $member->ageStatusLabel(),
                 $member->department?->name ?? '',
                 $member->position?->name ?? '',
                 $statusLabels[$member->member_status] ?? $member->member_status,
+                $member->inactiveReasonLabel() ?: ($member->member_status === 'alumni' ? 'Alumni/data lama' : ($member->member_status === 'moved' ? 'Pindah/data lama' : '')),
+                DateFormatter::date($member->inactive_at, ''),
+                $member->status_notes ?: '',
                 $member->user ? 'Sudah Ada' : 'Belum Ada',
                 $member->notes ?: '',
             ];
@@ -133,10 +149,11 @@ class MemberExportController extends Controller
         <col min="4" max="4" width="18" customWidth="1"/>
         <col min="5" max="5" width="28" customWidth="1"/>
         <col min="6" max="6" width="28" customWidth="1"/>
-        <col min="7" max="7" width="18" customWidth="1"/>
-        <col min="8" max="9" width="20" customWidth="1"/>
-        <col min="10" max="11" width="18" customWidth="1"/>
-        <col min="12" max="12" width="30" customWidth="1"/>
+        <col min="7" max="10" width="18" customWidth="1"/>
+        <col min="11" max="12" width="20" customWidth="1"/>
+        <col min="13" max="14" width="20" customWidth="1"/>
+        <col min="15" max="16" width="28" customWidth="1"/>
+        <col min="17" max="18" width="22" customWidth="1"/>
     </cols>
     <sheetData>{$rowXml}</sheetData>
 </worksheet>

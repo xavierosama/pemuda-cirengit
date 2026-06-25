@@ -44,7 +44,7 @@
                     </div>
                 </div>
                 <dl class="grid gap-3 text-sm sm:grid-cols-2 lg:min-w-[520px]">
-                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tanggal</dt><dd class="mt-1 font-medium text-slate-800">{{ $activity->activity_date->format('d/m/Y') }}</dd></div>
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Tanggal</dt><dd class="mt-1 font-medium text-slate-800">{{ \App\Support\DateFormatter::date($activity->activity_date) }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Waktu</dt><dd class="mt-1 font-medium text-slate-800">{{ $activityTime ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Lokasi</dt><dd class="mt-1 font-medium text-slate-800">{{ $activity->location ?: '-' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Bidang</dt><dd class="mt-1 font-medium text-slate-800">{{ $activity->department?->name ?? '-' }}</dd></div>
@@ -175,7 +175,7 @@
                         <div class="mt-3 flex flex-wrap items-center gap-2">
                             <x-ui.status-badge :status="$attendance->verification_status" :label="$verificationLabels[$attendance->verification_status]" />
                             <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">{{ ucfirst($attendance->attendance_method) }}</span>
-                            <span class="text-xs text-slate-500">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? 'Belum presensi' }}</span>
+                            <span class="text-xs text-slate-500">{{ \App\Support\DateFormatter::dateTime($attendance->checked_in_at, 'Belum presensi') }}</span>
                         </div>
                         <dl class="mt-3 grid gap-2 text-xs text-slate-600">
                             <div class="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-3 py-2">
@@ -229,7 +229,7 @@
                                 <td class="max-w-36 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $attendance->member->position?->name ?? '-' }}</span></td>
                                 <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$attendance->status" :label="$statusLabels[$attendance->status]" /></td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm capitalize text-slate-600">{{ $attendance->attendance_method }}</td>
-                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ \App\Support\DateFormatter::dateTime($attendance->checked_in_at) }}</td>
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' m' : '-' }}</td>
                                 <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$attendance->verification_status" :label="$verificationLabels[$attendance->verification_status]" /></td>
                                 <td class="max-w-48 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $attendance->notes ?: '-' }}</span></td>

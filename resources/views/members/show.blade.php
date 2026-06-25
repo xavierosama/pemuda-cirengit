@@ -49,7 +49,7 @@
                     <div>
                         <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">{{ $member->npa ?: 'Anggota' }}</p>
                         <h2 class="mt-1 text-2xl font-bold text-slate-950">{{ $member->full_name }}</h2>
-                        <p class="mt-1 text-sm text-slate-500">Bergabung {{ $member->joined_at?->format('d/m/Y') ?? '-' }}</p>
+                        <p class="mt-1 text-sm text-slate-500">Bergabung {{ \App\Support\DateFormatter::date($member->joined_at) }}</p>
                     </div>
                 </div>
                 <span class="{{ $statusClasses[$member->member_status] }} inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ring-1 ring-inset">{{ $statusLabels[$member->member_status] }}</span>

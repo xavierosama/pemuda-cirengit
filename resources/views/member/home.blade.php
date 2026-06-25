@@ -178,7 +178,9 @@
                                 @foreach ($currentActivities as $activity)
                                     @php
                                         $attendance = $activity->attendances->first();
-                                        $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
+                                        $startTime = \App\Support\DateFormatter::time($activity->start_time, '');
+                                        $endTime = \App\Support\DateFormatter::time($activity->end_time, '');
+                                        $time = trim($startTime.($endTime !== '' ? ' - '.$endTime : ''));
                                         $canCheckIn = ! $attendance || $attendance->status === 'absent';
                                         $attendanceAvailability = $activity->attendanceAvailability();
                                         $attendanceOpenAt = $activity->effectiveAttendanceOpenAt();
@@ -197,12 +199,12 @@
                                                     <p class="mt-2 line-clamp-2 break-words text-sm font-medium text-slate-600">{{ $activity->topic ? 'Topik: '.$activity->topic : $subInfo }}</p>
                                                 @endif
                                                 <div class="mt-3 grid gap-x-4 gap-y-1.5 text-sm text-slate-700 dark:text-slate-300 sm:grid-cols-2 lg:grid-cols-4">
-                                                    <p><span class="font-semibold text-slate-900">Tanggal:</span> {{ $activity->activity_date->format('d/m/Y') }}</p>
+                                                    <p><span class="font-semibold text-slate-900">Tanggal:</span> {{ \App\Support\DateFormatter::date($activity->activity_date) }}</p>
                                                     <p><span class="font-semibold text-slate-900">Waktu:</span> {{ $time !== '' ? $time : '-' }}</p>
                                                     <p class="sm:col-span-2"><span class="font-semibold text-slate-900">Lokasi:</span> {{ $activity->location ?: '-' }}</p>
                                                     <p><span class="font-semibold text-slate-900">Bidang:</span> {{ $activity->department?->name ?? '-' }}</p>
                                                     <p><span class="font-semibold text-slate-900">PIC:</span> {{ $activity->pic?->full_name ?? '-' }}</p>
-                                                    <p class="sm:col-span-2"><span class="font-semibold text-slate-900">Presensi:</span> {{ $attendanceOpenAt?->format('d/m/Y H:i') ?? '-' }} - {{ $attendanceCloseAt?->format('d/m/Y H:i') ?? '-' }}</p>
+                                                    <p class="sm:col-span-2"><span class="font-semibold text-slate-900">Presensi:</span> {{ \App\Support\DateFormatter::dateTime($attendanceOpenAt) }} - {{ \App\Support\DateFormatter::dateTime($attendanceCloseAt) }}</p>
                                                 </div>
                                             </div>
 
@@ -254,7 +256,7 @@
                                                             <x-ui.status-badge :status="$attendance->verification_status" :label="$verificationLabels[$attendance->verification_status] ?? $attendance->verification_status" />
                                                         </div>
                                                         <p class="mt-2 text-xs text-slate-500">Waktu presensi</p>
-                                                        <p class="text-sm font-semibold text-slate-800">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</p>
+                                                        <p class="text-sm font-semibold text-slate-800">{{ \App\Support\DateFormatter::dateTime($attendance->checked_in_at) }}</p>
                                                         @if ($attendance->status === 'permission' && $attendance->notes)
                                                             <p class="mt-2 text-xs text-slate-500">Alasan izin</p>
                                                             <p class="line-clamp-3 text-sm text-slate-700">{{ $attendance->notes }}</p>
@@ -290,7 +292,9 @@
                                             } elseif ($activity->activity_date->betweenIncluded(now()->startOfWeek(), now()->endOfWeek())) {
                                                 $dateLabel = 'Minggu ini';
                                             }
-                                            $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
+                                            $startTime = \App\Support\DateFormatter::time($activity->start_time, '');
+                                            $endTime = \App\Support\DateFormatter::time($activity->end_time, '');
+                                            $time = trim($startTime.($endTime !== '' ? ' - '.$endTime : ''));
                                             $attendanceAvailability = $activity->attendanceAvailability();
                                             $subInfo = $activity->topic ?: ($activity->description ?: $activity->location);
                                         @endphp
@@ -308,7 +312,7 @@
                                                 @if ($subInfo)
                                                     <p class="mt-1 line-clamp-1 text-xs font-medium text-slate-500">{{ $subInfo }}</p>
                                                 @endif
-                                                <p class="mt-1 text-sm text-slate-600">{{ $activity->activity_date->format('d/m/Y') }} &middot; {{ $time !== '' ? $time : '-' }}</p>
+                                                <p class="mt-1 text-sm text-slate-600">{{ \App\Support\DateFormatter::date($activity->activity_date) }} &middot; {{ $time !== '' ? $time : '-' }}</p>
                                                 <p class="mt-1 truncate text-xs text-slate-500">{{ $activity->location ?: '-' }} &middot; {{ $activity->department?->name ?? '-' }}</p>
                                                 @if ($activity->pic)
                                                     <p class="mt-1 text-xs text-slate-500">PIC: {{ $activity->pic->full_name }}</p>
@@ -374,7 +378,9 @@
                                 @php
                                     $historyActivity = $attendance->activity;
                                     $historySubInfo = $historyActivity?->topic ?: ($historyActivity?->description ?: $historyActivity?->location);
-                                    $historyTime = trim(($historyActivity?->start_time ? substr($historyActivity->start_time, 0, 5) : '').($historyActivity?->end_time ? ' - '.substr($historyActivity->end_time, 0, 5) : ''));
+                                    $historyStartTime = \App\Support\DateFormatter::time($historyActivity?->start_time, '');
+                                    $historyEndTime = \App\Support\DateFormatter::time($historyActivity?->end_time, '');
+                                    $historyTime = trim($historyStartTime.($historyEndTime !== '' ? ' - '.$historyEndTime : ''));
                                 @endphp
                                 <article class="px-4 py-4">
                                     <div class="flex items-start justify-between gap-3">
@@ -386,10 +392,10 @@
                                         </div>
                                         <x-ui.status-badge :status="$attendance->status" :label="$attendanceLabels[$attendance->status] ?? $attendance->status" />
                                     </div>
-                                    <p class="mt-2 text-xs font-medium text-slate-600">{{ $historyActivity?->activity_date?->format('d/m/Y') ?? '-' }} @if($historyTime) &middot; {{ $historyTime }} @endif</p>
+                                    <p class="mt-2 text-xs font-medium text-slate-600">{{ \App\Support\DateFormatter::date($historyActivity?->activity_date) }} @if($historyTime) &middot; {{ $historyTime }} @endif</p>
                                     <div class="mt-3 flex flex-wrap items-center gap-2">
                                         <x-ui.status-badge :status="$attendance->verification_status" :label="$verificationLabels[$attendance->verification_status] ?? $attendance->verification_status" />
-                                        <span class="text-xs text-slate-500">Presensi: {{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</span>
+                                        <span class="text-xs text-slate-500">Presensi: {{ \App\Support\DateFormatter::dateTime($attendance->checked_in_at) }}</span>
                                     </div>
                                     @if ($attendance->status === 'permission' && $attendance->notes)
                                         <p class="mt-2 line-clamp-2 text-xs text-slate-500">Alasan: {{ $attendance->notes }}</p>
@@ -417,8 +423,8 @@
                                                     <p class="mt-1 line-clamp-1 text-xs text-slate-500">Alasan: {{ $attendance->notes }}</p>
                                                 @endif
                                             </td>
-                                            <td class="whitespace-nowrap px-4 py-2.5 text-sm text-slate-600">{{ $attendance->activity?->activity_date?->format('d/m/Y') ?? '-' }}</td>
-                                            <td class="whitespace-nowrap px-4 py-2.5 text-sm text-slate-600">{{ $attendance->checked_in_at?->format('d/m/Y H:i') ?? '-' }}</td>
+                                            <td class="whitespace-nowrap px-4 py-2.5 text-sm text-slate-600">{{ \App\Support\DateFormatter::date($attendance->activity?->activity_date) }}</td>
+                                            <td class="whitespace-nowrap px-4 py-2.5 text-sm text-slate-600">{{ \App\Support\DateFormatter::dateTime($attendance->checked_in_at) }}</td>
                                             <td class="whitespace-nowrap px-4 py-2.5">
                                                 <x-ui.status-badge :status="$attendance->status" :label="$attendanceLabels[$attendance->status] ?? $attendance->status" />
                                             </td>

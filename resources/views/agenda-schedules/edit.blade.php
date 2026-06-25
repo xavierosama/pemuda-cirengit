@@ -20,7 +20,7 @@
                     <h2 class="mt-2 text-2xl font-bold text-slate-950">Edit Jadwal Agenda</h2>
                     <p class="mt-2 max-w-2xl text-sm text-slate-500">Perbarui pola agenda, waktu, dan lokasi default tanpa mengubah alur generate kegiatan.</p>
                     @if ($agendaSchedule->updated_at)
-                        <p class="mt-3 text-xs font-medium text-slate-500">Terakhir diperbarui: {{ $agendaSchedule->updated_at->format('d/m/Y H:i') }}</p>
+                        <p class="mt-3 text-xs font-medium text-slate-500">Terakhir diperbarui: {{ \App\Support\DateFormatter::dateTime($agendaSchedule->updated_at) }}</p>
                     @endif
                 </div>
                 <a href="{{ route('agenda-schedules.index') }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">Kembali</a>

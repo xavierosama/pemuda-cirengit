@@ -116,7 +116,7 @@
                         </div>
                         <div>
                             <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Tanggal Bergabung</dt>
-                            <dd class="mt-1 text-sm text-slate-700">{{ $member->joined_at?->format('d/m/Y') ?? '-' }}</dd>
+                            <dd class="mt-1 text-sm text-slate-700">{{ \App\Support\DateFormatter::date($member->joined_at) }}</dd>
                         </div>
                         <div>
                             <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Email Login</dt>

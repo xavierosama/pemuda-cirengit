@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Activity;
+use App\Support\DateFormatter;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use ZipArchive;
@@ -81,7 +82,7 @@ class ActivityAttendanceExportController extends Controller
 
         $rows = [
             ['Nama kegiatan', $activity->title],
-            ['Tanggal kegiatan', $activity->activity_date->format('d/m/Y')],
+            ['Tanggal kegiatan', DateFormatter::date($activity->activity_date)],
             ['Waktu kegiatan', $time ?: '-'],
             ['Lokasi kegiatan', $activity->location ?: '-'],
             ['Bidang', $activity->department?->name ?? '-'],
@@ -104,7 +105,7 @@ class ActivityAttendanceExportController extends Controller
                 $attendance->member->position?->name ?? '',
                 $statusLabels[$attendance->status] ?? $attendance->status,
                 $methodLabels[$attendance->attendance_method] ?? $attendance->attendance_method,
-                $attendance->checked_in_at?->format('d/m/Y H:i') ?? '',
+                DateFormatter::dateTime($attendance->checked_in_at, ''),
                 $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' m' : '',
                 $verificationLabels[$attendance->verification_status] ?? $attendance->verification_status,
                 $attendance->notes ?: '',

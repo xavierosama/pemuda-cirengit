@@ -16,7 +16,7 @@
             ['label' => 'Total Anggota Aktif', 'value' => $statistics['active_members'], 'note' => 'Anggota berstatus aktif', 'color' => 'border-l-emerald-600'],
             ['label' => 'Anggota Belum Punya Akun', 'value' => $statistics['members_without_account'], 'note' => 'Anggota aktif tanpa akun login', 'color' => 'border-l-sky-600'],
             ['label' => 'Agenda Aktif', 'value' => $statistics['active_agenda_schedules'], 'note' => 'Jadwal agenda berjalan', 'color' => 'border-l-cyan-600'],
-            ['label' => 'Kegiatan Bulan Ini', 'value' => $statistics['monthly_activities'], 'note' => 'Periode '.now()->format('m/Y'), 'color' => 'border-l-violet-600'],
+            ['label' => 'Kegiatan Bulan Ini', 'value' => $statistics['monthly_activities'], 'note' => 'Periode '.\App\Support\DateFormatter::dateRange(now()->copy()->startOfMonth(), now()->copy()->endOfMonth()), 'color' => 'border-l-violet-600'],
             ['label' => 'Presensi Perlu Verifikasi', 'value' => $statistics['need_verification_attendances'], 'note' => 'Menunggu keputusan admin', 'color' => 'border-l-amber-500'],
         ];
         $attendanceCards = [
@@ -26,7 +26,7 @@
             ['label' => 'Total Perlu Verifikasi', 'value' => $monthlyAttendanceSummary['need_verification'], 'color' => 'text-amber-700'],
         ];
         $commandCards = [
-            ['label' => 'Kegiatan Hari Ini', 'value' => $todayActivities->count(), 'note' => 'Agenda pada '.now()->format('d/m/Y'), 'color' => 'border-l-emerald-600'],
+            ['label' => 'Kegiatan Hari Ini', 'value' => $todayActivities->count(), 'note' => 'Agenda pada '.\App\Support\DateFormatter::date(now()), 'color' => 'border-l-emerald-600'],
             ['label' => 'Presensi Dibuka', 'value' => $openAttendanceActivities->count(), 'note' => 'Butuh pemantauan langsung', 'color' => 'border-l-sky-600'],
             ['label' => 'Perlu Finalisasi', 'value' => $needFinalizationActivities->count(), 'note' => 'Kegiatan lewat belum selesai', 'color' => 'border-l-amber-500'],
         ];
@@ -70,7 +70,7 @@
                 <x-ui.card padding="none" class="overflow-hidden">
                     <div class="border-b border-slate-200 px-5 py-4">
                         <h3 class="text-base font-bold text-slate-950">Hari Ini Ada Apa?</h3>
-                        <p class="mt-1 text-sm text-slate-500">Kegiatan pada tanggal {{ now()->format('d/m/Y') }}.</p>
+                        <p class="mt-1 text-sm text-slate-500">Kegiatan pada tanggal {{ \App\Support\DateFormatter::date(now()) }}.</p>
                     </div>
                     <div class="divide-y divide-slate-100">
                         @forelse ($todayActivities as $activity)
@@ -164,8 +164,10 @@
                             $subInfo = $activity->topic
                                 ? 'Topik: '.$activity->topic
                                 : ($activity->description ?: ($activity->location ?: $activity->agendaSchedule?->default_location));
-                            $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
-                            $dateLabel = ($dayLabels[$activity->activity_date->dayOfWeek] ?? '').', '.$activity->activity_date->format('d/m/Y');
+                            $startTime = \App\Support\DateFormatter::time($activity->start_time, '');
+                            $endTime = \App\Support\DateFormatter::time($activity->end_time, '');
+                            $time = trim($startTime.($endTime !== '' ? ' - '.$endTime : ''));
+                            $dateLabel = ($dayLabels[$activity->activity_date->dayOfWeek] ?? '').', '.\App\Support\DateFormatter::date($activity->activity_date);
                         @endphp
                         <article class="grid gap-4 px-5 py-4 transition hover:bg-slate-50 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start">
                             <div class="flex h-8 w-8 items-center justify-center rounded-full bg-emerald-50 text-sm font-bold text-emerald-700 ring-1 ring-inset ring-emerald-200">
@@ -198,7 +200,7 @@
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <h2 class="text-base font-bold text-slate-950">Rekap Presensi Bulan Ini</h2>
-                        <p class="mt-1 text-sm text-slate-500">Ringkasan status presensi periode {{ now()->format('m/Y') }}.</p>
+                        <p class="mt-1 text-sm text-slate-500">Ringkasan status presensi periode {{ \App\Support\DateFormatter::dateRange(now()->copy()->startOfMonth(), now()->copy()->endOfMonth()) }}.</p>
                     </div>
                     <div class="rounded-lg bg-emerald-50 px-3 py-2 text-right">
                         <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">Kehadiran</p>
@@ -239,7 +241,7 @@
                                 </div>
                                 <div>
                                     <p class="text-xs font-semibold uppercase text-slate-500">Kegiatan</p>
-                                    <p class="mt-1 text-sm text-slate-700">{{ $attendance->activity?->activity_date?->format('d/m/Y') ?? '-' }}{{ $attendance->activity?->start_time ? ' '.substr($attendance->activity->start_time, 0, 5) : '' }}</p>
+                                    <p class="mt-1 text-sm text-slate-700">{{ \App\Support\DateFormatter::date($attendance->activity?->activity_date) }}{{ $attendance->activity?->start_time ? ' '.\App\Support\DateFormatter::time($attendance->activity->start_time) : '' }}</p>
                                 </div>
                                 <div>
                                     <p class="text-xs font-semibold uppercase text-slate-500">Bidang</p>

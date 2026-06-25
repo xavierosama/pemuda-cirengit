@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Member;
+use App\Support\DateFormatter;
 use App\Support\TableControls;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -16,6 +17,11 @@ class AttendanceReportController extends Controller
 {
     public function index(Request $request): View
     {
+        $request->merge([
+            'start_date' => DateFormatter::normalizeInputDateForValidation($request->input('start_date')),
+            'end_date' => DateFormatter::normalizeInputDateForValidation($request->input('end_date')),
+        ]);
+
         $validated = $request->validate([
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
@@ -159,7 +165,7 @@ class AttendanceReportController extends Controller
             ],
             'activityTrend' => [
                 'labels' => $activityRowsForChart
-                    ->map(fn (array $row) => $row['activity']->activity_date->format('d/m/Y').' - '.$row['activity']->title)
+                    ->map(fn (array $row) => DateFormatter::date($row['activity']->activity_date).' - '.$row['activity']->title)
                     ->values(),
                 'data' => $activityRowsForChart->map(fn (array $row) => $row['counts']['present'])->values(),
             ],

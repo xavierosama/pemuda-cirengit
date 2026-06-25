@@ -75,6 +75,39 @@ class Member extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    public function age(): ?int
+    {
+        return $this->birth_date?->age;
+    }
+
+    public function ageStatusKey(): ?string
+    {
+        if (! $this->birth_date) {
+            return null;
+        }
+
+        return $this->birth_date->age >= 41 ? 'needs_processing' : 'eligible';
+    }
+
+    public function ageStatusLabel(): string
+    {
+        return match ($this->ageStatusKey()) {
+            'eligible' => 'Memenuhi',
+            'needs_processing' => 'Perlu Diproses',
+            default => '-',
+        };
+    }
+
+    public function needsAgeLimitProcessing(): bool
+    {
+        return $this->member_status === 'active' && $this->ageStatusKey() === 'needs_processing';
+    }
+
+    public function inactiveReasonLabel(): ?string
+    {
+        return self::INACTIVE_REASONS[$this->inactive_reason] ?? null;
+    }
+
     public function displayStatusKey(): string
     {
         return $this->member_status === 'active' ? 'active' : 'inactive';

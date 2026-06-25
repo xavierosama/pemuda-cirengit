@@ -9,9 +9,11 @@
 @php
     $dayLabels = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
     $subInfo = $activity->topic ?: ($activity->description ?: $activity->location);
-    $time = trim(($activity->start_time ? substr($activity->start_time, 0, 5) : '').($activity->end_time ? ' - '.substr($activity->end_time, 0, 5) : ''));
+    $startTime = \App\Support\DateFormatter::time($activity->start_time, '');
+    $endTime = \App\Support\DateFormatter::time($activity->end_time, '');
+    $time = trim($startTime.($endTime !== '' ? ' - '.$endTime : ''));
     $dateLabel = $activity->activity_date
-        ? ($dayLabels[$activity->activity_date->dayOfWeek].', '.$activity->activity_date->format('d/m/Y'))
+        ? ($dayLabels[$activity->activity_date->dayOfWeek].', '.\App\Support\DateFormatter::date($activity->activity_date))
         : null;
     $metaItems = array_filter([
         $dateLabel,
