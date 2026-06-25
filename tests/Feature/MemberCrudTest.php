@@ -65,7 +65,7 @@ class MemberCrudTest extends TestCase
             ->assertSee('Identitas Anggota')
             ->assertSee('Contoh: 20.0001')
             ->assertSee('Digunakan untuk akun login anggota.')
-            ->assertSee('Format tampilan: dd/mm/yyyy.');
+            ->assertSee('Klik untuk memilih tanggal. Tampilan menggunakan format dd/mm/yyyy.');
 
         $this->actingAs($user)
             ->get(route('members.edit', $member))
@@ -126,6 +126,56 @@ class MemberCrudTest extends TestCase
             'position_id',
             'member_status',
         ]);
+    }
+
+    public function test_member_date_picker_inputs_submit_database_dates_and_accept_indonesian_dates(): void
+    {
+        $user = User::factory()->create();
+        $department = Department::create(['name' => 'Pendidikan', 'status' => 'active']);
+        $position = Position::create(['name' => 'Anggota', 'status' => 'active']);
+        $member = Member::create([
+            'full_name' => 'Anggota Tanggal',
+            'joined_at' => '2026-06-25',
+            'birth_date' => '1998-01-09',
+            'department_id' => $department->id,
+            'position_id' => $position->id,
+            'member_status' => 'active',
+        ]);
+
+        $this->actingAs($user)
+            ->get(route('members.edit', $member))
+            ->assertOk()
+            ->assertSee('js-date-picker', false)
+            ->assertSee('value="2026-06-25"', false)
+            ->assertSee('value="1998-01-09"', false)
+            ->assertSee('placeholder="dd/mm/yyyy"', false)
+            ->assertSee('Klik untuk memilih tanggal. Dipakai untuk memantau batas usia anggota Pemuda.');
+
+        $this->actingAs($user)
+            ->put(route('members.update', $member), [
+                'full_name' => 'Anggota Tanggal Update',
+                'joined_at' => '26/06/2026',
+                'birth_date' => '10/01/1998',
+                'department_id' => $department->id,
+                'position_id' => $position->id,
+                'member_status' => 'inactive',
+                'inactive_reason' => 'other',
+                'inactive_at' => '27/06/2026',
+                'status_notes' => 'Testing format tanggal Indonesia.',
+            ])
+            ->assertRedirect(route('members.index'));
+
+        $member->refresh();
+        $this->assertSame('2026-06-26', $member->joined_at->format('Y-m-d'));
+        $this->assertSame('1998-01-10', $member->birth_date->format('Y-m-d'));
+        $this->assertSame('2026-06-27', $member->inactive_at->format('Y-m-d'));
+
+        $this->actingAs($user)
+            ->get(route('members.edit', $member))
+            ->assertOk()
+            ->assertSee('value="2026-06-26"', false)
+            ->assertSee('value="1998-01-10"', false)
+            ->assertSee('value="2026-06-27"', false);
     }
 
     public function test_member_index_filters_by_account_status_and_shows_summary_cards(): void

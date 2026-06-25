@@ -4,6 +4,7 @@ namespace App\Http\Requests\Auth;
 
 use App\Models\Member;
 use App\Models\User;
+use App\Support\DefaultAdminCredentials;
 use Illuminate\Auth\Events\Lockout;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -68,6 +69,11 @@ class LoginRequest extends FormRequest
     private function loginEmail(): string
     {
         $login = $this->string('email')->toString();
+
+        if (Str::lower($login) === DefaultAdminCredentials::LOGIN) {
+            return DefaultAdminCredentials::EMAIL;
+        }
+
         $email = User::query()
             ->where('email', $login)
             ->value('email');

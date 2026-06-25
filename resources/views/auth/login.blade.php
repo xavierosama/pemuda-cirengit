@@ -88,8 +88,8 @@
                         @csrf
 
                         <div>
-                            <label for="email" class="block text-sm font-semibold text-slate-700">Email atau NPA</label>
-                            <input id="email" class="mt-2 block w-full rounded-xl border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-emerald-600" type="text" name="email" value="{{ old('email') }}" placeholder="Masukkan email atau NPA" required autofocus autocomplete="username">
+                            <label for="email" class="block text-sm font-semibold text-slate-700">Username, Email, atau NPA</label>
+                            <input id="email" class="mt-2 block w-full rounded-xl border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm transition placeholder:text-slate-400 focus:border-emerald-600 focus:ring-emerald-600" type="text" name="email" value="{{ old('email') }}" placeholder="Masukkan username, email, atau NPA" required autofocus autocomplete="username">
                             <x-input-error :messages="$errors->get('email')" class="mt-2" />
                         </div>
 

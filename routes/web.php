@@ -44,6 +44,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/member/activities/{activity}/permission', [MemberDashboardAttendanceController::class, 'permission'])
         ->middleware('member')
         ->name('member.activities.permission');
+    Route::get('/member/profile', [ProfileController::class, 'editMember'])
+        ->middleware('member')
+        ->name('member.profile.edit');
+    Route::patch('/member/profile', [ProfileController::class, 'updateMember'])
+        ->middleware('member')
+        ->name('member.profile.update');
 
     Route::get('attendance/check-in/{token}', [AttendanceCheckInController::class, 'show'])
         ->name('attendance.check-in.show');

@@ -7,6 +7,15 @@
     $errorClass = 'mt-2 text-sm text-red-600';
     $inactiveReasons = \App\Models\Member::INACTIVE_REASONS;
     $currentStatus = old('member_status', isset($member) ? $member->displayStatusKey() : 'active');
+    $dateInputValue = function (string $field, mixed $value = null): string {
+        $oldValue = old($field);
+
+        if ($oldValue !== null) {
+            return (string) \App\Support\DateFormatter::normalizeInputDate($oldValue);
+        }
+
+        return (string) \App\Support\DateFormatter::normalizeInputDate($value);
+    };
 @endphp
 
 <div class="space-y-5">
@@ -31,15 +40,15 @@
 
             <div>
                 <label for="joined_at" class="{{ $labelClass }}">Tanggal Bergabung</label>
-                <input id="joined_at" name="joined_at" type="date" value="{{ old('joined_at', isset($member) && $member->joined_at ? $member->joined_at->format('Y-m-d') : '') }}" class="{{ $inputClass }}">
-                <p class="{{ $helperClass }}">Format tampilan: dd/mm/yyyy.</p>
+                <input id="joined_at" name="joined_at" type="text" value="{{ $dateInputValue('joined_at', $member->joined_at ?? null) }}" placeholder="dd/mm/yyyy" class="js-date-picker {{ $inputClass }}">
+                <p class="{{ $helperClass }}">Klik untuk memilih tanggal. Tampilan menggunakan format dd/mm/yyyy.</p>
                 @error('joined_at') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div>
                 <label for="birth_date" class="{{ $labelClass }}">Tanggal Lahir</label>
-                <input id="birth_date" name="birth_date" type="date" value="{{ old('birth_date', isset($member) && $member->birth_date ? $member->birth_date->format('Y-m-d') : '') }}" class="{{ $inputClass }}">
-                <p class="{{ $helperClass }}">Dipakai untuk memantau batas usia anggota Pemuda.</p>
+                <input id="birth_date" name="birth_date" type="text" value="{{ $dateInputValue('birth_date', $member->birth_date ?? null) }}" placeholder="dd/mm/yyyy" class="js-date-picker {{ $inputClass }}">
+                <p class="{{ $helperClass }}">Klik untuk memilih tanggal. Dipakai untuk memantau batas usia anggota Pemuda.</p>
                 @error('birth_date') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
         </div>
@@ -78,7 +87,8 @@
 
             <div x-cloak x-show="status === 'inactive'" x-transition>
                 <label for="inactive_at" class="{{ $labelClass }}">Tanggal Tidak Aktif</label>
-                <input id="inactive_at" name="inactive_at" type="date" value="{{ old('inactive_at', isset($member) && $member->inactive_at ? $member->inactive_at->format('Y-m-d') : '') }}" class="{{ $inputClass }}">
+                <input id="inactive_at" name="inactive_at" type="text" value="{{ $dateInputValue('inactive_at', $member->inactive_at ?? null) }}" placeholder="dd/mm/yyyy" class="js-date-picker {{ $inputClass }}">
+                <p class="{{ $helperClass }}">Klik untuk memilih tanggal. Tampilan menggunakan format dd/mm/yyyy.</p>
                 @error('inactive_at') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 

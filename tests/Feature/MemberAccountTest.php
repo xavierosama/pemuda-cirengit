@@ -175,7 +175,9 @@ class MemberAccountTest extends TestCase
             ->assertSee('Profil Anggota')
             ->assertSee('Panduan Presensi')
             ->assertSee('Belum ada riwayat presensi.');
-        $this->actingAs($user)->get(route('profile.edit'))->assertOk();
+        $this->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertRedirect(route('member.profile.edit'));
         $this->actingAs($user)
             ->get(route('attendance.check-in.show', $activity->attendance_token))
             ->assertOk()
@@ -271,7 +273,11 @@ class MemberAccountTest extends TestCase
             ->assertSee('10/06/2026 20:05')
             ->assertSee('Hadir')
             ->assertSee('Valid')
-            ->assertSee('Edit Profil')
+            ->assertSee('aria-label="Buka menu akun"', false)
+            ->assertSee('title="Buka menu akun"', false)
+            ->assertSee('NPA: 20.0001')
+            ->assertSee('Lihat Profile')
+            ->assertSee('Edit Profile')
             ->assertSee('Logout');
 
         Carbon::setTestNow();

@@ -6,6 +6,7 @@ use App\Models\Department;
 use App\Models\Member;
 use App\Models\Position;
 use App\Models\User;
+use App\Support\DefaultAdminCredentials;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoMemberSeeder;
 use Database\Seeders\DepartmentSeeder;
@@ -23,13 +24,14 @@ class SeederTest extends TestCase
         $this->seed(DatabaseSeeder::class);
         $this->seed(DatabaseSeeder::class);
 
-        $admin = User::where('email', 'admin@pemudacirengit.test')->firstOrFail();
+        $admin = User::where('email', DefaultAdminCredentials::EMAIL)->firstOrFail();
 
-        $this->assertSame('Admin', $admin->name);
+        $this->assertSame('Administrator', $admin->name);
         $this->assertSame('admin', $admin->role);
         $this->assertNull($admin->member_id);
-        $this->assertTrue(Hash::check('password', $admin->password));
-        $this->assertSame(1, User::where('email', 'admin@pemudacirengit.test')->count());
+        $this->assertNotNull($admin->email_verified_at);
+        $this->assertTrue(Hash::check(DefaultAdminCredentials::PASSWORD, $admin->password));
+        $this->assertSame(1, User::where('email', DefaultAdminCredentials::EMAIL)->count());
 
         foreach (['Pendidikan', 'Dakwah', 'Kaderisasi', 'Sosial', 'Ekonomi', 'Publikasi', 'Olahraga', 'Urusan Rumah Tangga'] as $department) {
             $this->assertDatabaseHas('departments', [

@@ -66,27 +66,7 @@
                         </div>
                     </div>
 
-                    <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.outside="open = false">
-                        <button type="button" class="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-emerald-700 text-sm font-bold text-white shadow-sm ring-1 ring-inset ring-emerald-800 transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2" @click="open = ! open" aria-label="Menu anggota" :aria-expanded="open.toString()">
-                            @if ($profilePhotoUrl)
-                                <img src="{{ $profilePhotoUrl }}" alt="Foto profil {{ $displayName }}" class="h-full w-full object-cover">
-                            @else
-                                {{ $initial }}
-                            @endif
-                        </button>
-
-                        <div x-cloak x-show="open" x-transition.origin.top.right class="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-800 dark:bg-slate-900">
-                            <div class="border-b border-slate-100 px-4 py-3 dark:border-slate-800">
-                                <p class="truncate text-sm font-bold text-slate-950 dark:text-white">{{ $displayName }}</p>
-                                <p class="truncate text-xs text-slate-500 dark:text-slate-400">{{ $user->email }}</p>
-                            </div>
-                            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-800">Edit Profil</a>
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <button type="submit" class="block w-full px-4 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-500/10">Logout</button>
-                            </form>
-                        </div>
-                    </div>
+                    <x-member.account-menu :user="$user" :member="$member" />
                 </div>
             </header>
 
@@ -107,7 +87,7 @@
                         <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">{{ $errors->first('reason') }}</div>
                     @endif
 
-                    <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+                    <section id="profil-anggota" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm scroll-mt-20 dark:border-slate-800 dark:bg-slate-900 sm:p-5">
                         <h2 class="sr-only">Profil Anggota</h2>
                         <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                             <div class="flex min-w-0 gap-4">
@@ -159,8 +139,7 @@
                         </div>
                     </section>
 
-                    <nav class="grid gap-2 sm:grid-cols-3" aria-label="Navigasi cepat anggota">
-                        <a href="{{ route('member.home') }}" class="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-800">Kembali ke Dashboard</a>
+                    <nav class="grid gap-2 sm:grid-cols-2" aria-label="Navigasi cepat anggota">
                         <a href="#kegiatan-mendatang" class="inline-flex items-center justify-center rounded-xl border border-emerald-200 bg-white px-4 py-3 text-sm font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-50">Lihat Kegiatan Mendatang</a>
                         <a href="#riwayat-presensi" class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 shadow-sm transition hover:bg-slate-50">Lihat Riwayat Presensi</a>
                     </nav>

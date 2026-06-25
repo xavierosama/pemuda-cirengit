@@ -4,6 +4,8 @@ namespace Tests\Feature\Auth;
 
 use App\Models\Member;
 use App\Models\User;
+use App\Support\DefaultAdminCredentials;
+use Database\Seeders\AdminUserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -16,8 +18,8 @@ class AuthenticationTest extends TestCase
         $response = $this->get('/login');
 
         $response->assertStatus(200)
-            ->assertSee('Email atau NPA')
-            ->assertSee('Masukkan email atau NPA');
+            ->assertSee('Username, Email, atau NPA')
+            ->assertSee('Masukkan username, email, atau NPA');
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
@@ -30,6 +32,20 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_default_seeded_admin_can_authenticate_using_admin_username(): void
+    {
+        $this->seed(AdminUserSeeder::class);
+        $admin = User::where('email', DefaultAdminCredentials::EMAIL)->firstOrFail();
+
+        $response = $this->post('/login', [
+            'email' => DefaultAdminCredentials::LOGIN,
+            'password' => DefaultAdminCredentials::PASSWORD,
+        ]);
+
+        $this->assertAuthenticatedAs($admin);
         $response->assertRedirect(route('dashboard', absolute: false));
     }
 

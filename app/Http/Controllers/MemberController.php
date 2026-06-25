@@ -210,6 +210,9 @@ class MemberController extends Controller
             'status_notes' => ['nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string'],
         ], [
+            'joined_at.date' => 'Tanggal bergabung harus menggunakan format dd/mm/yyyy.',
+            'birth_date.date' => 'Tanggal lahir harus menggunakan format dd/mm/yyyy.',
+            'inactive_at.date' => 'Tanggal tidak aktif harus menggunakan format dd/mm/yyyy.',
             'npa.unique' => 'NPA sudah digunakan oleh anggota lain.',
         ]);
 

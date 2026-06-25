@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Support\DateFormatter;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,11 +16,24 @@ class ProfileController extends Controller
     /**
      * Display the user's profile form.
      */
-    public function edit(Request $request): View
+    public function edit(Request $request): View|RedirectResponse
     {
+        if ($request->user()->role === 'member') {
+            return Redirect::route('member.profile.edit');
+        }
+
         $request->user()->load(['member.department', 'member.position']);
 
         return view('profile.edit', [
+            'user' => $request->user(),
+        ]);
+    }
+
+    public function editMember(Request $request): View
+    {
+        $request->user()->load(['member.department', 'member.position']);
+
+        return view('member.edit-profile', [
             'user' => $request->user(),
         ]);
     }
@@ -49,14 +63,21 @@ class ProfileController extends Controller
         $member = $user->member;
 
         if (! $member) {
-            return Redirect::route('profile.edit')
+            return Redirect::route($user->role === 'member' ? 'member.home' : 'profile.edit')
                 ->with('error', 'Akun Anda belum terhubung dengan data anggota.');
         }
+
+        $request->merge([
+            'birth_date' => DateFormatter::normalizeInputDateForValidation($request->input('birth_date')),
+        ]);
 
         $validated = $request->validate([
             'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
             'phone' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string'],
+            'birth_date' => ['nullable', 'date'],
+        ], [
+            'birth_date.date' => 'Tanggal lahir harus menggunakan format dd/mm/yyyy.',
         ]);
 
         if ($request->hasFile('profile_photo')) {
@@ -71,7 +92,8 @@ class ProfileController extends Controller
 
         $member->update($validated);
 
-        return Redirect::route('profile.edit')->with('status', 'member-profile-updated');
+        return Redirect::route($user->role === 'member' ? 'member.profile.edit' : 'profile.edit')
+            ->with('status', 'member-profile-updated');
     }
 
     /**
