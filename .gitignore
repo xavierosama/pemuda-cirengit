@@ -18,7 +18,7 @@
 /public/storage
 /storage/*.key
 /storage/pail
-/vendor
+# /vendor  # Included in Git for Vercel deployment (no composer in serverless build)
 Homestead.json
 Homestead.yaml
 Thumbs.db
