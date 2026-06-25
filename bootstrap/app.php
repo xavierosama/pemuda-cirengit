@@ -18,7 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->report(function (\Throwable $e) {
-            error_log('ACTUAL_ERROR: ' . $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine());
+        $exceptions->render(function (\Throwable $e) {
+            return response('REAL ERROR: ' . $e->getMessage() . "\n\nFile: " . $e->getFile() . ':' . $e->getLine() . "\n\nTrace:\n" . $e->getTraceAsString(), 500)
+                ->header('Content-Type', 'text/plain');
         });
     })->create();
