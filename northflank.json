@@ -1,0 +1,91 @@
+{
+  "$schema": "https://api.northflank.com/v1/schemas/northflank.json",
+  "spec": {
+    "kind": "CombinedService",
+    "spec": {
+      "name": "pemuda-cirengit",
+      "description": "Laravel app for Pemuda Cirengit — built with Docker",
+      "billing": {
+        "deploymentPlan": "nf-compute-10"
+      },
+      "deployment": {
+        "instances": 1,
+        "docker": {
+          "configType": "default"
+        },
+        "buildpack": {
+          "configType": "default"
+        },
+        "storage": {
+          "ephemeralStorage": {
+            "storageSize": 1024
+          }
+        }
+      },
+      "buildSettings": {
+        "dockerfile": {
+          "buildEngine": "kaniko",
+          "useCache": true,
+          "dockerFilePath": "/Dockerfile",
+          "dockerWorkDir": "/"
+        }
+      },
+      "buildArguments": {},
+      "ports": [
+        {
+          "name": "http",
+          "internalPort": 8080,
+          "public": true,
+          "protocol": "HTTP"
+        }
+      ],
+      "healthChecks": [
+        {
+          "protocol": "HTTP",
+          "path": "/",
+          "port": 8080,
+          "initialDelaySeconds": 30,
+          "periodSeconds": 30,
+          "timeoutSeconds": 10,
+          "successThreshold": 1,
+          "failureThreshold": 3
+        }
+      ],
+      "runtimeEnvironment": {
+        "APP_NAME": "Pemuda Cirengit",
+        "APP_ENV": "production",
+        "APP_DEBUG": "false",
+        "APP_LOCALE": "id",
+        "APP_FALLBACK_LOCALE": "id",
+        "BCRYPT_ROUNDS": "12",
+        "LOG_CHANNEL": "stderr",
+        "LOG_LEVEL": "error",
+        "DB_CONNECTION": "pgsql",
+        "DB_PORT": "5432",
+        "DB_DATABASE": "neondb",
+        "DB_USERNAME": "neondb_owner",
+        "DB_SSLMODE": "require",
+        "SESSION_DRIVER": "database",
+        "SESSION_LIFETIME": "120",
+        "CACHE_STORE": "database",
+        "QUEUE_CONNECTION": "database",
+        "FILESYSTEM_DISK": "local",
+        "BROADCAST_CONNECTION": "log",
+        "MAIL_MAILER": "log"
+      },
+      "runtimeSecretEnvironmentVariables": {
+        "APP_KEY": "",
+        "APP_URL": "",
+        "DB_HOST": "",
+        "DB_PASSWORD": ""
+      },
+      "vcsData": {
+        "projectUrl": "https://github.com/xavierosama/pemuda-cirengit",
+        "projectType": "github",
+        "selfHostedVcsId": "",
+        "accountLogin": "xavierosama",
+        "projectBranch": "main"
+      }
+    }
+  }
+}

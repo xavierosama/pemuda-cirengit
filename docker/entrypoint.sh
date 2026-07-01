@@ -11,12 +11,13 @@ if [ -z "$APP_KEY" ]; then
     php artisan key:generate --force
 fi
 
+# Link storage ke public
+echo "🔗 Linking storage..."
+php artisan storage:link --force 2>/dev/null || true
+
 # Optimize Laravel untuk production
 echo "⚡ Optimizing Laravel..."
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-php artisan event:cache
+php artisan optimize
 
 # Run database migrations
 echo "🗄️  Running migrations..."
