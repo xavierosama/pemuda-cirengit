@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AgendaSchedule;
 use App\Models\AgendaWeeklyTopic;
 use App\Models\Activity;
+use App\Models\ActivityLocation;
 use App\Models\Department;
 use App\Models\Member;
 use App\Services\ActivityAttendanceScheduleService;
@@ -16,6 +17,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -42,7 +44,7 @@ class AgendaScheduleController extends Controller
         $perPage = TableControls::perPage($request);
 
         $agendaSchedules = AgendaSchedule::query()
-            ->with(['department', 'pic', 'weeklyTopics'])
+            ->with(['department', 'pic', 'weeklyTopics', 'activityLocation'])
             ->when($search, fn ($query) => $query->where('title', 'like', "%{$search}%"))
             ->when($departmentId, fn ($query) => $query->where('department_id', $departmentId))
             ->when(
@@ -104,7 +106,7 @@ class AgendaScheduleController extends Controller
      */
     public function show(AgendaSchedule $agendaSchedule): View
     {
-        $agendaSchedule->load(['department', 'pic', 'creator']);
+        $agendaSchedule->load(['department', 'pic', 'creator', 'activityLocation']);
 
         return view('agenda-schedules.show', compact('agendaSchedule'));
     }
@@ -248,7 +250,7 @@ class AgendaScheduleController extends Controller
     {
         return view('agenda-schedules.edit', array_merge(
             ['agendaSchedule' => $agendaSchedule],
-            $this->formOptions()
+            $this->formOptions($agendaSchedule)
         ));
     }
 
@@ -273,11 +275,23 @@ class AgendaScheduleController extends Controller
             ->with('success', 'Jadwal agenda berhasil dinonaktifkan.');
     }
 
-    private function formOptions(): array
+    private function formOptions(?AgendaSchedule $agendaSchedule = null): array
     {
+        $activityLocations = ActivityLocation::query()
+            ->where(function ($query) use ($agendaSchedule) {
+                $query->where('is_active', true);
+
+                if ($agendaSchedule?->activity_location_id) {
+                    $query->orWhere('id', $agendaSchedule->activity_location_id);
+                }
+            })
+            ->orderBy('name')
+            ->get();
+
         return [
             'departments' => Department::where('status', 'active')->orderBy('name')->get(),
             'members' => Member::where('member_status', 'active')->orderBy('full_name')->get(),
+            'activityLocations' => $activityLocations,
         ];
     }
 
@@ -292,6 +306,7 @@ class AgendaScheduleController extends Controller
             'description' => ['nullable', 'string'],
             'department_id' => ['nullable', 'exists:departments,id'],
             'pic_id' => ['nullable', 'exists:members,id'],
+            'activity_location_id' => ['nullable', 'exists:activity_locations,id'],
             'schedule_type' => ['required', Rule::in($this->scheduleTypes())],
             'day_of_week' => ['nullable', 'required_if:schedule_type,weekly', 'integer', 'between:0,6'],
             'day_of_month' => ['nullable', 'required_if:schedule_type,monthly', 'integer', 'between:1,31'],
@@ -308,6 +323,14 @@ class AgendaScheduleController extends Controller
             'end_time.regex' => 'Waktu selesai harus menggunakan format 24 jam HH:mm, contoh 20:00.',
         ]);
 
+        if (($validated['start_time'] ?? null) && ($validated['end_time'] ?? null) && $validated['end_time'] <= $validated['start_time']) {
+            throw ValidationException::withMessages([
+                'end_time' => 'Waktu selesai harus setelah waktu mulai.',
+            ]);
+        }
+
+        $validated = $this->applyActivityLocationDefaults($validated);
+
         if ($validated['schedule_type'] !== 'weekly') {
             $validated['day_of_week'] = null;
         }
@@ -319,6 +342,26 @@ class AgendaScheduleController extends Controller
         if ($validated['schedule_type'] !== 'incidental') {
             $validated['specific_date'] = null;
         }
+
+        return $validated;
+    }
+
+    private function applyActivityLocationDefaults(array $validated): array
+    {
+        if (empty($validated['activity_location_id'])) {
+            return $validated;
+        }
+
+        $location = ActivityLocation::find($validated['activity_location_id']);
+
+        if (! $location) {
+            return $validated;
+        }
+
+        $validated['default_location'] = $location->name;
+        $validated['default_latitude'] = $location->latitude;
+        $validated['default_longitude'] = $location->longitude;
+        $validated['default_radius'] = $location->radius_meters;
 
         return $validated;
     }

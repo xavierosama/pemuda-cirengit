@@ -4,6 +4,7 @@ use App\Http\Controllers\AgendaScheduleController;
 use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\ActivityAttendanceQrController;
 use App\Http\Controllers\ActivityAttendanceExportController;
+use App\Http\Controllers\ActivityLocationController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceCheckInController;
 use App\Http\Controllers\AttendanceReportController;
@@ -84,6 +85,9 @@ Route::middleware(['auth', 'internal'])->group(function () {
     Route::patch('agenda-schedules/{agenda_schedule}/deactivate', [AgendaScheduleController::class, 'deactivate'])
         ->name('agenda-schedules.deactivate');
     Route::resource('agenda-schedules', AgendaScheduleController::class)->except('destroy');
+    Route::patch('activity-locations/{activity_location}/deactivate', [ActivityLocationController::class, 'deactivate'])
+        ->name('activity-locations.deactivate');
+    Route::resource('activity-locations', ActivityLocationController::class)->except('destroy');
 
     Route::patch('activities/{activity}/status', [ActivityController::class, 'updateStatus'])
         ->name('activities.status.update');

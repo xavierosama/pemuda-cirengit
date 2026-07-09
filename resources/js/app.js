@@ -20,8 +20,25 @@ const initializeDatePickers = () => {
     });
 };
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeDatePickers);
-} else {
+const initializeTimePickers = () => {
+    flatpickr('.js-time-picker', {
+        enableTime: true,
+        noCalendar: true,
+        dateFormat: 'H:i',
+        time_24hr: true,
+        allowInput: false,
+        disableMobile: true,
+        locale: Indonesian,
+    });
+};
+
+const initializePickers = () => {
     initializeDatePickers();
+    initializeTimePickers();
+};
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePickers);
+} else {
+    initializePickers();
 }

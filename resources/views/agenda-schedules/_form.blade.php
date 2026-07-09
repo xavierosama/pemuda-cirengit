@@ -2,13 +2,49 @@
 
 @php
     $selectedType = old('schedule_type', $agendaSchedule->schedule_type ?? 'incidental');
+    $selectedLocationId = old('activity_location_id', $agendaSchedule->activity_location_id ?? '');
+    $legacyLocation = [
+        'name' => old('default_location', $agendaSchedule->default_location ?? ''),
+        'latitude' => old('default_latitude', $agendaSchedule->default_latitude ?? ''),
+        'longitude' => old('default_longitude', $agendaSchedule->default_longitude ?? ''),
+        'radius_meters' => old('default_radius', $agendaSchedule->default_radius ?? 100),
+    ];
+    $locationsPayload = $activityLocations->mapWithKeys(fn ($location) => [
+        (string) $location->id => [
+            'id' => (string) $location->id,
+            'name' => $location->name,
+            'address' => $location->address,
+            'latitude' => $location->latitude !== null ? (string) $location->latitude : '',
+            'longitude' => $location->longitude !== null ? (string) $location->longitude : '',
+            'radius_meters' => $location->radius_meters,
+            'is_active' => $location->is_active,
+        ],
+    ])->all();
     $inputClass = 'mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600';
     $labelClass = 'block text-sm font-semibold text-slate-700';
     $helperClass = 'mt-1 text-xs text-slate-500';
     $errorClass = 'mt-2 text-sm text-red-600';
 @endphp
 
-<div x-data="{ scheduleType: @js($selectedType) }" class="space-y-5">
+<div
+    x-data="{
+        scheduleType: @js($selectedType),
+        selectedLocationId: @js((string) $selectedLocationId),
+        locations: @js($locationsPayload),
+        legacyLocation: @js($legacyLocation),
+        get selectedLocation() {
+            return this.locations[this.selectedLocationId] || null;
+        },
+        locationValue(key) {
+            if (this.selectedLocation) {
+                return this.selectedLocation[key] ?? '';
+            }
+
+            return this.legacyLocation[key] ?? '';
+        },
+    }"
+    class="space-y-5"
+>
     <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div class="mb-5 border-b border-slate-100 pb-4">
             <h3 class="text-base font-bold text-slate-950">Informasi Agenda</h3>
@@ -109,42 +145,89 @@
         <div class="grid gap-5 md:grid-cols-2">
             <div>
                 <label for="start_time" class="{{ $labelClass }}">Waktu mulai</label>
-                <input id="start_time" name="start_time" type="text" inputmode="numeric" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" placeholder="Contoh: 20:00" value="{{ old('start_time', isset($agendaSchedule) && $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '') }}" class="{{ $inputClass }}">
-                <p class="{{ $helperClass }}">Gunakan format 24 jam, contoh 20:00.</p>
+                <input id="start_time" name="start_time" type="text" placeholder="HH:mm" value="{{ old('start_time', isset($agendaSchedule) && $agendaSchedule->start_time ? substr($agendaSchedule->start_time, 0, 5) : '') }}" class="js-time-picker {{ $inputClass }}">
+                <p class="{{ $helperClass }}">Klik field untuk memilih jam. Format tersimpan tetap 24 jam, contoh 20:00.</p>
                 @error('start_time') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div>
                 <label for="end_time" class="{{ $labelClass }}">Waktu selesai</label>
-                <input id="end_time" name="end_time" type="text" inputmode="numeric" pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$" placeholder="Contoh: 20:00" value="{{ old('end_time', isset($agendaSchedule) && $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : '') }}" class="{{ $inputClass }}">
-                <p class="{{ $helperClass }}">Gunakan format 24 jam, contoh 20:00.</p>
+                <input id="end_time" name="end_time" type="text" placeholder="HH:mm" value="{{ old('end_time', isset($agendaSchedule) && $agendaSchedule->end_time ? substr($agendaSchedule->end_time, 0, 5) : '') }}" class="js-time-picker {{ $inputClass }}">
+                <p class="{{ $helperClass }}">Klik field untuk memilih jam selesai. Waktu selesai harus setelah waktu mulai.</p>
                 @error('end_time') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div class="md:col-span-2">
-                <label for="default_location" class="{{ $labelClass }}">Lokasi default</label>
-                <input id="default_location" name="default_location" type="text" value="{{ old('default_location', $agendaSchedule->default_location ?? '') }}" class="{{ $inputClass }}">
+                <label for="activity_location_id" class="{{ $labelClass }}">Lokasi default</label>
+                <select id="activity_location_id" name="activity_location_id" x-model="selectedLocationId" class="{{ $inputClass }}">
+                    <option value="">Pilih lokasi kegiatan</option>
+                    @foreach ($activityLocations as $location)
+                        <option value="{{ $location->id }}" @selected((string) $selectedLocationId === (string) $location->id)>
+                            {{ $location->name }}{{ $location->is_active ? '' : ' (Nonaktif)' }}
+                        </option>
+                    @endforeach
+                </select>
+                <p class="{{ $helperClass }}">Lokasi aktif diambil dari Master Data &gt; Lokasi Kegiatan.</p>
+                @error('activity_location_id') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
                 @error('default_location') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
+            <input type="hidden" name="default_location" :value="locationValue('name')">
+            <input type="hidden" name="default_latitude" :value="locationValue('latitude')">
+            <input type="hidden" name="default_longitude" :value="locationValue('longitude')">
+            <input type="hidden" name="default_radius" :value="locationValue('radius_meters') || 100">
+
             <div>
-                <label for="default_latitude" class="{{ $labelClass }}">Latitude default</label>
-                <input id="default_latitude" name="default_latitude" type="number" step="0.0000001" value="{{ old('default_latitude', $agendaSchedule->default_latitude ?? '') }}" class="{{ $inputClass }}">
-                <p class="{{ $helperClass }}">Isi sesuai titik lokasi kegiatan.</p>
+                <p class="{{ $labelClass }}">Latitude default</p>
+                <div class="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700" x-text="locationValue('latitude') || '-'"></div>
+                <p class="{{ $helperClass }}">Terisi otomatis dari lokasi yang dipilih.</p>
                 @error('default_latitude') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div>
-                <label for="default_longitude" class="{{ $labelClass }}">Longitude default</label>
-                <input id="default_longitude" name="default_longitude" type="number" step="0.0000001" value="{{ old('default_longitude', $agendaSchedule->default_longitude ?? '') }}" class="{{ $inputClass }}">
-                <p class="{{ $helperClass }}">Isi sesuai titik lokasi kegiatan.</p>
+                <p class="{{ $labelClass }}">Longitude default</p>
+                <div class="mt-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700" x-text="locationValue('longitude') || '-'"></div>
+                <p class="{{ $helperClass }}">Terisi otomatis dari lokasi yang dipilih.</p>
                 @error('default_longitude') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
-            <div>
-                <label for="default_radius" class="{{ $labelClass }}">Radius default</label>
-                <input id="default_radius" name="default_radius" type="number" min="1" value="{{ old('default_radius', $agendaSchedule->default_radius ?? 100) }}" class="{{ $inputClass }}" required>
-                <p class="{{ $helperClass }}">Dalam meter, contoh: 100.</p>
+            <div class="md:col-span-2">
+                <p class="{{ $labelClass }}">Detail lokasi terpilih</p>
+                <div class="mt-2 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <template x-if="selectedLocation">
+                        <div class="grid gap-3 text-sm text-slate-700 md:grid-cols-3">
+                            <div class="md:col-span-3">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Alamat/Keterangan</p>
+                                <p class="mt-1 whitespace-pre-line" x-text="selectedLocation.address || '-'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Latitude</p>
+                                <p class="mt-1 font-semibold" x-text="selectedLocation.latitude || '-'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Longitude</p>
+                                <p class="mt-1 font-semibold" x-text="selectedLocation.longitude || '-'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Radius</p>
+                                <p class="mt-1 font-semibold"><span x-text="selectedLocation.radius_meters"></span> meter</p>
+                            </div>
+                        </div>
+                    </template>
+
+                    <template x-if="! selectedLocation">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-700">Belum memilih lokasi master.</p>
+                            <p class="mt-1 text-sm text-slate-500">Pilih lokasi agar latitude, longitude, dan radius default terisi otomatis.</p>
+                            <template x-if="legacyLocation.name">
+                                <p class="mt-3 rounded-lg bg-white px-3 py-2 text-xs text-slate-500">
+                                    Lokasi lama tetap dipertahankan: <span class="font-semibold text-slate-700" x-text="legacyLocation.name"></span>.
+                                </p>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+                <p class="{{ $helperClass }}">Untuk menambah pilihan, buka Master Data &gt; Lokasi Kegiatan.</p>
                 @error('default_radius') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
         </div>

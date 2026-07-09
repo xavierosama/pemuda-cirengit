@@ -25,6 +25,13 @@
         </svg>
         @break
 
+    @case('map-pin')
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 21.25s6.25-5.2 6.25-11a6.25 6.25 0 1 0-12.5 0c0 5.8 6.25 11 6.25 11Z" />
+            <circle cx="12" cy="10.25" r="2.25" />
+        </svg>
+        @break
+
     @case('calendar')
         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M7.75 4.75v2.5M16.25 4.75v2.5M4.75 9.25h14.5M6.75 6.25h10.5a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6.75a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z" />

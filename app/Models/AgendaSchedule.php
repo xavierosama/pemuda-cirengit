@@ -11,6 +11,7 @@ class AgendaSchedule extends Model
     protected $fillable = [
         'department_id',
         'pic_id',
+        'activity_location_id',
         'title',
         'description',
         'schedule_type',
@@ -45,6 +46,11 @@ class AgendaSchedule extends Model
     public function pic(): BelongsTo
     {
         return $this->belongsTo(Member::class, 'pic_id');
+    }
+
+    public function activityLocation(): BelongsTo
+    {
+        return $this->belongsTo(ActivityLocation::class);
     }
 
     public function creator(): BelongsTo

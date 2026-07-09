@@ -54,7 +54,11 @@
             <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <h3 class="text-base font-bold text-slate-950">Lokasi Default</h3>
                 <dl class="mt-5 space-y-4">
+                    <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Sumber Lokasi</dt><dd class="mt-1 text-sm text-slate-700">{{ $agendaSchedule->activityLocation?->name ?? 'Data lokasi tersimpan di jadwal' }}</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Lokasi</dt><dd class="mt-1 text-sm text-slate-700">{{ $agendaSchedule->default_location ?: '-' }}</dd></div>
+                    @if ($agendaSchedule->activityLocation?->address)
+                        <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Alamat/Keterangan</dt><dd class="mt-1 whitespace-pre-line text-sm text-slate-700">{{ $agendaSchedule->activityLocation->address }}</dd></div>
+                    @endif
                     <div class="grid grid-cols-2 gap-4"><div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Latitude</dt><dd class="mt-1 text-sm text-slate-700">{{ $agendaSchedule->default_latitude ?: '-' }}</dd></div><div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Longitude</dt><dd class="mt-1 text-sm text-slate-700">{{ $agendaSchedule->default_longitude ?: '-' }}</dd></div></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Radius</dt><dd class="mt-1 text-sm text-slate-700">{{ $agendaSchedule->default_radius }} meter</dd></div>
                     <div><dt class="text-xs font-semibold uppercase tracking-wide text-slate-500">Dibuat oleh</dt><dd class="mt-1 text-sm text-slate-700">{{ $agendaSchedule->creator?->name ?? '-' }}</dd></div>

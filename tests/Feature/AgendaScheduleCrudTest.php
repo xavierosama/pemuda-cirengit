@@ -75,10 +75,11 @@ class AgendaScheduleCrudTest extends TestCase
             ->assertSee('Informasi Agenda')
             ->assertSee('Pola Jadwal')
             ->assertSee('Waktu & Lokasi Default', false)
-            ->assertSee('type="text"', false)
+            ->assertSee('js-time-picker', false)
+            ->assertSee('activity_location_id', false)
             ->assertSee('value="19:30"', false)
             ->assertSee('value="21:00"', false)
-            ->assertSee('Gunakan format 24 jam, contoh 20:00.')
+            ->assertSee('Klik field untuk memilih jam.')
             ->assertSee('Batal/Kembali');
 
         $this->actingAs($user)->put(route('agenda-schedules.update', $agendaSchedule), [

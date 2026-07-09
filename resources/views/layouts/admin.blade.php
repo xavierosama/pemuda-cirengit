@@ -49,6 +49,7 @@
                         ['label' => 'Data Anggota', 'href' => route('members.index'), 'active' => request()->routeIs('members.*'), 'icon' => 'users'],
                         ['label' => 'Data Bidang', 'href' => route('departments.index'), 'active' => request()->routeIs('departments.*'), 'icon' => 'folder'],
                         ['label' => 'Data Jabatan', 'href' => route('positions.index'), 'active' => request()->routeIs('positions.*'), 'icon' => 'badge'],
+                        ['label' => 'Lokasi Kegiatan', 'href' => route('activity-locations.index'), 'active' => request()->routeIs('activity-locations.*'), 'icon' => 'map-pin'],
                     ],
                 ],
                 [
