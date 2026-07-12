@@ -31,8 +31,9 @@ class DepartmentCrudTest extends TestCase
             ->assertSee('Kelola bidang organisasi Pemuda Persis Cirengit.')
             ->assertSee('Total Bidang')
             ->assertSee('Bidang Aktif')
-            ->assertSee('Filter Data Bidang')
             ->assertSee('Tabel Data Bidang')
+            ->assertSee('Cari nama bidang')
+            ->assertSee('Filter')
             ->assertSee('Jumlah Anggota')
             ->assertSee('Bidang Riset');
 

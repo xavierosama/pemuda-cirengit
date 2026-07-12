@@ -27,14 +27,14 @@
         <div class="grid gap-5 md:grid-cols-2">
             <div>
                 <label for="npa" class="{{ $labelClass }}">Nomor Pokok Anggota (NPA)</label>
-                <input id="npa" name="npa" type="text" value="{{ old('npa', $member->npa ?? '') }}" placeholder="Masukkan NPA" class="{{ $inputClass }}">
+                <input id="npa" name="npa" type="text" value="{{ old('npa', $member->npa ?? '') }}" placeholder="Masukkan NPA" class="{{ $inputClass }}" @if (! isset($member)) autofocus @endif>
                 <p class="{{ $helperClass }}">Contoh: 20.0001</p>
                 @error('npa') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 
             <div>
                 <label for="full_name" class="{{ $labelClass }}">Nama Lengkap</label>
-                <input id="full_name" name="full_name" type="text" value="{{ old('full_name', $member->full_name ?? '') }}" class="{{ $inputClass }}" required autofocus>
+                <input id="full_name" name="full_name" type="text" value="{{ old('full_name', $member->full_name ?? '') }}" class="{{ $inputClass }}" required>
                 @error('full_name') <p class="{{ $errorClass }}">{{ $message }}</p> @enderror
             </div>
 

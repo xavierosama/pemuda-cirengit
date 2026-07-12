@@ -7,10 +7,10 @@
 
 @php
     $variants = [
-        'primary' => 'bg-emerald-700 text-white shadow-sm hover:bg-emerald-800 focus:ring-emerald-600 disabled:bg-emerald-500',
-        'secondary' => 'bg-slate-900 text-white shadow-sm hover:bg-slate-700 focus:ring-slate-600 disabled:bg-slate-500',
-        'danger' => 'bg-red-600 text-white shadow-sm hover:bg-red-700 focus:ring-red-600 disabled:bg-red-400',
-        'warning' => 'bg-amber-500 text-white shadow-sm hover:bg-amber-600 focus:ring-amber-500 disabled:bg-amber-400',
+        'primary' => 'bg-emerald-700 text-white shadow-sm shadow-emerald-700/20 hover:bg-emerald-800 focus:ring-emerald-600 disabled:bg-emerald-500',
+        'secondary' => 'border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-slate-400 hover:bg-slate-50 focus:ring-slate-500 disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800',
+        'danger' => 'bg-red-600 text-white shadow-sm shadow-red-600/20 hover:bg-red-700 focus:ring-red-600 disabled:bg-red-400',
+        'warning' => 'bg-amber-500 text-white shadow-sm shadow-amber-500/20 hover:bg-amber-600 focus:ring-amber-500 disabled:bg-amber-400',
     ];
     $sizes = [
         'sm' => 'px-3 py-1.5 text-xs',
@@ -22,7 +22,7 @@
 <button
     type="{{ $type }}"
     x-bind:disabled="typeof submitting !== 'undefined' && submitting"
-    {{ $attributes->merge(['class' => 'inline-flex items-center justify-center gap-2 rounded-lg font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-80 '.($variants[$variant] ?? $variants['primary']).' '.($sizes[$size] ?? $sizes['md'])]) }}
+    {{ $attributes->merge(['class' => 'inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-80 dark:focus:ring-offset-slate-950 '.($variants[$variant] ?? $variants['primary']).' '.($sizes[$size] ?? $sizes['md'])]) }}
 >
     <svg
         x-cloak

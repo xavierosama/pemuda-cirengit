@@ -48,8 +48,9 @@ class ActivityCrudTest extends TestCase
             ->assertSee('Kelola kegiatan berjalan, perubahan jadwal, dan pengaturan presensi.')
             ->assertSee('Kegiatan Bulan Ini')
             ->assertSee('Presensi Terjadwal')
-            ->assertSee('Filter Kegiatan Aktual')
             ->assertSee('Tabel Kegiatan Aktual')
+            ->assertSee('Cari nama kegiatan')
+            ->assertSee('Filter')
             ->assertSee('Kajian Aktual');
 
         $this->actingAs($user)

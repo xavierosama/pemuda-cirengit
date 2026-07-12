@@ -15,9 +15,9 @@
     ];
 
     $iconClasses = [
-        'danger' => 'bg-red-50 text-red-600 ring-red-100',
-        'warning' => 'bg-amber-50 text-amber-600 ring-amber-100',
-        'primary' => 'bg-emerald-50 text-emerald-600 ring-emerald-100',
+        'danger' => 'bg-red-50 text-red-600 ring-red-100 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/30',
+        'warning' => 'bg-amber-50 text-amber-600 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/30',
+        'primary' => 'bg-emerald-50 text-emerald-600 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/30',
     ];
 @endphp
 
@@ -46,7 +46,7 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="translate-y-0 scale-100 opacity-100"
         x-transition:leave-end="translate-y-3 scale-95 opacity-0"
-        class="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-950/20"
+        class="relative w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl shadow-slate-950/20 dark:border-slate-800 dark:bg-slate-900"
     >
         <div class="flex gap-4">
             <div class="{{ $iconClasses[$variant] ?? $iconClasses['primary'] }} flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1 ring-inset">
@@ -62,9 +62,9 @@
             </div>
 
             <div class="min-w-0">
-                <h2 class="text-lg font-bold text-slate-950">{{ $title }}</h2>
+                <h2 class="text-lg font-bold text-slate-950 dark:text-white">{{ $title }}</h2>
                 @if ($description)
-                    <p class="mt-2 text-sm leading-6 text-slate-600">{{ $description }}</p>
+                    <p class="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-400">{{ $description }}</p>
                 @endif
             </div>
         </div>
@@ -72,7 +72,7 @@
         <div class="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
                 type="button"
-                class="inline-flex items-center justify-center rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                class="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 dark:focus:ring-offset-slate-900"
                 x-on:click="open = false"
                 x-bind:disabled="typeof submitting !== 'undefined' && submitting"
             >
@@ -80,7 +80,7 @@
             </button>
             <button
                 type="button"
-                class="{{ $variantClasses[$variant] ?? $variantClasses['primary'] }} inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-80"
+                class="{{ $variantClasses[$variant] ?? $variantClasses['primary'] }} inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-80 dark:focus:ring-offset-slate-900"
                 x-on:click="$dispatch('confirmed')"
                 x-bind:disabled="typeof submitting !== 'undefined' && submitting"
             >

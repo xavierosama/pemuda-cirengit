@@ -34,7 +34,7 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="bg-slate-100 font-sans antialiased text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+    <body class="bg-slate-100 font-sans antialiased text-slate-900 selection:bg-emerald-100 selection:text-emerald-900 dark:bg-slate-950 dark:text-slate-100">
         @php
             $menuSections = [
                 [
@@ -91,10 +91,10 @@
                     localStorage.setItem('pemuda-sidebar-collapsed', this.sidebarCollapsed ? 'true' : 'false');
                 }
             }"
-            class="min-h-screen bg-slate-100 dark:bg-slate-950"
+            class="min-h-screen bg-gradient-to-br from-slate-50 via-sky-50/35 to-emerald-50/30 dark:from-slate-950 dark:via-slate-950 dark:to-slate-900"
         >
             <aside
-                class="fixed inset-y-0 left-0 z-40 -translate-x-full border-r border-slate-200 bg-white shadow-xl shadow-slate-200/50 transition-all duration-200 ease-in-out dark:border-slate-800 dark:bg-slate-900 dark:shadow-black/20 lg:translate-x-0 lg:shadow-none"
+                class="fixed inset-y-0 left-0 z-40 flex h-screen -translate-x-full flex-col border-r border-slate-200/80 bg-white/95 shadow-xl shadow-slate-200/50 backdrop-blur transition-all duration-200 ease-in-out dark:border-slate-800 dark:bg-slate-900/95 dark:shadow-black/20 lg:translate-x-0 lg:shadow-none"
                 :class="{
                     'translate-x-0 w-72': sidebarOpen,
                     '-translate-x-full w-72': ! sidebarOpen,
@@ -102,9 +102,15 @@
                     'lg:w-72': ! sidebarCollapsed
                 }"
             >
-                <div class="flex h-16 items-center justify-between border-b border-slate-200 px-4 dark:border-slate-800" :class="sidebarCollapsed ? 'lg:justify-center' : ''">
+                <div
+                    class="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-4 dark:border-slate-800"
+                    :class="sidebarCollapsed ? 'lg:px-1 lg:justify-center' : ''"
+                >
                     <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-emerald-700 text-sm font-bold text-white ring-1 ring-inset ring-emerald-600/40">
+                        <div
+                            class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-emerald-700 text-sm font-bold text-white ring-1 ring-inset ring-emerald-600/40 transition-all"
+                            :class="sidebarCollapsed ? 'lg:h-8 lg:w-8 lg:rounded-lg lg:text-xs' : ''"
+                        >
                             @if ($appLogoUrl)
                                 <img src="{{ $appLogoUrl }}" alt="{{ $appName }}" class="h-full w-full object-contain p-1.5">
                             @else
@@ -119,6 +125,22 @@
 
                     <button
                         type="button"
+                        class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:border-emerald-100 hover:bg-emerald-50 hover:text-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:ring-offset-2 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-200 dark:focus:ring-emerald-500/30 dark:focus:ring-offset-slate-900 lg:inline-flex"
+                        :class="sidebarCollapsed ? 'lg:h-8 lg:w-8' : ''"
+                        @click="toggleSidebarCollapse()"
+                        :aria-label="sidebarCollapsed ? 'Tampilkan sidebar' : 'Sembunyikan sidebar'"
+                        :title="sidebarCollapsed ? 'Tampilkan sidebar' : 'Sembunyikan sidebar'"
+                    >
+                        <svg x-show="! sidebarCollapsed" x-transition.opacity class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.25 8.5 12l7.25-7.25" />
+                        </svg>
+                        <svg x-cloak x-show="sidebarCollapsed" x-transition.opacity class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.75 7.25 7.25-7.25 7.25" />
+                        </svg>
+                    </button>
+
+                    <button
+                        type="button"
                         class="rounded-xl p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:hidden"
                         @click="sidebarOpen = false"
                         aria-label="Tutup menu"
@@ -129,7 +151,7 @@
                     </button>
                 </div>
 
-                <nav class="space-y-6 px-3 py-5">
+                <nav class="flex-1 space-y-6 overflow-y-auto overflow-x-hidden px-3 py-5">
                     @foreach ($menuSections as $section)
                         <div class="space-y-1.5">
                             @if ($section['heading'])
@@ -141,9 +163,12 @@
                                     href="{{ $menu['href'] }}"
                                     title="{{ $menu['label'] }}"
                                     aria-label="{{ $menu['label'] }}"
-                                    class="{{ $menu['active'] ? 'bg-emerald-50 text-emerald-800 ring-1 ring-inset ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-200 dark:ring-emerald-400/20' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:text-white' }} group relative flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition"
+                                    class="{{ $menu['active'] ? 'bg-gradient-to-r from-emerald-50 to-sky-50 text-emerald-800 shadow-sm ring-1 ring-inset ring-emerald-100 dark:from-emerald-500/10 dark:to-sky-500/10 dark:text-emerald-200 dark:ring-emerald-400/20' : 'text-slate-700 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800/70 dark:hover:text-white' }} group relative flex items-center rounded-xl px-3 py-2.5 text-sm font-semibold transition"
                                     :class="sidebarCollapsed ? 'lg:justify-center lg:px-2' : ''"
                                 >
+                                    @if ($menu['active'])
+                                        <span x-show="! sidebarCollapsed" class="absolute left-0 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-emerald-500" aria-hidden="true"></span>
+                                    @endif
                                     <span class="{{ $menu['active'] ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-300' }} shrink-0 transition">
                                         @include('layouts.partials.admin-menu-icon', ['icon' => $menu['icon']])
                                     </span>
@@ -165,7 +190,7 @@
 
             <div class="min-h-screen transition-all duration-200" :class="sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'">
                 <header class="sticky top-0 z-20 border-b border-slate-200 bg-white/85 shadow-sm shadow-slate-200/50 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/85 dark:shadow-black/20">
-                    <div class="flex min-h-16 items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
+                    <div class="flex min-h-14 items-center justify-between gap-3 px-4 py-2 sm:px-6 lg:px-8">
                         <div class="flex items-center gap-3">
                             <button
                                 type="button"
@@ -177,39 +202,6 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
                                 </svg>
                             </button>
-
-                            <button
-                                type="button"
-                                class="hidden rounded-xl p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200 lg:inline-flex"
-                                @click="toggleSidebarCollapse()"
-                                :aria-label="sidebarCollapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'"
-                                :title="sidebarCollapsed ? 'Perluas sidebar' : 'Ciutkan sidebar'"
-                            >
-                                <svg class="h-5 w-5 transition" :class="{ 'rotate-180': sidebarCollapsed }" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.25 8.5 12l7.25-7.25" />
-                                </svg>
-                            </button>
-
-                            <a href="{{ route('dashboard') }}" class="hidden items-center gap-3 rounded-2xl px-1 py-1 sm:flex lg:hidden xl:flex">
-                                <div class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-emerald-700 text-xs font-bold text-white ring-1 ring-inset ring-emerald-600/40">
-                                    @if ($appLogoUrl)
-                                        <img src="{{ $appLogoUrl }}" alt="{{ $appName }}" class="h-full w-full object-contain p-1.5">
-                                    @else
-                                        {{ str($appName)->substr(0, 2)->upper() }}
-                                    @endif
-                                </div>
-                                <div class="hidden min-w-0 xl:block">
-                                    <p class="max-w-48 truncate text-sm font-bold text-slate-950 dark:text-white">{{ $appName }}</p>
-                                    <p class="max-w-48 truncate text-xs text-slate-500 dark:text-slate-400">{{ $organizationName }}</p>
-                                </div>
-                            </a>
-
-                            <div class="hidden h-8 w-px bg-slate-200 dark:bg-slate-800 sm:block lg:hidden xl:block"></div>
-
-                            <div class="min-w-0">
-                                <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">@yield('section', 'Admin')</p>
-                                <h1 class="truncate text-base font-bold text-slate-950 dark:text-white sm:text-lg">@yield('page-title', 'Dashboard')</h1>
-                            </div>
                         </div>
 
                         <div class="flex items-center gap-3">

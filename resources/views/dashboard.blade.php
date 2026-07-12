@@ -13,11 +13,11 @@
     @php
         $statusLabels = ['scheduled' => 'Terjadwal', 'completed' => 'Selesai', 'holiday' => 'Libur', 'postponed' => 'Ditunda', 'relocated' => 'Pindah Lokasi', 'cancelled' => 'Dibatalkan'];
         $summaryCards = [
-            ['label' => 'Total Anggota Aktif', 'value' => $statistics['active_members'], 'note' => 'Anggota berstatus aktif', 'color' => 'border-l-emerald-600'],
-            ['label' => 'Anggota Belum Punya Akun', 'value' => $statistics['members_without_account'], 'note' => 'Anggota aktif tanpa akun login', 'color' => 'border-l-sky-600'],
-            ['label' => 'Agenda Aktif', 'value' => $statistics['active_agenda_schedules'], 'note' => 'Jadwal agenda berjalan', 'color' => 'border-l-cyan-600'],
-            ['label' => 'Kegiatan Bulan Ini', 'value' => $statistics['monthly_activities'], 'note' => 'Periode '.\App\Support\DateFormatter::dateRange(now()->copy()->startOfMonth(), now()->copy()->endOfMonth()), 'color' => 'border-l-violet-600'],
-            ['label' => 'Presensi Perlu Verifikasi', 'value' => $statistics['need_verification_attendances'], 'note' => 'Menunggu keputusan admin', 'color' => 'border-l-amber-500'],
+            ['label' => 'Total Anggota Aktif', 'value' => $statistics['active_members'], 'note' => 'Anggota berstatus aktif', 'accent' => 'emerald', 'tone' => 'emerald'],
+            ['label' => 'Anggota Belum Punya Akun', 'value' => $statistics['members_without_account'], 'note' => 'Anggota aktif tanpa akun login', 'accent' => 'sky', 'tone' => 'sky'],
+            ['label' => 'Agenda Aktif', 'value' => $statistics['active_agenda_schedules'], 'note' => 'Jadwal agenda berjalan', 'accent' => 'sky', 'tone' => 'sky'],
+            ['label' => 'Kegiatan Bulan Ini', 'value' => $statistics['monthly_activities'], 'note' => 'Periode '.\App\Support\DateFormatter::dateRange(now()->copy()->startOfMonth(), now()->copy()->endOfMonth()), 'accent' => 'violet', 'tone' => 'violet'],
+            ['label' => 'Presensi Perlu Verifikasi', 'value' => $statistics['need_verification_attendances'], 'note' => 'Menunggu keputusan admin', 'accent' => 'amber', 'tone' => 'amber'],
         ];
         $attendanceCards = [
             ['label' => 'Total Hadir', 'value' => $monthlyAttendanceSummary['present'], 'color' => 'text-emerald-700'],
@@ -26,9 +26,15 @@
             ['label' => 'Total Perlu Verifikasi', 'value' => $monthlyAttendanceSummary['need_verification'], 'color' => 'text-amber-700'],
         ];
         $commandCards = [
-            ['label' => 'Kegiatan Hari Ini', 'value' => $todayActivities->count(), 'note' => 'Agenda pada '.\App\Support\DateFormatter::date(now()), 'color' => 'border-l-emerald-600'],
-            ['label' => 'Presensi Dibuka', 'value' => $openAttendanceActivities->count(), 'note' => 'Butuh pemantauan langsung', 'color' => 'border-l-sky-600'],
-            ['label' => 'Perlu Finalisasi', 'value' => $needFinalizationActivities->count(), 'note' => 'Kegiatan lewat belum selesai', 'color' => 'border-l-amber-500'],
+            ['label' => 'Kegiatan Hari Ini', 'value' => $todayActivities->count(), 'note' => 'Agenda pada '.\App\Support\DateFormatter::date(now()), 'accent' => 'emerald', 'tone' => 'emerald'],
+            ['label' => 'Presensi Dibuka', 'value' => $openAttendanceActivities->count(), 'note' => 'Butuh pemantauan langsung', 'accent' => 'sky', 'tone' => 'sky'],
+            ['label' => 'Perlu Finalisasi', 'value' => $needFinalizationActivities->count(), 'note' => 'Kegiatan lewat belum selesai', 'accent' => 'amber', 'tone' => 'amber'],
+        ];
+        $toneClasses = [
+            'emerald' => 'bg-emerald-50 text-emerald-700 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-500/20',
+            'sky' => 'bg-sky-50 text-sky-700 ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20',
+            'amber' => 'bg-amber-50 text-amber-700 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-500/20',
+            'violet' => 'bg-violet-50 text-violet-700 ring-violet-100 dark:bg-violet-500/10 dark:text-violet-300 dark:ring-violet-500/20',
         ];
         $dayLabels = [0 => 'Minggu', 1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'];
     @endphp
@@ -36,15 +42,24 @@
     <div class="space-y-6">
         <section>
             <div class="mb-4">
-                <h2 class="text-xl font-bold text-slate-950">Ringkasan Utama</h2>
-                <p class="mt-1 text-sm text-slate-500">Gambaran cepat kondisi administrasi Pemuda Cirengit.</p>
+                <h2 class="text-xl font-bold tracking-tight text-slate-950 dark:text-white">Ringkasan Utama</h2>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Gambaran cepat kondisi administrasi Pemuda Cirengit.</p>
             </div>
             <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
                 @foreach ($summaryCards as $card)
-                    <x-ui.card class="{{ $card['color'] }} border-l-4" padding="md">
-                        <p class="text-sm font-medium text-slate-500">{{ $card['label'] }}</p>
-                        <p class="mt-3 text-3xl font-bold text-slate-950">{{ number_format($card['value']) }}</p>
-                        <p class="mt-2 text-xs font-medium text-slate-500">{{ $card['note'] }}</p>
+                    <x-ui.card :accent="$card['accent']" padding="md">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-slate-600 dark:text-slate-400">{{ $card['label'] }}</p>
+                                <p class="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">{{ number_format($card['value']) }}</p>
+                            </div>
+                            <div class="{{ $toneClasses[$card['tone']] }} flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset">
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path d="M2 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5H2v-5ZM8 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v9H8V7ZM14 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h-4V4Z" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">{{ $card['note'] }}</p>
                     </x-ui.card>
                 @endforeach
             </div>
@@ -52,16 +67,25 @@
 
         <section>
             <div class="mb-4">
-                <h2 class="text-xl font-bold text-slate-950">Command Center</h2>
-                <p class="mt-1 text-sm text-slate-500">Sinyal operasional yang perlu dilihat pengurus hari ini.</p>
+                <h2 class="text-xl font-bold tracking-tight text-slate-950 dark:text-white">Command Center</h2>
+                <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Sinyal operasional yang perlu dilihat pengurus hari ini.</p>
             </div>
 
             <div class="grid gap-4 md:grid-cols-3">
                 @foreach ($commandCards as $card)
-                    <x-ui.card class="{{ $card['color'] }} border-l-4" padding="md">
-                        <p class="text-sm font-medium text-slate-500">{{ $card['label'] }}</p>
-                        <p class="mt-3 text-3xl font-bold text-slate-950">{{ number_format($card['value']) }}</p>
-                        <p class="mt-2 text-xs font-medium text-slate-500">{{ $card['note'] }}</p>
+                    <x-ui.card :accent="$card['accent']" padding="md">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-600 dark:text-slate-400">{{ $card['label'] }}</p>
+                                <p class="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">{{ number_format($card['value']) }}</p>
+                            </div>
+                            <div class="{{ $toneClasses[$card['tone']] }} flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset">
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-12.5a.75.75 0 0 0-1.5 0v4.25c0 .199.079.39.22.53l2.5 2.5a.75.75 0 1 0 1.06-1.06l-2.28-2.28V5.5Z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                        <p class="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">{{ $card['note'] }}</p>
                     </x-ui.card>
                 @endforeach
             </div>

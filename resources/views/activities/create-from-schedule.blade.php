@@ -5,7 +5,7 @@
 @section('page-title', 'Buat Kegiatan dari Jadwal')
 
 @section('content')
-    <div class="max-w-3xl space-y-6">
+    <div class="w-full space-y-6">
         <div class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
             <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Jadwal Agenda</p>
             <h2 class="mt-2 text-2xl font-bold text-slate-950">{{ $agendaSchedule->title }}</h2>

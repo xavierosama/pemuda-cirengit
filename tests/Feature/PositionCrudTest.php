@@ -31,8 +31,9 @@ class PositionCrudTest extends TestCase
             ->assertSee('Kelola jabatan dan posisi anggota dalam organisasi.')
             ->assertSee('Total Jabatan')
             ->assertSee('Jabatan Aktif')
-            ->assertSee('Filter Data Jabatan')
             ->assertSee('Tabel Data Jabatan')
+            ->assertSee('Cari nama jabatan')
+            ->assertSee('Filter')
             ->assertSee('Jumlah Anggota')
             ->assertSee('Koordinator Lapangan');
 

@@ -12,7 +12,7 @@
 @endsection
 
 @section('content')
-    <div class="mx-auto max-w-4xl space-y-6">
+    <div class="w-full space-y-6">
         <x-ui.page-header
             eyebrow="Master Data"
             title="Tambah Lokasi Kegiatan"

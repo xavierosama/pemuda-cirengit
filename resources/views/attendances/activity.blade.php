@@ -26,6 +26,7 @@
             ['label' => 'Total Tidak Hadir', 'value' => $summary['absent'], 'class' => 'border-l-slate-500'],
             ['label' => 'Total Perlu Verifikasi', 'value' => $summary['need_verification'], 'class' => 'border-l-amber-500'],
         ];
+        $filterCount = collect([$status, $departmentId])->filter(fn ($value) => filled($value))->count();
     @endphp
 
     <div class="space-y-6" x-data="{ copied: false }">
@@ -132,34 +133,57 @@
 
         <x-activity-whatsapp-reminder :activity="$activity" />
 
-        <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <form method="GET" action="{{ route('activities.attendances.index', $activity) }}" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-[minmax(220px,1fr)_180px_200px_auto]">
-                <input type="hidden" name="sort" value="{{ $currentSort }}">
-                <input type="hidden" name="direction" value="{{ $currentDirection }}">
-                <input type="hidden" name="per_page" value="{{ $perPage }}">
-                <input name="search" type="search" value="{{ $search }}" placeholder="Cari nama anggota atau NPA" aria-label="Cari nama anggota atau NPA" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                <select name="status" aria-label="Filter status kehadiran" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                    <option value="">Semua status</option>
-                    @foreach ($statusLabels as $value => $label)
-                        <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-                <select name="department_id" aria-label="Filter bidang" class="block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                    <option value="">Semua bidang</option>
-                    @foreach ($departments as $department)
-                        <option value="{{ $department->id }}" @selected((string) $departmentId === (string) $department->id)>{{ $department->name }}</option>
-                    @endforeach
-                </select>
-                <div class="flex gap-2 sm:col-span-2 xl:col-span-1">
-                    <button type="submit" class="inline-flex flex-1 items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700">Filter</button>
-                    <a href="{{ route('activities.attendances.index', $activity) }}" class="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Reset</a>
+        <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="grid gap-4 border-b border-slate-200 px-4 py-3 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+                <div>
+                    <h3 class="text-base font-bold text-slate-950">Tabel Peserta Presensi</h3>
+                    <p class="mt-1 text-sm text-slate-500">Cari anggota dan saring status kehadiran tanpa membuka form filter terpisah.</p>
                 </div>
-            </form>
-        </section>
+                <x-ui.table-toolbar
+                    :action="route('activities.attendances.index', $activity)"
+                    search-placeholder="Cari nama anggota atau NPA"
+                    :search-value="$search"
+                    :search-hidden="[
+                        'sort' => $currentSort,
+                        'direction' => $currentDirection,
+                        'per_page' => $perPage,
+                        'status' => $status,
+                        'department_id' => $departmentId,
+                    ]"
+                    :filter-hidden="[
+                        'sort' => $currentSort,
+                        'direction' => $currentDirection,
+                        'per_page' => $perPage,
+                    ]"
+                    :filter-count="$filterCount"
+                    :reset-href="route('activities.attendances.index', $activity)"
+                    show-filter
+                >
+                    <x-slot:filters>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label for="status_filter" class="text-sm font-semibold text-slate-700">Status kehadiran</label>
+                                <select id="status_filter" name="status" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                    <option value="">Semua status</option>
+                                    @foreach ($statusLabels as $value => $label)
+                                        <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label for="department_id_filter" class="text-sm font-semibold text-slate-700">Bidang</label>
+                                <select id="department_id_filter" name="department_id" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                    <option value="">Semua bidang</option>
+                                    @foreach ($departments as $department)
+                                        <option value="{{ $department->id }}" @selected((string) $departmentId === (string) $department->id)>{{ $department->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+                    </x-slot:filters>
 
-        <div class="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div class="flex justify-end border-b border-slate-200 px-4 py-3">
-                <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" />
+                    <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" />
+                </x-ui.table-toolbar>
             </div>
             <div class="divide-y divide-slate-100 md:hidden">
                 @forelse ($attendances as $attendance)
@@ -217,7 +241,7 @@
                             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Jarak</th>
                             <x-sortable-th field="verification_status" label="Status Verifikasi" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
                             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Catatan</th>
-                            <th class="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
+                            <th class="sticky right-0 z-20 border-l border-slate-200 bg-slate-50 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.35)]">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -233,7 +257,7 @@
                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-600">{{ $attendance->distance_from_activity !== null ? number_format((float) $attendance->distance_from_activity, 2).' m' : '-' }}</td>
                                 <td class="whitespace-nowrap px-3 py-4"><x-ui.status-badge :status="$attendance->verification_status" :label="$verificationLabels[$attendance->verification_status]" /></td>
                                 <td class="max-w-48 px-3 py-4 text-sm text-slate-600"><span class="line-clamp-2 break-words">{{ $attendance->notes ?: '-' }}</span></td>
-                                <td class="whitespace-nowrap px-3 py-4 text-right"><div class="flex justify-end gap-1.5" x-data="{ correctionOpen: false, correctionSubmitting: false, correctionStatus: @js($attendance->status) }">
+                                <td class="sticky right-0 z-10 whitespace-nowrap border-l border-slate-100 bg-white px-3 py-4 text-right shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.35)]"><div class="flex justify-end gap-1.5" x-data="{ correctionOpen: false, correctionSubmitting: false, correctionStatus: @js($attendance->status) }">
                                     <button
                                         type="button"
                                         title="Ubah Status"

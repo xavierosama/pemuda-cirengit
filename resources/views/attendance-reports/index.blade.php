@@ -25,6 +25,14 @@
         $hasAttendanceData = array_sum($statusCounts) > 0;
         $hasActivityTrend = $chartData['activityTrend']['data']->sum() > 0;
         $hasDepartmentData = $chartData['departmentAttendance']['data']->sum() > 0;
+        $defaultStartDate = now(config('app.timezone'))->startOfMonth()->toDateString();
+        $defaultEndDate = now(config('app.timezone'))->endOfMonth()->toDateString();
+        $filterCount = collect([
+            (string) $filters['start_date'] !== $defaultStartDate ? $filters['start_date'] : null,
+            (string) $filters['end_date'] !== $defaultEndDate ? $filters['end_date'] : null,
+            $filters['department_id'],
+            $filters['activity_id'],
+        ])->filter(fn ($value) => filled($value))->count();
         $summaryCards = [
             ['label' => 'Total Kegiatan', 'value' => $summary['total_activities'], 'note' => 'Kegiatan dalam periode', 'color' => 'border-l-violet-500'],
             ['label' => 'Total Anggota Aktif', 'value' => $summary['total_active_members'], 'note' => 'Sesuai filter bidang', 'color' => 'border-l-cyan-500'],
@@ -45,56 +53,65 @@
             </x-slot>
         </x-ui.page-header>
 
-        <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="mb-4">
-                <h3 class="text-base font-bold text-slate-950">Filter Rekap</h3>
-                <p class="mt-1 text-sm text-slate-500">Atur periode dan cakupan data yang ingin dimonitor.</p>
+        <section class="rounded-lg border border-slate-200 bg-white shadow-sm">
+            <div class="grid gap-4 px-5 py-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
+                <div>
+                    <h3 class="text-base font-bold text-slate-950">Konteks Rekap</h3>
+                    <p class="mt-1 text-sm text-slate-500">Periode aktif: <span class="font-semibold text-slate-800">{{ $periodLabel }}</span>. Filter detail tersedia di tombol Filter.</p>
+                </div>
+                <x-ui.table-toolbar
+                    :action="route('attendance-reports.index')"
+                    :show-search="false"
+                    :filter-hidden="[
+                        'per_page' => $perPage,
+                        'activity_sort' => $activitySort,
+                        'activity_direction' => $activityDirection,
+                        'member_sort' => $memberSort,
+                        'member_direction' => $memberDirection,
+                    ]"
+                    :filter-count="$filterCount"
+                    :reset-href="route('attendance-reports.index')"
+                    show-filter
+                >
+                    <x-slot:filters>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label for="start_date_filter" class="block text-sm font-semibold text-slate-700">Tanggal Mulai</label>
+                                <input id="start_date_filter" name="start_date" type="date" value="{{ $filters['start_date'] }}" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                @error('start_date') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label for="end_date_filter" class="block text-sm font-semibold text-slate-700">Tanggal Akhir</label>
+                                <input id="end_date_filter" name="end_date" type="date" value="{{ $filters['end_date'] }}" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                @error('end_date') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label for="department_id_filter" class="block text-sm font-semibold text-slate-700">Bidang</label>
+                                <select id="department_id_filter" name="department_id" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                    <option value="">Semua bidang</option>
+                                    @foreach ($departments as $department)
+                                        <option value="{{ $department->id }}" @selected((string) $filters['department_id'] === (string) $department->id)>{{ $department->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('department_id') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div>
+                                <label for="activity_id_filter" class="block text-sm font-semibold text-slate-700">Kegiatan</label>
+                                <select id="activity_id_filter" name="activity_id" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                    <option value="">Semua kegiatan</option>
+                                    @foreach ($activityOptions as $activity)
+                                        <option value="{{ $activity->id }}" @selected((string) $filters['activity_id'] === (string) $activity->id)>{{ \App\Support\DateFormatter::date($activity->activity_date) }} - {{ $activity->title }}</option>
+                                    @endforeach
+                                </select>
+                                @error('activity_id') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
+                            </div>
+                        </div>
+                    </x-slot:filters>
+                </x-ui.table-toolbar>
             </div>
-            <form method="GET" action="{{ route('attendance-reports.index') }}" class="grid gap-4 md:grid-cols-2 xl:grid-cols-[160px_160px_190px_minmax(240px,1fr)_auto]">
-                <input type="hidden" name="per_page" value="{{ $perPage }}">
-                <input type="hidden" name="activity_sort" value="{{ $activitySort }}">
-                <input type="hidden" name="activity_direction" value="{{ $activityDirection }}">
-                <input type="hidden" name="member_sort" value="{{ $memberSort }}">
-                <input type="hidden" name="member_direction" value="{{ $memberDirection }}">
-                <div>
-                    <label for="start_date" class="block text-sm font-semibold text-slate-700">Tanggal Mulai</label>
-                    <input id="start_date" name="start_date" type="date" value="{{ $filters['start_date'] }}" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                    @error('start_date') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
-                </div>
-
-                <div>
-                    <label for="end_date" class="block text-sm font-semibold text-slate-700">Tanggal Akhir</label>
-                    <input id="end_date" name="end_date" type="date" value="{{ $filters['end_date'] }}" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                    @error('end_date') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
-                </div>
-
-                <div>
-                    <label for="department_id" class="block text-sm font-semibold text-slate-700">Bidang</label>
-                    <select id="department_id" name="department_id" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                        <option value="">Semua bidang</option>
-                        @foreach ($departments as $department)
-                            <option value="{{ $department->id }}" @selected((string) $filters['department_id'] === (string) $department->id)>{{ $department->name }}</option>
-                        @endforeach
-                    </select>
-                    @error('department_id') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
-                </div>
-
-                <div>
-                    <label for="activity_id" class="block text-sm font-semibold text-slate-700">Kegiatan</label>
-                    <select id="activity_id" name="activity_id" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                        <option value="">Semua kegiatan</option>
-                        @foreach ($activityOptions as $activity)
-                            <option value="{{ $activity->id }}" @selected((string) $filters['activity_id'] === (string) $activity->id)>{{ \App\Support\DateFormatter::date($activity->activity_date) }} - {{ $activity->title }}</option>
-                        @endforeach
-                    </select>
-                    @error('activity_id') <p class="mt-2 text-sm text-red-600">{{ $message }}</p> @enderror
-                </div>
-
-                <div class="flex gap-2 self-end md:col-span-2 xl:col-span-1">
-                    <button type="submit" class="inline-flex flex-1 items-center justify-center rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-700">Terapkan Filter</button>
-                    <a href="{{ route('attendance-reports.index') }}" class="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Reset Filter</a>
-                </div>
-            </form>
         </section>
 
         @if (! $hasAttendanceData)
@@ -176,7 +193,7 @@
                             <x-sortable-th field="activity_date" label="Tanggal/Jam" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
                             <th class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Rekap H/TH/I/V</th>
                             <x-sortable-th field="attendance_percentage" label="Kehadiran" :current-sort="$activitySort" :current-direction="$activityDirection" :query="$queryParams" sort-param="activity_sort" direction-param="activity_direction" page-param="activity_page" />
-                            <th class="w-20 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
+                            <th class="sticky right-0 z-20 w-20 border-l border-slate-200 bg-slate-50 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.35)]">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -211,7 +228,7 @@
                                     </div>
                                 </td>
                                 <td class="px-3 py-4"><span class="{{ $percentageClass($row['attendance_percentage']) }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ number_format($row['attendance_percentage'], 2) }}%</span></td>
-                                <td class="px-3 py-4 text-right"><x-ui.action-icon :href="route('activities.attendances.index', $activity)" label="Detail" variant="detail" /></td>
+                                <td class="sticky right-0 z-10 border-l border-slate-100 bg-white px-3 py-4 text-right shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.35)]"><x-ui.action-icon :href="route('activities.attendances.index', $activity)" label="Detail" variant="detail" /></td>
                             </tr>
                         @empty
                             <tr><td colspan="6"><x-ui.empty-state title="Belum ada kegiatan pada periode ini." description="Ubah filter periode atau pilih kegiatan lain." /></td></tr>

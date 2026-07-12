@@ -9,7 +9,7 @@
         $statusLabels = ['present' => 'Hadir', 'permission' => 'Izin', 'absent' => 'Tidak Hadir', 'need_verification' => 'Perlu Verifikasi'];
     @endphp
 
-    <div class="mx-auto max-w-3xl space-y-5">
+    <div class="w-full space-y-5">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Daftar Hadir Manual</p>

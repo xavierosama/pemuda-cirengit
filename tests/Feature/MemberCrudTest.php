@@ -191,7 +191,9 @@ class MemberCrudTest extends TestCase
             ->assertSee('Kelola data anggota, NPA, bidang, jabatan, dan akun login anggota.')
             ->assertSee('Total Anggota Aktif')
             ->assertSee('Perlu Diproses Batas Usia')
-            ->assertSee('Filter Data Anggota')
+            ->assertSee('Tabel Data Anggota')
+            ->assertSee('Cari nama / NPA / email / no HP')
+            ->assertSee('Filter')
             ->assertSee('Anggota Punya Akun')
             ->assertDontSee('Anggota Tanpa Akun');
 

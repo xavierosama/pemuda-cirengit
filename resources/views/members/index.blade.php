@@ -19,6 +19,7 @@
             ['label' => 'Total Anggota Nonaktif', 'value' => $memberStats['inactive'], 'class' => 'bg-slate-50 text-slate-700 ring-slate-200'],
             ['label' => 'Perlu Diproses Batas Usia', 'value' => $memberStats['age_limit_due'], 'class' => 'bg-amber-50 text-amber-700 ring-amber-100'],
         ];
+        $filterCount = collect([$departmentId, $positionId, $memberStatus, $inactiveReason, $accountStatus])->filter(fn ($value) => filled($value))->count();
     @endphp
 
     <div class="space-y-6">
@@ -44,77 +45,86 @@
             @endforeach
         </div>
 
-        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div class="mb-4">
-                <h3 class="text-base font-bold text-slate-950">Filter Data Anggota</h3>
-                <p class="mt-1 text-sm text-slate-500">Cari dan saring data berdasarkan identitas, bidang, jabatan, status anggota, atau akun login.</p>
-            </div>
-            <form method="GET" action="{{ route('members.index') }}" class="grid gap-4 lg:grid-cols-12">
-                <input type="hidden" name="sort" value="{{ $currentSort }}">
-                <input type="hidden" name="direction" value="{{ $currentDirection }}">
-                <input type="hidden" name="per_page" value="{{ $perPage }}">
-                <div class="lg:col-span-3">
-                    <label for="search" class="text-sm font-semibold text-slate-700">Search nama / NPA / email / no HP</label>
-                    <input id="search" name="search" type="search" value="{{ $search }}" placeholder="Contoh: Ahmad, 20.0001, email, no HP" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                </div>
-                <div class="lg:col-span-2">
-                    <label for="department_id" class="text-sm font-semibold text-slate-700">Bidang</label>
-                    <select id="department_id" name="department_id" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                        <option value="">Semua bidang</option>
-                        @foreach ($departments as $department)
-                            <option value="{{ $department->id }}" @selected((string) $departmentId === (string) $department->id)>{{ $department->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="lg:col-span-2">
-                    <label for="position_id" class="text-sm font-semibold text-slate-700">Jabatan</label>
-                    <select id="position_id" name="position_id" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                        <option value="">Semua jabatan</option>
-                        @foreach ($positions as $position)
-                            <option value="{{ $position->id }}" @selected((string) $positionId === (string) $position->id)>{{ $position->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="lg:col-span-2">
-                    <label for="member_status" class="text-sm font-semibold text-slate-700">Status anggota</label>
-                    <select id="member_status" name="member_status" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                        <option value="">Semua status</option>
-                        <option value="active" @selected($memberStatus === 'active')>Aktif</option>
-                        <option value="inactive" @selected($memberStatus === 'inactive')>Tidak Aktif</option>
-                        <option value="age_limit_due" @selected($memberStatus === 'age_limit_due')>Perlu Diproses Batas Usia</option>
-                    </select>
-                </div>
-                <div class="lg:col-span-2">
-                    <label for="inactive_reason" class="text-sm font-semibold text-slate-700">Alasan tidak aktif</label>
-                    <select id="inactive_reason" name="inactive_reason" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                        <option value="">Semua alasan</option>
-                        @foreach ($inactiveReasons as $value => $label)
-                            <option value="{{ $value }}" @selected($inactiveReason === $value)>{{ $label }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="lg:col-span-2">
-                    <label for="account_status" class="text-sm font-semibold text-slate-700">Status akun</label>
-                    <select id="account_status" name="account_status" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
-                        <option value="">Semua akun</option>
-                        <option value="exists" @selected($accountStatus === 'exists')>Sudah Ada</option>
-                        <option value="missing" @selected($accountStatus === 'missing')>Belum Ada</option>
-                    </select>
-                </div>
-                <div class="flex gap-2 lg:col-span-12 lg:justify-end">
-                    <button type="submit" class="inline-flex flex-1 items-center justify-center rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-700 sm:flex-none">Terapkan Filter</button>
-                    <a href="{{ route('members.index') }}" class="inline-flex flex-1 items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 sm:flex-none">Reset</a>
-                </div>
-            </form>
-        </div>
-
-        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div class="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <div class="grid gap-4 border-b border-slate-200 px-5 py-4 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-center">
                 <div>
                     <h3 class="text-base font-bold text-slate-950">Tabel Data Anggota</h3>
                     <p class="mt-1 text-sm text-slate-500">Daftar anggota sesuai filter aktif. Gunakan scroll horizontal pada layar kecil.</p>
                 </div>
-                <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" />
+                <x-ui.table-toolbar
+                    :action="route('members.index')"
+                    search-placeholder="Cari nama / NPA / email / no HP"
+                    :search-value="$search"
+                    :search-hidden="[
+                        'sort' => $currentSort,
+                        'direction' => $currentDirection,
+                        'per_page' => $perPage,
+                        'department_id' => $departmentId,
+                        'position_id' => $positionId,
+                        'member_status' => $memberStatus,
+                        'inactive_reason' => $inactiveReason,
+                        'account_status' => $accountStatus,
+                    ]"
+                    :filter-hidden="[
+                        'sort' => $currentSort,
+                        'direction' => $currentDirection,
+                        'per_page' => $perPage,
+                    ]"
+                    :filter-count="$filterCount"
+                    :reset-href="route('members.index')"
+                    show-filter
+                >
+                    <x-slot:filters>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label for="department_id_filter" class="text-sm font-semibold text-slate-700">Bidang</label>
+                                <select id="department_id_filter" name="department_id" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                    <option value="">Semua bidang</option>
+                                    @foreach ($departments as $department)
+                                        <option value="{{ $department->id }}" @selected((string) $departmentId === (string) $department->id)>{{ $department->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label for="position_id_filter" class="text-sm font-semibold text-slate-700">Jabatan</label>
+                                <select id="position_id_filter" name="position_id" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                    <option value="">Semua jabatan</option>
+                                    @foreach ($positions as $position)
+                                        <option value="{{ $position->id }}" @selected((string) $positionId === (string) $position->id)>{{ $position->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label for="member_status_filter" class="text-sm font-semibold text-slate-700">Status anggota</label>
+                                <select id="member_status_filter" name="member_status" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                    <option value="">Semua status</option>
+                                    <option value="active" @selected($memberStatus === 'active')>Aktif</option>
+                                    <option value="inactive" @selected($memberStatus === 'inactive')>Tidak Aktif</option>
+                                    <option value="age_limit_due" @selected($memberStatus === 'age_limit_due')>Perlu Diproses Batas Usia</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="inactive_reason_filter" class="text-sm font-semibold text-slate-700">Alasan tidak aktif</label>
+                                <select id="inactive_reason_filter" name="inactive_reason" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                    <option value="">Semua alasan</option>
+                                    @foreach ($inactiveReasons as $value => $label)
+                                        <option value="{{ $value }}" @selected($inactiveReason === $value)>{{ $label }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label for="account_status_filter" class="text-sm font-semibold text-slate-700">Status akun</label>
+                                <select id="account_status_filter" name="account_status" class="mt-2 block w-full rounded-lg border-slate-300 shadow-sm focus:border-emerald-600 focus:ring-emerald-600">
+                                    <option value="">Semua akun</option>
+                                    <option value="exists" @selected($accountStatus === 'exists')>Sudah Ada</option>
+                                    <option value="missing" @selected($accountStatus === 'missing')>Belum Ada</option>
+                                </select>
+                            </div>
+                        </div>
+                    </x-slot:filters>
+
+                    <x-per-page-selector :per-page="$perPage" :options="$perPageOptions" :query="$queryParams" />
+                </x-ui.table-toolbar>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-200">
@@ -129,7 +139,7 @@
                             <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Status Usia</th>
                             <x-sortable-th field="member_status" label="Status Anggota" :current-sort="$currentSort" :current-direction="$currentDirection" :query="$queryParams" />
                             <th class="whitespace-nowrap px-4 py-3 text-left text-xs font-bold uppercase tracking-wide text-slate-500">Status Akun</th>
-                            <th class="whitespace-nowrap px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500">Aksi</th>
+                            <th class="sticky right-0 z-20 whitespace-nowrap border-l border-slate-200 bg-slate-50 px-4 py-3 text-right text-xs font-bold uppercase tracking-wide text-slate-500 shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.35)]">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100 bg-white">
@@ -171,7 +181,7 @@
                                 <td class="whitespace-nowrap px-3 py-4">
                                     <x-ui.status-badge :status="$member->user ? 'account_exists' : 'account_missing'" />
                                 </td>
-                                <td class="whitespace-nowrap px-3 py-4 text-right text-sm font-semibold">
+                                <td class="sticky right-0 z-10 whitespace-nowrap border-l border-slate-100 bg-white px-3 py-4 text-right text-sm font-semibold shadow-[-8px_0_12px_-12px_rgba(15,23,42,0.35)]">
                                     <div class="flex justify-end gap-1.5">
                                         <x-ui.action-icon :href="route('members.show', $member)" label="Detail" variant="detail" />
                                         <x-ui.action-dropdown>

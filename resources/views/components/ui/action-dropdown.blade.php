@@ -62,7 +62,7 @@
     <button
         x-ref="trigger"
         type="button"
-        class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"
+        class="inline-flex h-8 w-8 items-center justify-center rounded-xl text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white dark:focus:ring-offset-slate-950"
         x-on:click="toggleDropdown()"
         x-bind:aria-expanded="dropdownOpen.toString()"
         aria-haspopup="true"
