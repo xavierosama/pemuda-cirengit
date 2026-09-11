@@ -27,7 +27,7 @@
         ];
     @endphp
 
-    <div class="max-w-7xl space-y-6">
+    <div class="max-w-7xl space-y-4 sm:space-y-6">
         @if (session('success'))
             <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ session('success') }}</div>
         @endif
@@ -44,7 +44,7 @@
             <x-ui.status-badge class="w-fit" :status="$activity->status" :label="$statusLabels[$activity->status]" />
         </div>
 
-        <div class="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+        <div class="grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
             <section class="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -165,10 +165,10 @@
                 </div>
             </div>
 
-            <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="mt-4 grid grid-cols-2 gap-3 sm:mt-5 sm:gap-4 xl:grid-cols-4">
                 @foreach ($summaryCards as $card)
                     <div class="{{ $card['class'] }} rounded-lg border border-slate-200 border-l-4 bg-white p-4 shadow-sm">
-                        <p class="text-sm font-medium text-slate-500">{{ $card['label'] }}</p>
+                        <p class="line-clamp-2 text-xs font-medium text-slate-500 sm:text-sm">{{ $card['label'] }}</p>
                         <p class="mt-2 text-2xl font-bold text-slate-950">{{ number_format($card['value']) }}</p>
                     </div>
                 @endforeach

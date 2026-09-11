@@ -75,6 +75,31 @@ class Member extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
+    public function notificationPreferences(): HasMany
+    {
+        return $this->hasMany(NotificationPreference::class);
+    }
+
+    public function feeRecords(): HasMany
+    {
+        return $this->hasMany(MemberFeeRecord::class);
+    }
+
+    public function feeSettings(): HasMany
+    {
+        return $this->hasMany(MemberFeeSetting::class);
+    }
+
     public function age(): ?int
     {
         return $this->birth_date?->age;

@@ -24,7 +24,7 @@
         method="POST"
         action="{{ route('settings.update') }}"
         enctype="multipart/form-data"
-        class="space-y-6"
+        class="space-y-4 sm:space-y-6"
         x-data="{ submitting: false, whatsappTemplate: @js(old('whatsapp_group_reminder_template', $settings['whatsapp_group_reminder_template'])), defaultWhatsappTemplate: @js(\App\Support\SystemSettings::DEFAULT_WHATSAPP_GROUP_REMINDER_TEMPLATE) }"
         x-on:submit="submitting = true"
     >
@@ -41,10 +41,10 @@
             </x-slot>
         </x-ui.page-header>
 
-        <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)]">
-            <div class="space-y-6">
+        <div class="grid gap-4 sm:gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(320px,0.72fr)]">
+            <div class="space-y-4 sm:space-y-6">
                 <x-ui.card padding="lg" class="dark:border-slate-800 dark:bg-slate-900">
-                    <div class="mb-6 flex items-start gap-4">
+                    <div class="mb-4 flex items-start gap-3 sm:mb-6 sm:gap-4">
                         <div class="{{ $sectionIconClass }}">
                             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 3.75 4.5 7.5 12 11.25l7.5-3.75L12 3.75Z" />
@@ -57,7 +57,7 @@
                         </div>
                     </div>
 
-                    <div class="grid gap-5 md:grid-cols-2">
+                    <div class="grid gap-4 sm:gap-5 md:grid-cols-2">
                         <div>
                             <x-input-label for="app_name" value="Nama Aplikasi" class="{{ $labelClass }}" />
                             <input id="app_name" name="app_name" type="text" value="{{ old('app_name', $settings['app_name']) }}" class="{{ $fieldClass }}" placeholder="Pemuda Cirengit" required>
@@ -75,8 +75,8 @@
                 </x-ui.card>
 
                 <x-ui.card padding="lg" class="dark:border-slate-800 dark:bg-slate-900">
-                    <div class="mb-6 flex items-start justify-between gap-4">
-                        <div class="flex items-start gap-4">
+                    <div class="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                        <div class="flex items-start gap-3 sm:gap-4">
                             <div class="{{ $sectionIconClass }}">
                                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M7.75 8.25h8.5M7.75 12h5.5M5.75 19.25l2.75-2h9.75a2 2 0 0 0 2-2v-8.5a2 2 0 0 0-2-2H5.75a2 2 0 0 0-2 2v8.5a2 2 0 0 0 2 2v2Z" />
@@ -114,7 +114,7 @@
                 </x-ui.card>
 
                 <x-ui.card padding="lg" class="dark:border-slate-800 dark:bg-slate-900">
-                    <div class="mb-6 flex items-start gap-4">
+                    <div class="mb-4 flex items-start gap-3 sm:mb-6 sm:gap-4">
                         <div class="{{ $sectionIconClass }}">
                             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M4.75 5.75h14.5v8.5H4.75z" />
@@ -140,7 +140,7 @@
                 </x-ui.card>
 
                 <x-ui.card padding="lg" class="dark:border-slate-800 dark:bg-slate-900">
-                    <div class="mb-6 flex items-start gap-4">
+                    <div class="mb-4 flex items-start gap-3 sm:mb-6 sm:gap-4">
                         <div class="{{ $sectionIconClass }}">
                             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M7.75 14.25 10 16.5l6.25-7" />
@@ -153,7 +153,7 @@
                         </div>
                     </div>
 
-                    <div class="grid gap-5 md:grid-cols-2">
+                    <div class="grid gap-4 sm:gap-5 md:grid-cols-2">
                         <div>
                             <x-input-label for="default_attendance_radius" value="Default Radius Presensi" class="{{ $labelClass }}" />
                             <div class="mt-2 flex rounded-xl shadow-sm">
@@ -197,9 +197,9 @@
                 </x-ui.card>
             </div>
 
-            <div class="space-y-6">
+            <div class="space-y-4 sm:space-y-6">
                 <x-ui.card padding="lg" class="dark:border-slate-800 dark:bg-slate-900">
-                    <div class="mb-6 flex items-start gap-4">
+                    <div class="mb-4 flex items-start gap-3 sm:mb-6 sm:gap-4">
                         <div class="{{ $sectionIconClass }}">
                             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5.75 6.75h12.5v10.5H5.75z" />

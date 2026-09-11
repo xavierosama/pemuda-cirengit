@@ -19,6 +19,7 @@
         @if ($faviconUrl)
             <link rel="icon" href="{{ $faviconUrl }}">
         @endif
+        <x-pwa.meta :app-name="$appName" />
 
         <script>
             (() => {
@@ -66,7 +67,10 @@
                         </div>
                     </div>
 
-                    <x-member.account-menu :user="$user" :member="$member" />
+                    <div class="flex items-center gap-2">
+                        <x-member.notifications-menu />
+                        <x-member.account-menu :user="$user" :member="$member" />
+                    </div>
                 </div>
             </header>
 
@@ -169,6 +173,24 @@
                                 <p class="mt-1 text-sm text-slate-700">Aktif sebagai anggota</p>
                             </div>
                         </div>
+                    </section>
+
+                    <section class="grid gap-3 sm:grid-cols-2">
+                        <a href="{{ route('member.fees.index') }}" class="group rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md dark:border-emerald-900/60 dark:bg-slate-900 sm:p-5">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <p class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700">Tracking Iuran</p>
+                                    <h2 class="mt-1 text-lg font-bold text-slate-950 dark:text-white">Iuran Saya</h2>
+                                    <p class="mt-1 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">Lihat status iuran pribadi per bulan. Tidak ada tombol bayar atau upload bukti.</p>
+                                </div>
+                                <span class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-100 transition group-hover:bg-emerald-700 group-hover:text-white">
+                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.75 7.25h14.5v9.5H4.75v-9.5Z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 10.25h.01M16 13.75h.01M12 14.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />
+                                    </svg>
+                                </span>
+                            </div>
+                        </a>
                     </section>
 
                     <section class="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm shadow-emerald-100/60 ring-1 ring-emerald-50 dark:border-emerald-900/60 dark:bg-slate-900 dark:ring-emerald-400/10 sm:p-5">
@@ -515,6 +537,7 @@
                 });
             });
         </script>
+        <x-pwa.register />
         <x-ui.toast />
     </body>
 </html>

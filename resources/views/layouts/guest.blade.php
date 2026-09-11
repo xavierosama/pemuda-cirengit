@@ -18,6 +18,7 @@
         @if ($faviconUrl)
             <link rel="icon" href="{{ $faviconUrl }}">
         @endif
+        <x-pwa.meta :app-name="$appName" />
 
         <script>
             (() => {
@@ -55,6 +56,7 @@
                 </div>
             </div>
         @endif
+        <x-pwa.register />
         <x-ui.toast />
     </body>
 </html>

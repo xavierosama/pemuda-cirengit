@@ -16,6 +16,7 @@
         @if ($faviconUrl)
             <link rel="icon" href="{{ $faviconUrl }}">
         @endif
+        <x-pwa.meta :app-name="$appName" />
         <script>
             (() => {
                 const themeMode = @json($themeMode);
@@ -339,5 +340,6 @@
                 </section>
             </main>
         </div>
+        <x-pwa.register />
     </body>
 </html>

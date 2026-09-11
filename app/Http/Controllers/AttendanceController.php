@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\Department;
 use App\Models\Member;
 use App\Services\AttendanceSyncService;
+use App\Services\NotificationRuleService;
 use App\Support\DateFormatter;
 use App\Support\TableControls;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -313,6 +314,7 @@ class AttendanceController extends Controller
             'verified_by' => $request->user()->id,
             'verified_at' => now(),
         ]);
+        app(NotificationRuleService::class)->notifyAttendanceVerified($attendance->fresh(['activity', 'member.user']));
 
         return back()->with('success', 'Presensi berhasil diverifikasi sebagai valid.');
     }
@@ -325,6 +327,7 @@ class AttendanceController extends Controller
             'verified_by' => $request->user()->id,
             'verified_at' => now(),
         ]);
+        app(NotificationRuleService::class)->notifyAttendanceRejected($attendance->fresh(['activity', 'member.user']));
 
         return back()->with('success', 'Presensi telah ditolak.');
     }

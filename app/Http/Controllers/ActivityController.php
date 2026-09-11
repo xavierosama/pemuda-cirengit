@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Member;
 use App\Services\ActivityAttendanceScheduleService;
 use App\Services\AttendanceSyncService;
+use App\Services\NotificationRuleService;
 use App\Support\DateFormatter;
 use App\Support\SystemSettings;
 use App\Support\TableControls;
@@ -92,6 +93,7 @@ class ActivityController extends Controller
 
         $activity = Activity::create($data);
         $syncResult = app(AttendanceSyncService::class)->syncActiveMembers($activity, $request->user()->id);
+        app(NotificationRuleService::class)->notifyActivityCreated($activity);
 
         return redirect()
             ->route('activities.show', $activity)
@@ -130,6 +132,7 @@ class ActivityController extends Controller
         $this->applyAutomaticAttendanceSchedule($data);
         $this->ensureAttendanceToken($data, $activity);
         $activity->update($data);
+        $this->notifyIfScheduleOrLocationChanged($activity);
 
         return redirect()
             ->route('activities.show', $activity)
@@ -206,6 +209,7 @@ class ActivityController extends Controller
 
         $activity = Activity::create($data);
         $syncResult = app(AttendanceSyncService::class)->syncActiveMembers($activity, $request->user()->id);
+        app(NotificationRuleService::class)->notifyActivityCreated($activity);
 
         return redirect()
             ->route('activities.edit', $activity)
@@ -317,6 +321,26 @@ class ActivityController extends Controller
             $syncResult['created'],
             $syncResult['already_exists'] + $syncResult['skipped']
         );
+    }
+
+    private function notifyIfScheduleOrLocationChanged(Activity $activity): void
+    {
+        $changedFields = collect([
+            'activity_date',
+            'start_time',
+            'end_time',
+            'location',
+            'latitude',
+            'longitude',
+            'attendance_radius',
+        ])
+            ->filter(fn (string $field) => $activity->wasChanged($field))
+            ->values()
+            ->all();
+
+        if ($changedFields !== []) {
+            app(NotificationRuleService::class)->notifyActivityUpdated($activity->fresh(), $changedFields);
+        }
     }
 
     private function departmentChairPicMap(): array

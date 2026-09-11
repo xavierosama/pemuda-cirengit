@@ -10,6 +10,7 @@ use App\Models\Department;
 use App\Models\Member;
 use App\Services\ActivityAttendanceScheduleService;
 use App\Services\AttendanceSyncService;
+use App\Services\NotificationRuleService;
 use App\Support\DateFormatter;
 use App\Support\SystemSettings;
 use App\Support\TableControls;
@@ -232,6 +233,7 @@ class AgendaScheduleController extends Controller
                 'created_by' => $request->user()->id,
             ]);
             $syncResult = $attendanceSyncService->syncActiveMembers($activity, $request->user()->id);
+            app(NotificationRuleService::class)->notifyActivityCreated($activity);
             $attendanceCreated += $syncResult['created'];
             $attendanceAlreadyExists += $syncResult['already_exists'];
             $attendanceSkipped += $syncResult['skipped'];

@@ -27,6 +27,7 @@
         @if ($faviconUrl)
             <link rel="icon" href="{{ $faviconUrl }}">
         @endif
+        <x-pwa.meta :app-name="$appName" />
 
         <script>
             (() => {
@@ -60,7 +61,10 @@
                         </span>
                     </a>
 
-                    <x-member.account-menu :user="$user" :member="$member" />
+                    <div class="flex items-center gap-2">
+                        <x-member.notifications-menu />
+                        <x-member.account-menu :user="$user" :member="$member" />
+                    </div>
                 </div>
             </header>
 
@@ -213,6 +217,7 @@
                 </div>
             </main>
         </div>
+        <x-pwa.register />
         <x-ui.toast />
     </body>
 </html>

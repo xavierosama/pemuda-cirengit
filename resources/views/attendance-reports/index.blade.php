@@ -43,7 +43,7 @@
         ];
     @endphp
 
-    <div class="space-y-6">
+    <div class="space-y-4 sm:space-y-6">
         <x-ui.page-header title="Rekap Presensi" description="Pantau kehadiran anggota berdasarkan periode, bidang, dan kegiatan.">
             <x-slot name="action">
                 <div class="rounded-lg bg-emerald-50 px-4 py-3 text-left ring-1 ring-emerald-100 lg:text-right">
@@ -120,24 +120,24 @@
             </section>
         @endif
 
-        <section class="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <section class="grid gap-3 sm:gap-4 xl:grid-cols-[1.2fr_0.8fr]">
+            <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-3">
                 @foreach ($summaryCards as $card)
                     <x-ui.card class="{{ $card['color'] }} border-l-4" padding="md">
-                        <p class="text-sm font-medium text-slate-500">{{ $card['label'] }}</p>
-                        <p class="mt-3 text-2xl font-bold text-slate-950">{{ number_format($card['value']) }}</p>
-                        <p class="mt-2 text-xs text-slate-500">{{ $card['note'] }}</p>
+                        <p class="line-clamp-2 text-xs font-medium text-slate-500 sm:text-sm">{{ $card['label'] }}</p>
+                        <p class="mt-2 text-2xl font-bold text-slate-950 sm:mt-3">{{ number_format($card['value']) }}</p>
+                        <p class="mt-1 line-clamp-1 text-xs text-slate-500 sm:mt-2 sm:line-clamp-2">{{ $card['note'] }}</p>
                     </x-ui.card>
                 @endforeach
             </div>
 
-            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-6 shadow-sm">
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm sm:p-6">
                 <p class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Persentase Kehadiran</p>
-                <div class="mt-4 flex items-end gap-2">
-                    <p class="text-4xl font-bold text-emerald-950">{{ rtrim(rtrim(number_format($summary['attendance_percentage'], 2), '0'), '.') }}%</p>
-                    <p class="pb-1 text-sm text-emerald-700">Hadir / potensi kehadiran</p>
+                <div class="mt-3 flex items-end gap-2 sm:mt-4">
+                    <p class="text-3xl font-bold text-emerald-950 sm:text-4xl">{{ rtrim(rtrim(number_format($summary['attendance_percentage'], 2), '0'), '.') }}%</p>
+                    <p class="pb-1 text-xs text-emerald-700 sm:text-sm">Hadir / potensi kehadiran</p>
                 </div>
-                <div class="mt-5 h-3 overflow-hidden rounded-full bg-white ring-1 ring-emerald-100">
+                <div class="mt-4 h-2.5 overflow-hidden rounded-full bg-white ring-1 ring-emerald-100 sm:mt-5 sm:h-3">
                     <div class="h-full rounded-full bg-emerald-600" style="width: {{ min($summary['attendance_percentage'], 100) }}%"></div>
                 </div>
                 <p class="mt-3 text-xs text-emerald-700">Potensi kehadiran: {{ number_format($summary['total_potential_attendances']) }}</p>

@@ -54,7 +54,7 @@
         <span>{{ $label }}</span>
     </button>
 @elseif ($confirm)
-    <div x-data="{ open: false, submitting: false }" x-on:confirmed="submitting = true; $refs.dropdownAction.submit()">
+    <div x-data="{ open: false, submitting: false }" x-on:confirmed.window="if (open) { submitting = true; $refs.dropdownAction.submit() }">
         <form x-ref="dropdownAction" method="POST" action="{{ $action }}" x-on:submit.prevent="open = true; dropdownOpen = false">
             @csrf
             @if (strtoupper($method) !== 'POST')
@@ -72,14 +72,16 @@
             </button>
         </form>
 
-        <x-ui.confirm-modal
-            :title="$resolvedTitle"
-            :description="$resolvedDescription"
-            :confirm-text="$resolvedConfirmText"
-            :loading-text="$loadingText"
-            :cancel-text="$cancelText"
-            :variant="$resolvedVariant"
-        />
+        <template x-teleport="body">
+            <x-ui.confirm-modal
+                :title="$resolvedTitle"
+                :description="$resolvedDescription"
+                :confirm-text="$resolvedConfirmText"
+                :loading-text="$loadingText"
+                :cancel-text="$cancelText"
+                :variant="$resolvedVariant"
+            />
+        </template>
     </div>
 @else
     <form method="POST" action="{{ $action }}" x-data="{ submitting: false }" x-on:submit="submitting = true; dropdownOpen = false">

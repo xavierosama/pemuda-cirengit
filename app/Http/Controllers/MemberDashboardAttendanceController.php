@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity;
 use App\Models\Attendance;
+use App\Services\NotificationRuleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -66,6 +67,10 @@ class MemberDashboardAttendanceController extends Controller
             'verified_at' => null,
         ]);
         $attendance->save();
+
+        if (! $insideRadius) {
+            app(NotificationRuleService::class)->notifyAttendancePendingVerification($attendance->fresh(['activity', 'member.user']));
+        }
 
         return redirect()
             ->route('member.home')

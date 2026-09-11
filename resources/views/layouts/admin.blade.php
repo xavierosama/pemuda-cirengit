@@ -19,6 +19,7 @@
         @if ($faviconUrl)
             <link rel="icon" href="{{ $faviconUrl }}">
         @endif
+        <x-pwa.meta :app-name="$appName" />
 
         <script>
             (() => {
@@ -36,11 +37,17 @@
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-900 selection:bg-emerald-100 selection:text-emerald-900 dark:bg-slate-950 dark:text-slate-100">
         @php
+            $authUser = Auth::user();
+            $displayName = $authUser?->member?->full_name ?? $authUser?->name ?? 'User';
+            $initial = str($displayName)->substr(0, 1)->upper();
+            $profilePhotoUrl = $authUser?->member?->profile_photo ? asset('storage/'.$authUser->member->profile_photo) : null;
+            $homeRoute = $authUser?->role === 'bendahara' ? route('finance.dashboard') : route('dashboard');
+
             $menuSections = [
                 [
                     'heading' => null,
                     'items' => [
-                        ['label' => 'Dashboard', 'href' => route('dashboard'), 'active' => request()->routeIs('dashboard'), 'icon' => 'dashboard'],
+                        ['label' => $authUser?->role === 'bendahara' ? 'Dashboard Bendahara' : 'Dashboard', 'href' => $homeRoute, 'active' => request()->routeIs('dashboard') || request()->routeIs('finance.dashboard'), 'icon' => 'dashboard'],
                     ],
                 ],
                 [
@@ -60,6 +67,14 @@
                     ],
                 ],
                 [
+                    'heading' => 'Publikasi',
+                    'items' => [
+                        ['label' => 'Artikel Kajian', 'href' => route('articles.index'), 'active' => request()->routeIs('articles.*'), 'icon' => 'book'],
+                        ['label' => 'Kategori Kajian', 'href' => route('article-categories.index'), 'active' => request()->routeIs('article-categories.*'), 'icon' => 'folder'],
+                        ['label' => 'Notifikasi', 'href' => route('admin-notifications.index'), 'active' => request()->routeIs('admin-notifications.*'), 'icon' => 'bell'],
+                    ],
+                ],
+                [
                     'heading' => 'Presensi',
                     'items' => [
                         ['label' => 'Daftar Hadir', 'href' => route('attendances.index'), 'active' => request()->routeIs('attendances.*') || request()->routeIs('activities.attendances.*'), 'icon' => 'clipboard'],
@@ -73,13 +88,28 @@
                     ],
                 ],
             ];
-        @endphp
 
-        @php
-            $authUser = Auth::user();
-            $displayName = $authUser?->member?->full_name ?? $authUser?->name ?? 'User';
-            $initial = str($displayName)->substr(0, 1)->upper();
-            $profilePhotoUrl = $authUser?->member?->profile_photo ? asset('storage/'.$authUser->member->profile_photo) : null;
+            $financeSection = [
+                'heading' => 'Keuangan',
+                'items' => [
+                    ['label' => 'Dashboard Bendahara', 'href' => route('finance.dashboard'), 'active' => request()->routeIs('finance.dashboard'), 'icon' => 'wallet'],
+                    ['label' => 'Kategori Keuangan', 'href' => route('finance.categories.index'), 'active' => request()->routeIs('finance.categories.*'), 'icon' => 'folder'],
+                    ['label' => 'Pemasukan', 'href' => route('finance.income.index'), 'active' => request()->routeIs('finance.income.*') || (request()->routeIs('finance.transactions.*') && request('type') === 'income'), 'icon' => 'cash'],
+                    ['label' => 'Pengeluaran', 'href' => route('finance.expenses.index'), 'active' => request()->routeIs('finance.expenses.*') || (request()->routeIs('finance.transactions.*') && request('type') === 'expense'), 'icon' => 'cash'],
+                    ['label' => 'Iuran Anggota', 'href' => route('finance.member-fees.index'), 'active' => request()->routeIs('finance.member-fees.*'), 'icon' => 'clipboard'],
+                ],
+            ];
+
+            if ($authUser?->canManageFinance()) {
+                array_splice($menuSections, 1, 0, [$financeSection]);
+            }
+
+            if ($authUser?->role === 'bendahara') {
+                $menuSections = [
+                    $menuSections[0],
+                    $financeSection,
+                ];
+            }
         @endphp
 
         <div
@@ -106,7 +136,7 @@
                     class="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-slate-200 px-4 dark:border-slate-800"
                     :class="sidebarCollapsed ? 'lg:px-1 lg:justify-center' : ''"
                 >
-                    <a href="{{ route('dashboard') }}" class="flex items-center gap-3">
+                    <a href="{{ $homeRoute }}" class="flex items-center gap-3">
                         <div
                             class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-emerald-700 text-sm font-bold text-white ring-1 ring-inset ring-emerald-600/40 transition-all"
                             :class="sidebarCollapsed ? 'lg:h-8 lg:w-8 lg:rounded-lg lg:text-xs' : ''"
@@ -258,6 +288,8 @@
                 </main>
             </div>
         </div>
+        <x-pwa.register />
         <x-ui.toast />
+        @stack('scripts')
     </body>
 </html>

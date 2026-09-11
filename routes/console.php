@@ -4,6 +4,7 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use App\Models\Activity;
 use App\Services\ActivityAttendanceScheduleService;
+use App\Services\NotificationRuleService;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -56,3 +57,14 @@ Artisan::command('activities:backfill-attendance-schedule {--force : Hitung ulan
 
     $this->info("Backfill jadwal presensi selesai. {$updated} kegiatan diperbarui, {$skipped} kegiatan dilewati.");
 })->purpose('Backfill jadwal presensi otomatis untuk Kegiatan Aktual lama');
+
+Artisan::command('notifications:generate-reminders', function (NotificationRuleService $notificationRuleService) {
+    $summary = $notificationRuleService->generateReminders();
+
+    $this->info(sprintf(
+        'Generate reminder selesai. %d presensi dibuka, %d presensi hampir ditutup, %d belum presensi dibuat.',
+        $summary['attendance_opened'],
+        $summary['attendance_closing_soon'],
+        $summary['attendance_not_submitted']
+    ));
+})->purpose('Generate notifikasi otomatis berbasis waktu untuk kegiatan dan presensi');

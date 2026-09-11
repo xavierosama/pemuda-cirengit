@@ -3,9 +3,9 @@
     'description' => null,
 ])
 
-<div {{ $attributes->merge(['class' => 'px-4 py-12 text-center']) }}>
+<div {{ $attributes->merge(['class' => 'px-3 py-7 text-center sm:px-4 sm:py-12']) }}>
     <div class="mx-auto max-w-sm">
-        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-sky-600 ring-1 ring-inset ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20">
+        <div class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-sky-50 text-sky-600 ring-1 ring-inset ring-sky-100 dark:bg-sky-500/10 dark:text-sky-300 dark:ring-sky-500/20 sm:h-12 sm:w-12 sm:rounded-2xl">
             @isset($icon)
                 {{ $icon }}
             @else
@@ -14,13 +14,13 @@
                 </svg>
             @endisset
         </div>
-        <p class="mt-4 text-base font-bold text-slate-900 dark:text-white">{{ $title }}</p>
+        <p class="mt-3 text-sm font-bold text-slate-900 dark:text-white sm:mt-4 sm:text-base">{{ $title }}</p>
         @if ($description)
-            <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ $description }}</p>
+            <p class="mt-1 line-clamp-2 text-xs leading-5 text-slate-500 dark:text-slate-400 sm:text-sm sm:leading-6">{{ $description }}</p>
         @endif
 
         @isset($action)
-            <div class="mt-5 flex justify-center">
+            <div class="mt-4 flex justify-center sm:mt-5">
                 {{ $action }}
             </div>
         @endisset

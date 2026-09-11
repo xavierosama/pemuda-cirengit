@@ -25,7 +25,7 @@
         'violet' => 'text-violet-700 hover:bg-violet-50 focus:ring-violet-500 dark:text-violet-300 dark:hover:bg-violet-500/10',
     ];
     $buttonClass = ($variants[$variant] ?? $variants['slate']).' group relative inline-flex h-8 w-8 items-center justify-center rounded-xl transition focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-950';
-    $tooltipClass = 'pointer-events-none absolute bottom-full left-1/2 z-20 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-sm transition group-hover:opacity-100 group-focus:opacity-100';
+    $tooltipClass = 'pointer-events-none invisible absolute right-full top-1/2 z-[999] mr-2 -translate-y-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition group-hover:visible group-hover:opacity-100 group-focus:visible group-focus:opacity-100';
     $isDelete = strtoupper($method) === 'DELETE' || $variant === 'red' || $icon === 'trash';
     $isReset = $icon === 'key' || str($label)->lower()->contains('reset');
     $isSync = str($label)->lower()->contains('sinkron');
@@ -65,7 +65,7 @@
     </a>
 @else
     @if ($confirm)
-        <div x-data="{ open: false, submitting: false }" class="inline-flex" x-on:confirmed="submitting = true; $refs.confirmableAction.submit()">
+        <div x-data="{ open: false, submitting: false }" class="inline-flex" x-on:confirmed.window="if (open) { submitting = true; $refs.confirmableAction.submit() }">
             <form x-ref="confirmableAction" method="POST" action="{{ $action }}" class="inline-flex" x-on:submit.prevent="open = true">
                 @csrf
                 @if (strtoupper($method) !== 'POST')
@@ -84,13 +84,15 @@
                 </button>
             </form>
 
-            <x-ui.confirm-modal
-                :title="$resolvedTitle"
-                :description="$resolvedDescription"
-                :confirm-text="$resolvedConfirmText"
-                :cancel-text="$cancelText"
-                :variant="$resolvedVariant"
-            />
+            <template x-teleport="body">
+                <x-ui.confirm-modal
+                    :title="$resolvedTitle"
+                    :description="$resolvedDescription"
+                    :confirm-text="$resolvedConfirmText"
+                    :cancel-text="$cancelText"
+                    :variant="$resolvedVariant"
+                />
+            </template>
         </div>
     @else
         <form method="POST" action="{{ $action }}" class="inline-flex" x-data="{ submitting: false }" x-on:submit="submitting = true">

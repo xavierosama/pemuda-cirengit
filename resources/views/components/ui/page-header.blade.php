@@ -13,9 +13,9 @@
                     {{ $eyebrow }}
                 </div>
             @endif
-            <h2 class="{{ $eyebrow ? 'mt-3' : '' }} text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">{{ $title }}</h2>
+            <h2 class="{{ $eyebrow ? 'mt-2 sm:mt-3' : '' }} text-xl font-bold tracking-tight text-slate-950 dark:text-white sm:text-3xl">{{ $title }}</h2>
             @if ($description)
-                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-400">{{ $description }}</p>
+                <p class="mt-2 line-clamp-2 max-w-3xl text-sm leading-6 text-slate-600 dark:text-slate-400 sm:line-clamp-none">{{ $description }}</p>
             @endif
         </div>
 

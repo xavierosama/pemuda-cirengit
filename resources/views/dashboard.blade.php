@@ -39,53 +39,53 @@
         $dayLabels = [0 => 'Minggu', 1 => 'Senin', 2 => 'Selasa', 3 => 'Rabu', 4 => 'Kamis', 5 => 'Jumat', 6 => 'Sabtu'];
     @endphp
 
-    <div class="space-y-6">
+    <div class="space-y-4 sm:space-y-6">
         <section>
-            <div class="mb-4">
-                <h2 class="text-xl font-bold tracking-tight text-slate-950 dark:text-white">Ringkasan Utama</h2>
-                <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Gambaran cepat kondisi administrasi Pemuda Cirengit.</p>
+            <div class="mb-3 sm:mb-4">
+                <h2 class="text-lg font-bold tracking-tight text-slate-950 dark:text-white sm:text-xl">Ringkasan Utama</h2>
+                <p class="mt-1 line-clamp-1 text-sm text-slate-600 dark:text-slate-400 sm:line-clamp-none">Gambaran cepat kondisi administrasi Pemuda Cirengit.</p>
             </div>
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
                 @foreach ($summaryCards as $card)
                     <x-ui.card :accent="$card['accent']" padding="md">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <p class="text-sm font-semibold text-slate-600 dark:text-slate-400">{{ $card['label'] }}</p>
-                                <p class="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">{{ number_format($card['value']) }}</p>
+                                <p class="line-clamp-2 text-xs font-semibold text-slate-600 dark:text-slate-400 sm:text-sm">{{ $card['label'] }}</p>
+                                <p class="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:mt-3 sm:text-3xl">{{ number_format($card['value']) }}</p>
                             </div>
-                            <div class="{{ $toneClasses[$card['tone']] }} flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset">
+                            <div class="{{ $toneClasses[$card['tone']] }} hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset sm:flex">
                                 <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path d="M2 11a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v5H2v-5ZM8 7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v9H8V7ZM14 4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h-4V4Z" />
                                 </svg>
                             </div>
                         </div>
-                        <p class="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">{{ $card['note'] }}</p>
+                        <p class="mt-2 line-clamp-1 text-xs font-medium text-slate-500 dark:text-slate-400 sm:mt-3 sm:line-clamp-2">{{ $card['note'] }}</p>
                     </x-ui.card>
                 @endforeach
             </div>
         </section>
 
         <section>
-            <div class="mb-4">
-                <h2 class="text-xl font-bold tracking-tight text-slate-950 dark:text-white">Command Center</h2>
-                <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">Sinyal operasional yang perlu dilihat pengurus hari ini.</p>
+            <div class="mb-3 sm:mb-4">
+                <h2 class="text-lg font-bold tracking-tight text-slate-950 dark:text-white sm:text-xl">Command Center</h2>
+                <p class="mt-1 line-clamp-1 text-sm text-slate-600 dark:text-slate-400 sm:line-clamp-none">Sinyal operasional yang perlu dilihat pengurus hari ini.</p>
             </div>
 
-            <div class="grid gap-4 md:grid-cols-3">
+            <div class="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
                 @foreach ($commandCards as $card)
                     <x-ui.card :accent="$card['accent']" padding="md">
                         <div class="flex items-start justify-between gap-3">
                             <div>
-                                <p class="text-sm font-semibold text-slate-600 dark:text-slate-400">{{ $card['label'] }}</p>
-                                <p class="mt-3 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">{{ number_format($card['value']) }}</p>
+                                <p class="line-clamp-2 text-xs font-semibold text-slate-600 dark:text-slate-400 sm:text-sm">{{ $card['label'] }}</p>
+                                <p class="mt-2 text-2xl font-bold tracking-tight text-slate-950 dark:text-white sm:mt-3 sm:text-3xl">{{ number_format($card['value']) }}</p>
                             </div>
-                            <div class="{{ $toneClasses[$card['tone']] }} flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset">
+                            <div class="{{ $toneClasses[$card['tone']] }} hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset sm:flex">
                                 <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm.75-12.5a.75.75 0 0 0-1.5 0v4.25c0 .199.079.39.22.53l2.5 2.5a.75.75 0 1 0 1.06-1.06l-2.28-2.28V5.5Z" clip-rule="evenodd" />
                                 </svg>
                             </div>
                         </div>
-                        <p class="mt-3 text-xs font-medium text-slate-500 dark:text-slate-400">{{ $card['note'] }}</p>
+                        <p class="mt-2 line-clamp-1 text-xs font-medium text-slate-500 dark:text-slate-400 sm:mt-3 sm:line-clamp-2">{{ $card['note'] }}</p>
                     </x-ui.card>
                 @endforeach
             </div>

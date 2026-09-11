@@ -29,12 +29,12 @@
         $filterCount = collect([$status, $departmentId])->filter(fn ($value) => filled($value))->count();
     @endphp
 
-    <div class="space-y-6" x-data="{ copied: false }">
+    <div class="space-y-4 sm:space-y-6" x-data="{ copied: false }">
         @if (session('success'))
             <div class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">{{ session('success') }}</div>
         @endif
 
-        <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                     <a href="{{ route('activities.show', $activity) }}" class="text-sm font-semibold text-slate-600 hover:text-slate-900">Kembali ke Detail Kegiatan</a>
@@ -53,20 +53,20 @@
             </div>
         </section>
 
-        <section class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <section class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
             @foreach ($summaryCards as $card)
-                <div class="{{ $card['class'] }} rounded-lg border border-slate-200 border-l-4 bg-white p-5 shadow-sm">
-                    <p class="text-sm font-medium text-slate-500">{{ $card['label'] }}</p>
+                <div class="{{ $card['class'] }} rounded-lg border border-slate-200 border-l-4 bg-white p-4 shadow-sm sm:p-5">
+                    <p class="line-clamp-2 text-xs font-medium text-slate-500 sm:text-sm">{{ $card['label'] }}</p>
                     <p class="mt-3 text-2xl font-bold text-slate-950">{{ number_format($card['value']) }}</p>
                 </div>
             @endforeach
-            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-                <p class="text-sm font-medium text-emerald-700">Persentase Kehadiran</p>
+            <div class="rounded-lg border border-emerald-200 bg-emerald-50 p-4 shadow-sm sm:p-5">
+                <p class="line-clamp-2 text-xs font-medium text-emerald-700 sm:text-sm">Persentase Kehadiran</p>
                 <p class="mt-3 text-2xl font-bold text-emerald-900">{{ number_format($attendancePercentage, 2) }}%</p>
             </div>
         </section>
 
-        <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        <section class="rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                 <a href="{{ route('activities.show', $activity) }}" class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Kembali ke Detail Kegiatan</a>
                 <div x-data="{ open: false, submitting: false }" x-on:confirmed="submitting = true; $refs.syncParticipantsForm.submit()">

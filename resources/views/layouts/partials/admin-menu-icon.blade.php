@@ -57,6 +57,33 @@
         </svg>
         @break
 
+    @case('wallet')
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.75 7.75a2 2 0 0 1 2-2h10.5a2 2 0 0 1 2 2v1.5h-4.5a3 3 0 0 0 0 6h4.5v1a2 2 0 0 1-2 2H6.75a2 2 0 0 1-2-2v-8.5Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.75 9.25h4.5v6h-4.5a3 3 0 0 1 0-6ZM15.75 12.25h.01" />
+        </svg>
+        @break
+
+    @case('cash')
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.75 7.25h14.5v9.5H4.75v-9.5Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 10.25h.01M16 13.75h.01M12 14.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />
+        </svg>
+        @break
+
+    @case('bell')
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M14.85 18.25a2.85 2.85 0 0 1-5.7 0M18.5 9.5a6.5 6.5 0 0 0-13 0c0 6.75-2.5 7.75-2.5 7.75h18s-2.5-1-2.5-7.75Z" />
+        </svg>
+        @break
+
+    @case('book')
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.75 4.75h8.5a3.5 3.5 0 0 1 3.5 3.5v11H9.25a3.5 3.5 0 0 0-3.5 3.5v-18Z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5.75 4.75h8.5a3.5 3.5 0 0 1 3.5 3.5M9 9.25h5.5M9 12.25h5" />
+        </svg>
+        @break
+
     @case('cog')
         <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9.75 4.95 10.45 3.5h3.1l.7 1.45 1.55.65 1.55-.5 2.2 2.2-.5 1.55.65 1.55 1.45.7v3.1l-1.45.7-.65 1.55.5 1.55-2.2 2.2-1.55-.5-1.55.65-.7 1.45h-3.1l-.7-1.45-1.55-.65-1.55.5-2.2-2.2.5-1.55-.65-1.55-1.45-.7v-3.1l1.45-.7.65-1.55-.5-1.55 2.2-2.2 1.55.5 1.55-.65Z" />

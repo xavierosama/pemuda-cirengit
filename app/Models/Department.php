@@ -27,4 +27,9 @@ class Department extends Model
     {
         return $this->hasMany(Activity::class);
     }
+
+    public function managedArticles(): HasMany
+    {
+        return $this->hasMany(Article::class, 'managed_by_bidang_id');
+    }
 }

@@ -5,31 +5,41 @@ use App\Http\Controllers\ActivityController;
 use App\Http\Controllers\ActivityAttendanceQrController;
 use App\Http\Controllers\ActivityAttendanceExportController;
 use App\Http\Controllers\ActivityLocationController;
+use App\Http\Controllers\AdminNotificationController;
+use App\Http\Controllers\ArticleCategoryController;
+use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\AttendanceCheckInController;
 use App\Http\Controllers\AttendanceReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DepartmentController;
+use App\Http\Controllers\FinanceDashboardController;
+use App\Http\Controllers\FinancialCategoryController;
+use App\Http\Controllers\FinancialTransactionController;
 use App\Http\Controllers\MemberController;
 use App\Http\Controllers\MemberAccountController;
 use App\Http\Controllers\MemberDashboardAttendanceController;
 use App\Http\Controllers\MemberExportController;
+use App\Http\Controllers\MemberFeeController;
 use App\Http\Controllers\MemberHomeController;
 use App\Http\Controllers\MemberImportTemplateController;
+use App\Http\Controllers\MemberMyFeeController;
+use App\Http\Controllers\MemberNotificationController;
+use App\Http\Controllers\MemberNotificationPreferenceController;
+use App\Http\Controllers\MemberPushSubscriptionController;
 use App\Http\Controllers\PositionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicArticleController;
+use App\Http\Controllers\PublicLandingController;
 use App\Http\Controllers\SystemSettingController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    if (! auth()->check()) {
-        return redirect()->route('login');
-    }
-
-    return auth()->user()->role === 'member'
-        ? redirect()->route('member.home')
-        : redirect()->route('dashboard');
-});
+Route::get('/', PublicLandingController::class)->name('public.home');
+Route::get('/artikel', [PublicArticleController::class, 'index'])->name('public.articles.index');
+Route::get('/artikel/{article}', [PublicArticleController::class, 'show'])->name('public.articles.show');
+Route::get('/kajian', [PublicArticleController::class, 'index'])->name('public.articles.legacy-index');
+Route::get('/kajian/{article}', [PublicArticleController::class, 'show'])->name('public.articles.legacy-show');
+Route::get('/kategori/{category}', [PublicArticleController::class, 'category'])->name('public.categories.show');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified', 'internal'])
@@ -51,6 +61,33 @@ Route::middleware('auth')->group(function () {
     Route::patch('/member/profile', [ProfileController::class, 'updateMember'])
         ->middleware('member')
         ->name('member.profile.update');
+    Route::get('/member/notifications', [MemberNotificationController::class, 'index'])
+        ->middleware('member')
+        ->name('member.notifications.index');
+    Route::post('/member/notifications/{notification}/read', [MemberNotificationController::class, 'read'])
+        ->middleware('member')
+        ->name('member.notifications.read');
+    Route::post('/member/notifications/read-all', [MemberNotificationController::class, 'readAll'])
+        ->middleware('member')
+        ->name('member.notifications.read-all');
+    Route::get('/member/notification-settings', [MemberNotificationPreferenceController::class, 'edit'])
+        ->middleware('member')
+        ->name('member.notification-settings.edit');
+    Route::put('/member/notification-settings', [MemberNotificationPreferenceController::class, 'update'])
+        ->middleware('member')
+        ->name('member.notification-settings.update');
+    Route::post('/member/push-subscriptions', [MemberPushSubscriptionController::class, 'store'])
+        ->middleware('member')
+        ->name('member.push-subscriptions.store');
+    Route::delete('/member/push-subscriptions', [MemberPushSubscriptionController::class, 'destroy'])
+        ->middleware('member')
+        ->name('member.push-subscriptions.destroy');
+    Route::post('/member/push-notifications/test', [MemberPushSubscriptionController::class, 'test'])
+        ->middleware('member')
+        ->name('member.push-notifications.test');
+    Route::get('/member/iuran', MemberMyFeeController::class)
+        ->middleware('member')
+        ->name('member.fees.index');
 
     Route::get('attendance/check-in/{token}', [AttendanceCheckInController::class, 'show'])
         ->name('attendance.check-in.show');
@@ -65,9 +102,28 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+Route::middleware('auth')->prefix('finance')->name('finance.')->group(function () {
+    Route::get('dashboard', FinanceDashboardController::class)->name('dashboard');
+    Route::resource('categories', FinancialCategoryController::class)->except('show');
+    Route::get('income', [FinancialTransactionController::class, 'income'])->name('income.index');
+    Route::get('expenses', [FinancialTransactionController::class, 'expenses'])->name('expenses.index');
+    Route::resource('transactions', FinancialTransactionController::class)->except('show');
+    Route::get('member-fees', [MemberFeeController::class, 'index'])->name('member-fees.index');
+    Route::post('member-fees/generate', [MemberFeeController::class, 'generate'])->name('member-fees.generate');
+    Route::put('member-fees/settings', [MemberFeeController::class, 'updateSetting'])->name('member-fees.settings.update');
+    Route::patch('member-fees/{record}', [MemberFeeController::class, 'update'])->name('member-fees.update');
+});
+
 Route::middleware(['auth', 'internal'])->group(function () {
     Route::get('attendance-reports', [AttendanceReportController::class, 'index'])
         ->name('attendance-reports.index');
+    Route::resource('article-categories', ArticleCategoryController::class);
+    Route::post('articles/editor-image-upload', [ArticleController::class, 'editorImageUpload'])
+        ->name('articles.editor-image-upload');
+    Route::resource('articles', ArticleController::class);
+    Route::post('admin-notifications/{admin_notification}/send', [AdminNotificationController::class, 'send'])
+        ->name('admin-notifications.send');
+    Route::resource('admin-notifications', AdminNotificationController::class)->except('destroy');
 
     Route::get('settings', [SystemSettingController::class, 'edit'])
         ->name('settings.edit');

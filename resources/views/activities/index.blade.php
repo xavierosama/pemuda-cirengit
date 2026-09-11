@@ -23,7 +23,7 @@
         $filterCount = collect([$activityDate, $departmentId, $status, $startDate, $endDate, $attendanceStatus])->filter(fn ($value) => filled($value))->count();
     @endphp
 
-    <div class="space-y-6">
+    <div class="space-y-4 sm:space-y-6">
         <x-ui.page-header
             title="Kegiatan Aktual"
             eyebrow="Agenda & Kegiatan"
@@ -35,11 +35,11 @@
             </x-slot>
         </x-ui.page-header>
 
-        <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+        <div class="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-5">
             @foreach ($summaryCards as $card)
                 <x-ui.card padding="sm">
-                    <div class="{{ $card['class'] }} inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset">{{ $card['label'] }}</div>
-                    <p class="mt-4 text-3xl font-bold text-slate-950">{{ number_format($card['value']) }}</p>
+                    <div class="{{ $card['class'] }} inline-flex rounded-full px-2 py-1 text-[11px] font-semibold ring-1 ring-inset sm:px-2.5 sm:text-xs">{{ $card['label'] }}</div>
+                    <p class="mt-3 text-2xl font-bold text-slate-950 sm:mt-4 sm:text-3xl">{{ number_format($card['value']) }}</p>
                 </x-ui.card>
             @endforeach
         </div>

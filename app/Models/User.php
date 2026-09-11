@@ -75,4 +75,39 @@ class User extends Authenticatable
     {
         return $this->hasMany(Attendance::class, 'verified_by');
     }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(PushSubscription::class);
+    }
+
+    public function notificationPreferences(): HasMany
+    {
+        return $this->hasMany(NotificationPreference::class);
+    }
+
+    public function articles(): HasMany
+    {
+        return $this->hasMany(Article::class, 'author_id');
+    }
+
+    public function financialTransactions(): HasMany
+    {
+        return $this->hasMany(FinancialTransaction::class, 'created_by');
+    }
+
+    public function recordedMemberFees(): HasMany
+    {
+        return $this->hasMany(MemberFeeRecord::class, 'recorded_by');
+    }
+
+    public function canManageFinance(): bool
+    {
+        return in_array($this->role, ['admin', 'bendahara'], true);
+    }
 }

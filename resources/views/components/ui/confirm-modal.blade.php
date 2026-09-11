@@ -25,7 +25,7 @@
     x-cloak
     x-show="open"
     x-on:keydown.escape.window="open = false"
-    class="fixed inset-0 z-[60] flex min-h-screen items-center justify-center px-4 py-6"
+    class="fixed inset-0 z-[100] flex min-h-screen items-center justify-center px-4 py-6"
     role="dialog"
     aria-modal="true"
     style="display: none;"

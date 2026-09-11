@@ -5,18 +5,21 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\AgendaSchedule;
 use App\Models\Attendance;
+use App\Services\MemberNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class MemberHomeController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, MemberNotificationService $notificationService): View
     {
         $user = $request->user()->load(['member.department', 'member.position']);
         $attendanceHistory = collect();
         $currentActivities = collect();
 
         if ($user->member) {
+            $notificationService->syncForUser($user);
+
             $attendanceHistory = Attendance::query()
                 ->with('activity')
                 ->where('member_id', $user->member->id)

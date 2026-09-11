@@ -18,6 +18,9 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             DepartmentSeeder::class,
             PositionSeeder::class,
+            ArticleCategorySeeder::class,
+            FinancialCategorySeeder::class,
+            MembershipFeeSettingSeeder::class,
         ]);
 
         if ($this->command?->getLaravel()->environment('local')) {

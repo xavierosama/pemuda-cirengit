@@ -48,6 +48,9 @@
             <a href="{{ route('member.profile.edit') }}" class="block px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white" @click="open = false">
                 Edit Profile
             </a>
+            <a href="{{ route('member.notification-settings.edit') }}" class="block px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-950 dark:text-slate-200 dark:hover:bg-slate-800 dark:hover:text-white" @click="open = false">
+                Pengaturan Notifikasi
+            </a>
         </div>
 
         <div class="border-t border-slate-100 py-1 dark:border-slate-800">

@@ -10,26 +10,30 @@ class ExampleTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guest_homepage_redirects_to_login(): void
+    public function test_guest_homepage_displays_public_landing_page(): void
     {
         $response = $this->get('/');
 
-        $response->assertRedirect(route('login'));
+        $response->assertOk()
+            ->assertSee('Kajian')
+            ->assertSee('Login Member');
     }
 
-    public function test_internal_user_homepage_redirects_to_dashboard(): void
+    public function test_internal_user_homepage_displays_public_landing_with_dashboard_link(): void
     {
         $response = $this->actingAs(User::factory()->create(['role' => 'admin']))
             ->get('/');
 
-        $response->assertRedirect(route('dashboard'));
+        $response->assertOk()
+            ->assertSee('Dashboard');
     }
 
-    public function test_member_homepage_redirects_to_member_page(): void
+    public function test_member_homepage_displays_public_landing_with_dashboard_link(): void
     {
         $response = $this->actingAs(User::factory()->create(['role' => 'member']))
             ->get('/');
 
-        $response->assertRedirect(route('member.home'));
+        $response->assertOk()
+            ->assertSee('Dashboard');
     }
 }
